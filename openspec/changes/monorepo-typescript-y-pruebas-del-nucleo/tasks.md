@@ -33,7 +33,7 @@
 ## 5. CI
 
 - [x] 5.1 Crear `.github/workflows/ci.yml` (Node 24, pnpm, `install --frozen-lockfile`, build, typecheck, lint, test) y verificar con `pnpm install --frozen-lockfile && pnpm build && pnpm typecheck && pnpm lint && pnpm test` en local
-- [ ] 5.2 Subir la rama, abrir el pull request a `main` y verificar que el CI de GitHub Actions queda en verde
+- [x] 5.2 Subir la rama, abrir el pull request a `main` y verificar que el CI de GitHub Actions queda en verde
 
 ## 6. Verificación final
 
