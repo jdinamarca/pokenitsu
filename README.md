@@ -26,6 +26,21 @@ Si `corepack enable` falla por permisos, usa `npx pnpm@12 install` / `npx pnpm@1
 - Para cargar desde el celular en tu wifi: `HOST=0.0.0.0 pnpm start` y abre `http://<ip-de-tu-mac>:3000`
   (ojo: no tiene login, cualquiera en tu red podría usarlo).
 
+## Cargar cartas
+
+Eliges la expansión (como sale impresa en la carta, ej. `MEW ES`) y escribes números + Enter:
+
+| Entrada | Qué hace |
+|---|---|
+| `25` | una copia, variante automática (normal si es común, poco común, rara o promo; holo si no) |
+| `25r` `25h` `25e` `25p` `25m` | reverse, holo, 1st Edition, Poké Ball, Master Ball |
+| `25*4` | cuatro copias · `-25` quita una |
+| `lp`, `nm`… | cambia el estado de lo que sigue · `25r lp` solo para esa carta |
+| `es`, `en`… | cambia el idioma de lo que sigue |
+| `1-30` | una copia de cada carta del 1 al 30 (se combina: `1-30r`, `1-30*2`, `1-30 lp`, `-1-30`). Los números que no existen se saltan y se informan; más de 50 cartas pide confirmación |
+| Enter vacío | repite la última entrada (en la misma expansión) |
+| `⌘Z` | deshace la última carga; un rango se deshace completo (`inventory_log.batch`) |
+
 ## Estructura y pruebas
 
 Monorepo pnpm:

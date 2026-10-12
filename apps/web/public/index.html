@@ -431,9 +431,11 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
             <span><kbd>25e</kbd> 1st Edition · <kbd>25p</kbd> Poké Ball · <kbd>25m</kbd> Master Ball</span>
             <span><kbd>25*4</kbd> cuatro copias</span>
             <span><kbd>-25</kbd> quitar una</span>
+            <span><kbd>1-30</kbd> de la 1 a la 30 · <kbd>1-30r</kbd> todas reverse</span>
+            <span><kbd>Enter</kbd> vacío repite la última</span>
             <span><kbd>es</kbd> <kbd>en</kbd>… cambiar idioma</span>
             <span><kbd>lp</kbd> <kbd>nm</kbd>… cambiar estado · <kbd>25r lp</kbd> solo esa carta</span>
-            <span><kbd>Esc</kbd> cambiar expansión · <kbd>⌘Z</kbd> deshacer</span>
+            <span><kbd>Esc</kbd> cambiar expansión · <kbd>⌘Z</kbd> deshacer (un rango completo)</span>
           </div>
           <div class="opts"><label><input type="checkbox" id="soundToggle"> Sonido al cargar</label></div>
         </div>
@@ -761,7 +763,7 @@ async function loadState() {
   Object.assign(VLABEL, s.variants || {});
   data.added = {};
   for (const r of s.inventory) { putMeta(r); const k = keyOf(r.sid, r.num, r.variant, r.lang, r.cond, r.loc); knownVariants.add(r.variant); data.inv[k] = r.qty; data.added[k] = +r.added || 0; if (r.personal) data.pers[k] = r.personal; }
-  data.log = s.log.map(r => { putMeta(r); return { id: r.id, k: keyOf(r.sid, r.num, r.variant, r.lang, r.cond, r.loc), d: r.delta, p: r.personal }; });
+  data.log = s.log.map(r => { putMeta(r); return { id: r.id, k: keyOf(r.sid, r.num, r.variant, r.lang, r.cond, r.loc), d: r.delta, p: r.personal, b: r.batch }; });
   setLocations(s.locations || []); invVer++;
   if (s.vimg) VIMG = s.vimg;
   setGroups(s.groups);
@@ -822,16 +824,16 @@ function putRow(key, qty, personal) {
   if (qty && personal) data.pers[key] = personal; else delete data.pers[key];
 }
 // personal: the added copies go to my personal collection; removing takes copies for sale first
-function addQty(key, delta, personal = false) {
+function addQty(key, delta, personal = false, batch = null) {
   const cur = data.inv[key] || 0, next = Math.max(0, cur + delta), real = next - cur;
   if (!real) return 0;
   const curP = data.pers[key] || 0, nextP = real > 0 && personal ? curP + real : Math.min(curP, next);
   putRow(key, next, nextP);
-  const entry = { id: null, k: key, d: real, p: nextP - curP };
+  const entry = { id: null, k: key, d: real, p: nextP - curP, b: batch };
   data.log.push(entry); if (data.log.length > 100) data.log.splice(0, data.log.length - 100);
   const { sid, num, v, lang, cond, loc } = splitKey(key);
   enqueue(async () => {
-    const r = await api('POST', '/inventory/add', { sid, num, variant: v, lang, cond, loc, delta: real, personal });
+    const r = await api('POST', '/inventory/add', { sid, num, variant: v, lang, cond, loc, delta: real, personal, batch });
     entry.id = r.logId;
     putRow(key, r.qty, r.personal);
   });
@@ -843,16 +845,21 @@ function setPersonal(key, n) {
   const { sid, num, v, lang, cond, loc } = splitKey(key);
   enqueue(() => api('POST', '/inventory/personal', { sid, num, variant: v, lang, cond, loc, personal: n }));
 }
+// undoes the last load; a range ("1-30") is undone as a whole
 function undoLast() {
-  const e = data.log.pop(); if (!e) return;
-  const cur = data.inv[e.k] || 0, next = Math.max(0, cur - e.d);
-  putRow(e.k, next, Math.min(Math.max(0, (data.pers[e.k] || 0) - (e.p || 0)), next));
+  const e = data.log[data.log.length - 1]; if (!e) return;
+  const group = [];
+  while (data.log.length && (group.length === 0 || (e.b && data.log[data.log.length - 1].b === e.b))) group.push(data.log.pop());
+  for (const g of group) {
+    const cur = data.inv[g.k] || 0, next = Math.max(0, cur - g.d);
+    putRow(g.k, next, Math.min(Math.max(0, (data.pers[g.k] || 0) - (g.p || 0)), next));
+  }
   enqueue(async () => {
     const r = await api('POST', '/inventory/undo');
-    if (r.undone) putRow(keyOf(r.sid, r.num, r.variant, r.lang, r.cond, r.loc), r.qty, r.personal);
+    for (const x of r.rows || []) putRow(keyOf(x.sid, x.num, x.variant, x.lang, x.cond, x.loc), x.qty, x.personal);
     renderAll();
   });
-  renderAll(); showMsg('Deshecho: ' + describeKey(e.k), 'warn');
+  renderAll(); showMsg('Deshecho: ' + (group.length > 1 ? `rango de ${group.length} cartas` : describeKey(e.k)), 'warn');
 }
 function describeKey(k) { const { sid, num, v, lang, cond, loc } = splitKey(k); const m = meta(sid, num); return `${m ? m[0] : '?'} #${num} ${vlabel(v)} ${lang || '¿idioma?'}${cond !== 'NM' ? ' ' + cond : ''} (${setById[sid] ? setById[sid].name : sid})${loc ? ' → 📍 ' + locName(loc) : ''}`; }
 // copies of one printed card across variants and (optionally one) language
@@ -983,7 +990,8 @@ async function loadPrices() {
   clearTimeout(loadPrices.t); if (P.job?.running) loadPrices.t = setTimeout(loadPrices, 4000);
 }
 // just loaded: download its price if missing, then warn if it's worth something
-async function checkPrice(key, added = 0) {
+// quiet: no alert toast (a range shows one summary); returns { name, clp } when the copy is worth at least the alert
+async function checkPrice(key, added = 0, quiet = false) {
   const { sid, num } = splitKey(key), pk = sid + '|' + num;
   // also when the catalog has no illustrator for it: the server completes it from TCGdex
   if (!P.prices[pk] || !(meta(sid, num) || [])[2]) {
@@ -1010,7 +1018,9 @@ async function checkPrice(key, added = 0) {
       key = to; renderStats();
     }
   }
-  if (pr && P.cfg && P.cfg.alert && pr.clp >= P.cfg.alert) toast(`💰 ${m ? m[0] : 'Esta carta'} vale ~${clp(pr.clp)} (${pr.src}) · ¡sepárala!`, 'gold');
+  const valuable = pr && P.cfg && P.cfg.alert && pr.clp >= P.cfg.alert;
+  if (valuable && !quiet) toast(`💰 ${m ? m[0] : 'Esta carta'} vale ~${clp(pr.clp)} (${pr.src}) · ¡sepárala!`, 'gold');
+  return valuable ? { name: m ? m[0] : '?', clp: pr.clp } : null;
 }
 async function editOwnPrice(spec) {
   const [sid, num, v] = spec.split('|'), m = meta(sid, num);
@@ -1457,9 +1467,23 @@ let curSet = null;
 // entry syntax ("25r lp*2"…) and automatic variant: @pokenitsu/core
 function parseEntry(raw) { return Core.parseEntry(raw); }
 function autoVariant(m) { return Core.autoVariant(m ? m[3] : null); }
+// the last entry that loaded something, to repeat it with Enter on an empty box (same expansion only)
+let lastEntry = null;
+// one card of the current expansion: picks the variant, condition and location, and adds or removes the copies
+function loadOne(num, p, batch) {
+  const m = meta(curSet.id, num), v = p.v || autoVariant(m), cond = p.cond || data.cond;
+  const loc = p.sign < 0 ? removeLoc(curSet.id, num, v, data.lang, cond) : data.locPick === 'auto' ? suggestLoc(curSet.id, num, v, cond, data.personal) : +data.locPick;
+  const key = keyOf(curSet.id, num, v, data.lang, cond, loc);
+  const wasNew = cardQty(curSet.id, num) === 0;
+  return { key, m, wasNew, real: addQty(key, p.sign * p.qty, data.personal, batch) };
+}
 function commitEntry() {
-  const inp = $('entry'); const raw = inp.value;
-  if (!raw.trim()) return;
+  const inp = $('entry'); let raw = inp.value, repeated = false;
+  if (!raw.trim()) {
+    // Enter on an empty box: repeat the last entry
+    if (!lastEntry || !curSet || lastEntry.set !== curSet.id) return;
+    raw = lastEntry.raw; repeated = true;
+  }
   const L = langCode(raw);
   if (L) { setLang(L); inp.value = ''; flash('okf'); beep(true); return showMsg(`Idioma: ${LNAME[L]} (${L})`, ''); }
   const C = /^(nm|lp|mp|hp|dmg)$/i.test(raw.trim()) && condCode(raw);
@@ -1467,30 +1491,60 @@ function commitEntry() {
   if (!curSet) return fail('Primero elige una expansión (Esc).');
   const p = parseEntry(raw); if (!p || !p.qty) return fail('No entendí la entrada.');
   const idx = cards[curSet.id];
-  let num, v = p.v, warn = '';
+  // "1-30": a range, unless a number with a dash really exists in the expansion
+  if (p.range && !(idx && (idx.norm[norm(p.base)] !== undefined || idx.norm[norm(p.full)] !== undefined))) return commitRange(p, raw, repeated);
+  let num, warn = '';
   if (idx) {
     if (idx.norm[norm(p.base)] !== undefined) num = idx.norm[norm(p.base)];
-    else if (idx.norm[norm(p.full)] !== undefined) { num = idx.norm[norm(p.full)]; v = null; }
+    else if (idx.norm[norm(p.full)] !== undefined) { num = idx.norm[norm(p.full)]; p.v = null; }
     else return fail(`La carta "${p.full}" no existe en ${curSet.name}. ¿Expansión equivocada?`);
   } else {
     num = norm(p.base); warn = ' (sin datos de la expansión: no pude verificar la carta)';
   }
-  const m = meta(curSet.id, num);
-  if (!v) v = autoVariant(m);
-  const cond = p.cond || data.cond;
-  const loc = p.sign < 0 ? removeLoc(curSet.id, num, v, data.lang, cond) : data.locPick === 'auto' ? suggestLoc(curSet.id, num, v, cond, data.personal) : +data.locPick;
-  const key = keyOf(curSet.id, num, v, data.lang, cond, loc);
-  const wasNew = cardQty(curSet.id, num) === 0;
-  const real = addQty(key, p.sign * p.qty, data.personal);
+  const { key, m, wasNew, real } = loadOne(num, p);
   if (real === 0) return fail('No había copias de esa carta para quitar.');
+  lastEntry = { raw, set: curSet.id };
   save();
   inp.value = '';
   flash('okf'); beep(true);
-  showMsg(`${real > 0 ? '+' + real : real}${real > 0 && data.personal ? ' 🔒' : ''} · ${describeKey(key)}${warn}`, warn ? 'warn' : '');
+  showMsg(`${repeated ? `Repetido: ${raw.trim()} · ` : ''}${real > 0 ? '+' + real : real}${real > 0 && data.personal ? ' 🔒' : ''} · ${describeKey(key)}${warn}`, warn ? 'warn' : '');
   renderPreview(key); renderLog(); renderStats();
   if (real > 0 && wasNew && m && m[2]) celebrateArtist(m[2]);
   if (real > 0 && m && ['ir', 'sir', 'secret'].includes(rgroupOf(m[3]))) { const r = rarityOf(m[3]); toast(`✨ ¡${r[0]}! ${r[1]}: ${m[0]}`, 'gold'); }
   if (real > 0) checkPrice(key, real);
+}
+// "1-30r lp*2": every card of the range in the current expansion, as one group (undo reverts it all)
+async function commitRange(p, raw, repeated) {
+  const idx = cards[curSet.id], inp = $('entry');
+  if (!idx) return fail('Para cargar un rango necesito los datos de la expansión. Espera a que cargue y vuelve a intentar.');
+  const nums = [], skipped = [];
+  for (let n = p.range.from; n <= p.range.to; n++) { const num = idx.norm[norm(String(n))]; if (num === undefined) skipped.push(n); else nums.push(num); }
+  if (!nums.length) return fail(`Ningún número del ${p.range.from} al ${p.range.to} existe en ${curSet.name}.`);
+  if (nums.length > 50 && !confirm(`¿${p.sign < 0 ? 'Quitar' : 'Cargar'} ${nums.length} cartas (${p.range.from}–${p.range.to}) de ${curSet.name}?`)) return showMsg('Rango cancelado: no se cargó nada.', 'warn');
+  const batch = crypto.randomUUID(), loaded = [], noCopies = [], specials = [], artists = new Set();
+  for (const num of nums) {
+    const r = loadOne(num, p, batch);
+    if (!r.real) { noCopies.push(num); continue; }
+    loaded.push(r);
+    if (r.real > 0 && r.wasNew && r.m && r.m[2]) artists.add(r.m[2]);
+    if (r.real > 0 && r.m && ['ir', 'sir', 'secret'].includes(rgroupOf(r.m[3]))) specials.push(`${r.m[0]} (${rarityOf(r.m[3])[0]})`);
+  }
+  if (!loaded.length) return fail('No había copias de esas cartas para quitar.');
+  lastEntry = { raw, set: curSet.id };
+  save(); inp.value = ''; flash('okf'); beep(true);
+  const copies = loaded.reduce((a, r) => a + r.real, 0);
+  const extra = [skipped.length ? `${skipped.length} saltadas: ${skipped.slice(0, 8).join(', ')}${skipped.length > 8 ? '…' : ''} no existen` : '',
+    noCopies.length ? `${noCopies.length} sin copias para quitar` : ''].filter(Boolean);
+  showMsg(`${repeated ? `Repetido: ${raw.trim()} · ` : ''}${copies > 0 ? '+' : ''}${copies} ${Math.abs(copies) === 1 ? 'copia' : 'copias'} de ${loaded.length} cartas (${p.range.from}–${p.range.to}) · ${p.v ? vlabel(p.v) : 'variante automática'} ${data.lang || ''}${(p.cond || data.cond) !== 'NM' ? ' ' + (p.cond || data.cond) : ''}${data.personal && copies > 0 ? ' 🔒' : ''}${extra.length ? ' · ' + extra.join(' · ') : ''}`, extra.length ? 'warn' : '');
+  renderPreview(loaded[loaded.length - 1].key); renderLog(); renderStats();
+  if (artists.size === 1) celebrateArtist([...artists][0]);
+  else if (artists.size) toast(`🎨 ${artists.size} ilustradores con su primera carta: ${[...artists].slice(0, 5).join(', ')}${artists.size > 5 ? '…' : ''}`);
+  if (specials.length) toast(`✨ ${specials.length === 1 ? 'Carta especial' : specials.length + ' cartas especiales'}: ${specials.slice(0, 5).join(', ')}${specials.length > 5 ? '…' : ''}`, 'gold');
+  if (copies > 0) {
+    // prices (and re-filing by price) card by card, then one summary of the valuable ones
+    const found = (await Promise.all(loaded.map(r => checkPrice(r.key, r.real, true)))).filter(Boolean).sort((a, b) => b.clp - a.clp);
+    if (found.length) toast(`💰 ${found.length === 1 ? '1 carta valiosa' : found.length + ' cartas valiosas'} · ¡sepáralas!: ${found.slice(0, 4).map(f => `${f.name} ~${clp(f.clp)}`).join(', ')}${found.length > 4 ? '…' : ''}`, 'gold');
+  }
 }
 function celebrateArtist(artist) {
   const total = artistTotals[artist]; if (!total) return;
@@ -1545,6 +1599,7 @@ function renderResults() {
 }
 async function selectSet(id) {
   const s = setById[id]; if (!s) return;
+  if (!curSet || curSet.id !== id) lastEntry = null;
   curSet = s;
   if (resLang) { data.lang = resLang; resLang = null; renderLangs(); }
   else if (s.lang && data.lang !== s.lang) { data.lang = s.lang; renderLangs(); }

@@ -52,6 +52,8 @@ export interface Entry {
   v: string | null;
   /** condition for this entry only, or null (the current one) */
   cond: Cond | null;
+  /** "1-30": every number from `from` to `to` (inclusive, from <= to); null for a single card */
+  range: { from: number; to: number } | null;
 }
 
 export function parseEntry(raw: string): Entry | null {
@@ -89,7 +91,10 @@ export function parseEntry(raw: string): Entry | null {
     base = s.slice(0, -1);
     v = SUFFIX[last];
   }
-  return { sign, qty, base, full: s, v, cond };
+  // "1-30", "1-30r", "30-1": a range of numbers (a number that really has a dash wins later, in the expansion's index)
+  const mr = base.match(/^(\d+)-(\d+)$/);
+  const range = mr ? { from: Math.min(+mr[1]!, +mr[2]!), to: Math.max(+mr[1]!, +mr[2]!) } : null;
+  return { sign, qty, base, full: s, v, cond, range };
 }
 
 /** variant when the entry has no suffix: normal for common, uncommon, rare and promo (or unknown); holo otherwise */

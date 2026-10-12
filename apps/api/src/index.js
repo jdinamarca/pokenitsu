@@ -239,7 +239,7 @@ app.get('/api/artists/cards', async req => {
 app.get('/api/state', async () => {
   const [inv, log, groups, labels, locs, vimg] = await Promise.all([
     pool.query(`SELECT i.variant, i.lang, i.cond, i.loc, i.qty, i.personal, (extract(epoch FROM i.added_at) * 1000)::bigint AS added, ${CARD_COLS} FROM inventory i JOIN cards c ON c.id = i.card_id`),
-    pool.query(`SELECT l.id, l.variant, l.lang, l.cond, l.loc, l.delta, l.personal, ${CARD_COLS} FROM inventory_log l JOIN cards c ON c.id = l.card_id ORDER BY l.id DESC LIMIT 50`),
+    pool.query(`SELECT l.id, l.variant, l.lang, l.cond, l.loc, l.delta, l.personal, l.batch, ${CARD_COLS} FROM inventory_log l JOIN cards c ON c.id = l.card_id ORDER BY l.id DESC LIMIT 50`),
     groupsWithCards(),
     pool.query('SELECT slug, label FROM variant_labels'),
     pool.query('SELECT id, name, kind, pos, note, rule FROM locations ORDER BY pos, id'),
@@ -326,11 +326,13 @@ async function rowOf(c, b) {
   return { cardId: card.id, num: card.number, variant, lang, cond, loc };
 }
 
-// personal: true = the added copies go to my personal collection
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// personal: true = the added copies go to my personal collection; batch: id shared by every card of a range ("1-30"), undone together
 app.post('/api/inventory/add', async req => {
   const b = req.body || {};
   const d = parseInt(b.delta, 10);
   if (!d || Math.abs(d) > 10000) throw bad('Cantidad inválida');
+  if (b.batch != null && !UUID_RE.test(String(b.batch))) throw bad('Grupo inválido');
   return tx(async c => {
     const r = await rowOf(c, b);
     const cur = await lockRow(c, r);
@@ -340,8 +342,8 @@ app.post('/api/inventory/add', async req => {
     await writeRow(c, r, next, pers);
     let logId = null;
     if (real) ({ rows: [{ id: logId }] } = await c.query(
-      'INSERT INTO inventory_log (card_id, variant, lang, cond, loc, delta, personal) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id',
-      [...rowArgs(r), real, pers - cur.personal]));
+      'INSERT INTO inventory_log (card_id, variant, lang, cond, loc, delta, personal, batch) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id',
+      [...rowArgs(r), real, pers - cur.personal, b.batch || null]));
     return { sid: b.sid, num: r.num, variant: r.variant, lang: r.lang, cond: r.cond, loc: r.loc, qty: next, personal: next ? pers : 0, real, logId };
   });
 });
@@ -359,15 +361,24 @@ app.post('/api/inventory/personal', async req => {
   });
 });
 
+// Undoes the last load; when it was part of a range (batch), the whole range at once.
+// rows: every row as it ends up; the first one's fields are also at the top level (single loads)
 app.post('/api/inventory/undo', async () => tx(async c => {
-  const { rows } = await c.query(`SELECT l.*, ${CARD_COLS} FROM inventory_log l JOIN cards c ON c.id = l.card_id ORDER BY l.id DESC LIMIT 1 FOR UPDATE OF l`);
-  if (!rows.length) return { undone: null };
-  const e = rows[0], r = { cardId: e.card_id, variant: e.variant, lang: e.lang, cond: e.cond, loc: e.loc };
-  const cur = await lockRow(c, r);
-  const next = Math.max(0, cur.qty - e.delta), pers = Math.min(Math.max(0, cur.personal - e.personal), next);
-  await writeRow(c, r, next, pers);
-  await c.query('DELETE FROM inventory_log WHERE id = $1', [e.id]);
-  return { undone: e.id, sid: e.sid, num: e.num, variant: e.variant, lang: e.lang, cond: e.cond, loc: e.loc, qty: next, personal: next ? pers : 0 };
+  const { rows: [last] } = await c.query('SELECT id, batch FROM inventory_log ORDER BY id DESC LIMIT 1 FOR UPDATE');
+  if (!last) return { undone: null, rows: [] };
+  const { rows: entries } = await c.query(
+    `SELECT l.*, ${CARD_COLS} FROM inventory_log l JOIN cards c ON c.id = l.card_id
+     WHERE ${last.batch ? 'l.batch = $1' : 'l.id = $1'} ORDER BY l.id DESC FOR UPDATE OF l`, [last.batch || last.id]);
+  const out = [];
+  for (const e of entries) {
+    const r = { cardId: e.card_id, variant: e.variant, lang: e.lang, cond: e.cond, loc: e.loc };
+    const cur = await lockRow(c, r);
+    const next = Math.max(0, cur.qty - e.delta), pers = Math.min(Math.max(0, cur.personal - e.personal), next);
+    await writeRow(c, r, next, pers);
+    await c.query('DELETE FROM inventory_log WHERE id = $1', [e.id]);
+    out.push({ undone: e.id, sid: e.sid, num: e.num, variant: e.variant, lang: e.lang, cond: e.cond, loc: e.loc, qty: next, personal: next ? pers : 0 });
+  }
+  return { ...out[0], batch: last.batch, rows: out };
 }));
 
 // Moves n copies (default all; copies for sale go first) of a row to another variant / language / condition / location,

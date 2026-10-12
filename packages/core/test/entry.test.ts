@@ -8,7 +8,7 @@ const legacy = makeLegacy({ setById: {}, meta: () => null, priceOf: () => null, 
 
 describe('carga-de-cartas: sintaxis de entrada (escenarios)', () => {
   it('25 → una copia, variante automática', () =>
-    expect(parseEntry('25')).toEqual({ sign: 1, qty: 1, base: '25', full: '25', v: null, cond: null }));
+    expect(parseEntry('25')).toEqual({ sign: 1, qty: 1, base: '25', full: '25', v: null, cond: null, range: null }));
   it('25r lp*2 → 2 reverse LP', () => expect(parseEntry('25r lp*2')).toMatchObject({ qty: 2, base: '25', v: 'reverse', cond: 'LP' }));
   it('25 lp*2 → el estado antes de la cantidad', () =>
     expect(parseEntry('25 lp*2')).toMatchObject({ qty: 2, base: '25', v: null, cond: 'LP' }));
@@ -63,7 +63,13 @@ describe('equivalencia con el código anterior', () => {
           inputs.push(n + s + q + c, '-' + n + s + q + c, n + s + c + q, ' ' + n + s + ' ' + q + c + ' ');
         }
   it(`parseEntry en ${inputs.length} entradas generadas`, () => {
-    const diffs = inputs.filter(i => JSON.stringify(parseEntry(i)) !== JSON.stringify(legacy.parseEntry(i)));
+    // the old parser had no ranges: everything else must be the same
+    const diffs = inputs.filter(i => {
+      const e = parseEntry(i);
+      if (e && e.range) return true;
+      const old = e && { sign: e.sign, qty: e.qty, base: e.base, full: e.full, v: e.v, cond: e.cond };
+      return JSON.stringify(old) !== JSON.stringify(legacy.parseEntry(i));
+    });
     expect(diffs).toEqual([]);
   });
   it('autoVariant con todas las rarezas del catálogo', () => {
@@ -97,5 +103,25 @@ describe('equivalencia con el código anterior', () => {
     expect(xs.filter(x => langCode(x) !== legacy.langCode(x) || condCode(x) !== legacy.condCode(x))).toEqual([]);
     const ns = ['025', '0', '00', 'tg05', 'TG005', ' 7 ', 'SV107', 'swsh050', '25a', '0a'];
     expect(ns.filter(n => normNumber(n) !== legacy.norm(n))).toEqual([]);
+  });
+});
+
+describe('carga-por-rangos: rangos de números (escenarios)', () => {
+  it('1-30 → del 1 al 30', () =>
+    expect(parseEntry('1-30')).toMatchObject({ sign: 1, qty: 1, v: null, cond: null, range: { from: 1, to: 30 } }));
+  it('1-10r → reverse', () => expect(parseEntry('1-10r')).toMatchObject({ v: 'reverse', range: { from: 1, to: 10 } }));
+  it('1-30*2 → dos copias de cada una', () => expect(parseEntry('1-30*2')).toMatchObject({ qty: 2, range: { from: 1, to: 30 } }));
+  it('1-30 lp → todas en LP', () => expect(parseEntry('1-30 lp')).toMatchObject({ cond: 'LP', range: { from: 1, to: 30 } }));
+  it('1-30r lp*2 → todo junto', () =>
+    expect(parseEntry('1-30r lp*2')).toMatchObject({ qty: 2, v: 'reverse', cond: 'LP', range: { from: 1, to: 30 } }));
+  it('-1-30 → quita una de cada una', () => expect(parseEntry('-1-30')).toMatchObject({ sign: -1, range: { from: 1, to: 30 } }));
+  it('30-1 → igual que 1-30', () => expect(parseEntry('30-1')?.range).toEqual({ from: 1, to: 30 }));
+  it('con espacios: 1 - 30', () => expect(parseEntry('1 - 30')?.range).toEqual({ from: 1, to: 30 }));
+  it('guarda el texto completo por si el número con guion existe en la expansión', () => expect(parseEntry('1-30')?.full).toBe('1-30'));
+  it('no son rangos: 25, -25, TG1-TG5, 1-30a', () => {
+    expect(parseEntry('25')?.range).toBeNull();
+    expect(parseEntry('-25')?.range).toBeNull();
+    expect(parseEntry('TG1-TG5')?.range).toBeNull();
+    expect(parseEntry('1-30a')?.range).toBeNull();
   });
 });
