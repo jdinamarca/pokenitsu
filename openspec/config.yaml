@@ -1,0 +1,35 @@
+schema: spec-driven
+
+context: |
+  Language: es
+  All artifacts must be written in es (Spanish from Chile). Keep OpenSpec structural headings and SHALL/MUST keywords in English.
+
+  Producto: app web para inventariar, valorizar y vender cartas Pokémon TCG (nombre de trabajo "Challadex", repo "pokenitsu").
+  Usuario principal: coleccionista y vendedor chileno con ~6.000 cartas "challa" (bulk); arma kits curados (Pokédex por región,
+  ilustradores, artes conectados) y colecciones personales (master set de Eevee de pokecottage.com).
+  Se prepara una alfa privada con testers externos.
+
+  Stack:
+  - Node 24 (ESM), Fastify 5, pg. Sin build: `npm start` (node --env-file=.env server/index.js).
+  - Postgres en Docker (contenedor postgres-mac, base `pokemon`). Migraciones SQL numeradas en db/migrations, se aplican solas al arrancar.
+  - Front: un solo archivo public/index.html (JS vanilla, sin framework). public/pricing.js se comparte entre front y servidor.
+  - Fuentes externas: pokemontcg.io (catálogo internacional + precios TCGplayer/Cardmarket), TCGdex (japonesas, ilustradores,
+    precios Cardmarket frescos), pokecottage.com (checklists de master sets), exchangerate-api.com y mindicador.cl (tipo de cambio).
+
+  Convenciones:
+  - Una fila de inventario = carta (expansión + número) + variante + idioma + estado + ubicación. Clave en el front: "sid|num|variant|lang|cond|loc".
+  - UI en español de Chile; se dice "expansión" (no "set"); las series se muestran en inglés.
+  - Montos en CLP sin decimales; precios de mercado en NM, los demás estados se descuentan por %.
+  - Comentarios del código en inglés, cortos.
+  - Cada función nueva se documenta en README.md.
+
+  Limitaciones conocidas:
+  - Sin login ni separación por usuario: una sola persona por instalación.
+  - Sin pruebas automáticas todavía; se prueba a mano con Chrome headless (CDP).
+
+rules:
+  proposal:
+    - Decir explícitamente qué queda fuera del alcance.
+    - Si el cambio toca datos existentes del usuario, describir la migración y cómo se protege su inventario.
+  tasks:
+    - Incluir una tarea de prueba (manual o automática) y una de actualizar README.md.
