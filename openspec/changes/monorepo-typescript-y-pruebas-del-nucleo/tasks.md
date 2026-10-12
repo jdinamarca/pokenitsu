@@ -15,14 +15,14 @@
 
 ## 3. Paquete core y pruebas de equivalencia
 
-- [ ] 3.1 Crear `packages/core` (TypeScript estricto, tsup con salida ESM + tipos y salida IIFE global `Core` hacia `apps/web/public/core.js`, Vitest) y verificar que `pnpm build` genera ambos archivos y `pnpm test` corre (sin pruebas aún)
-- [ ] 3.2 Copiar las implementaciones actuales (del `index.html` y `pricing.js`) a `packages/core/test/legacy/` como referencia, y exportar del catálogo local un fixture JSON con las rarezas, nombres de carta y expansiones distintas (sin datos del inventario); verificar que el fixture tiene todas las rarezas presentes en `cards`
-- [ ] 3.3 Implementar en core rarezas y mecánica (`rarityOf`, `rarityGroup`, `mechOf`, `rarityMatches`) y series (`eraOf`), con pruebas de especificación y de equivalencia contra la referencia sobre todo el fixture; verificar `pnpm test` en verde con 0 diferencias
-- [ ] 3.4 Implementar la carga (`parseEntry`, `autoVariant`, `langCode`, `condCode`) con pruebas de los escenarios de `carga-de-cartas` (`25r lp*2`, `SV107` con letra, `-25`, `25 lp*2`) y equivalencia sobre entradas generadas; verificar en verde
-- [ ] 3.5 Implementar precios (`pickPrice`, `parseUsd`) con pruebas de los escenarios de `precios` (promo de una sola impresión, LP = 85%, exacto gana a aproximado, `349,99` → 349.99, precio propio) y equivalencia contra `pricing.js` sobre combinaciones generadas; verificar en verde
-- [ ] 3.6 Implementar ubicaciones (`isBulk`, `ruleAccepts`, `ruleScore`, `pickLocation`) con pruebas de los escenarios de `ubicaciones` (caja de Mega Evolution bajo la caja de la serie, carpeta de especiales por rareza o precio, `auto: false`, personal) y equivalencia sobre una grilla de reglas × copias; verificar en verde
-- [ ] 3.7 Implementar `slotVariants` con pruebas del escenario "Cosmos Holo" de `colecciones` y equivalencia; verificar en verde
-- [ ] 3.8 Configurar ESLint + Prettier para `packages/core` y `pnpm typecheck`; verificar que `pnpm lint` y `pnpm typecheck` pasan
+- [x] 3.1 Crear `packages/core` (TypeScript estricto, tsup con salida ESM + tipos y salida IIFE global `Core` hacia `apps/web/public/core.js`, Vitest) y verificar que `pnpm build` genera ambos archivos y `pnpm test` corre (sin pruebas aún)
+- [x] 3.2 Copiar las implementaciones actuales (del `index.html` y `pricing.js`) a `packages/core/test/legacy/` como referencia, y exportar del catálogo local un fixture JSON con las rarezas, nombres de carta y expansiones distintas (sin datos del inventario); verificar que el fixture tiene todas las rarezas presentes en `cards`
+- [x] 3.3 Implementar en core rarezas y mecánica (`rarityOf`, `rarityGroup`, `mechOf`, `rarityMatches`) y series (`eraOf`), con pruebas de especificación y de equivalencia contra la referencia sobre todo el fixture; verificar `pnpm test` en verde con 0 diferencias
+- [x] 3.4 Implementar la carga (`parseEntry`, `autoVariant`, `langCode`, `condCode`) con pruebas de los escenarios de `carga-de-cartas` (`25r lp*2`, `SV107` con letra, `-25`, `25 lp*2`) y equivalencia sobre entradas generadas; verificar en verde
+- [x] 3.5 Implementar precios (`pickPrice`, `parseUsd`) con pruebas de los escenarios de `precios` (promo de una sola impresión, LP = 85%, exacto gana a aproximado, `349,99` → 349.99, precio propio) y equivalencia contra `pricing.js` sobre combinaciones generadas; verificar en verde
+- [x] 3.6 Implementar ubicaciones (`isBulk`, `ruleAccepts`, `ruleScore`, `pickLocation`) con pruebas de los escenarios de `ubicaciones` (caja de Mega Evolution bajo la caja de la serie, carpeta de especiales por rareza o precio, `auto: false`, personal) y equivalencia sobre una grilla de reglas × copias; verificar en verde
+- [x] 3.7 Implementar `slotVariants` con pruebas del escenario "Cosmos Holo" de `colecciones` y equivalencia; verificar en verde
+- [x] 3.8 Configurar ESLint + Prettier para `packages/core` y `pnpm typecheck`; verificar que `pnpm lint` y `pnpm typecheck` pasan
 
 ## 4. Front y API usan core
 

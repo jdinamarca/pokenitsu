@@ -66,6 +66,7 @@ packages/core/ package.json, src/, test/, tsup.config.ts, tsconfig.json
 
 ### 5. TypeScript, lint y CI
 - TypeScript estricto (`strict`, `noUncheckedIndexedAccess`), `target ES2022`, `moduleResolution bundler`.
+- **TypeScript 6.0** (no 7.0): typescript-eslint y la generación de tipos de tsup todavía no soportan el compilador nativo de TS 7. Se sube cuando lo soporten. Los tipos (`.d.ts`) se generan con `tsc` y el JS con tsup.
 - ESLint (flat config + typescript-eslint) y Prettier, solo sobre `packages/core`.
 - GitHub Actions (`.github/workflows/ci.yml`): Node 24, `pnpm/action-setup`, `pnpm install --frozen-lockfile`, `pnpm build`, `pnpm typecheck`, `pnpm lint`, `pnpm test`.
 - pnpm se fija con el campo `packageManager` y se activa con corepack.
