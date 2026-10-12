@@ -4,6 +4,7 @@ Carga rápida de cartas (expansión + número + variante + idioma) guardada en P
 
 - Qué hace cada parte: [`openspec/specs/`](openspec/specs) (OpenSpec).
 - Por qué está hecha así: [`docs/adr/`](docs/adr/README.md) (decisiones de arquitectura).
+- Qué es esencial y en qué orden se construye: [`docs/producto/mapa-de-funcionalidades.md`](docs/producto/mapa-de-funcionalidades.md).
 
 ## Uso
 
