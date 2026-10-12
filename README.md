@@ -2,6 +2,9 @@
 
 Carga rápida de cartas (expansión + número + variante + idioma) guardada en Postgres.
 
+- Qué hace cada parte: [`openspec/specs/`](openspec/specs) (OpenSpec).
+- Por qué está hecha así: [`docs/adr/`](docs/adr/README.md) (decisiones de arquitectura).
+
 ## Uso
 
 ```bash
