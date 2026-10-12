@@ -1,6 +1,6 @@
 # 0015. Despliegue: Vercel para el front, Fly.io para la API y los workers, Supabase para Postgres e imágenes
 
-- Estado: Propuesto (pendiente de aprobación)
+- Estado: Aceptado
 - Fecha: 2026-10-12
 
 ## Contexto
@@ -27,7 +27,7 @@ Los usuarios están en Chile: conviene la región más cercana, São Paulo.
 ## Consecuencias
 - Positivas: cada pieza en el servicio que mejor la resuelve; despliegue automático desde GitHub; respaldos administrados.
 - Negativas: tres proveedores que configurar y vigilar.
-- **A verificar antes de aceptar:**
+- **A verificar antes de lanzar:**
   - El plan Hobby de Vercel es para uso no comercial; si la plataforma cobra, se necesita el plan Pro.
   - Los proyectos gratis de Supabase se pausan tras un período sin actividad; para usuarios reales conviene el plan pagado.
   - Confirmar precios vigentes de los tres servicios.

@@ -18,5 +18,5 @@ Por qué el sistema es como es. El **qué** hace está en [`openspec/specs/`](..
 | [0012](0012-front-react-vite-pwa.md) | Front con Vite + React + TypeScript, PWA | Aceptado |
 | [0013](0013-tareas-en-segundo-plano-con-pg-boss.md) | Tareas en segundo plano con pg-boss | Aceptado |
 | [0014](0014-pruebas-y-ci.md) | Pruebas automáticas y CI | Aceptado |
-| [0015](0015-despliegue.md) | Despliegue: Vercel + Fly.io + Supabase | **Propuesto** |
+| [0015](0015-despliegue.md) | Despliegue: Vercel + Fly.io + Supabase | Aceptado |
 | [0016](0016-observabilidad-y-correo.md) | Sentry, logs estructurados y Resend | Aceptado |

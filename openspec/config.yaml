@@ -27,6 +27,7 @@ context: |
   una decisión nueva o distinta se registra como ADR nuevo, nunca editando uno aceptado).
   Stack objetivo (en migración): TypeScript, monorepo pnpm (apps/api Fastify+Kysely+TypeBox, apps/web Vite+React+TanStack Query+Tailwind,
   packages/core), Better Auth, user_id + RLS, pg-boss, Vitest + Playwright, GitHub Actions.
+  Despliegue: front en Vercel, API + worker en Fly.io (gru), Postgres y Storage en Supabase (São Paulo).
 
   Limitaciones conocidas:
   - Sin login ni separación por usuario: una sola persona por instalación.
