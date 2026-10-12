@@ -1,3 +1,6 @@
+// FROZEN COPY of public/pricing.js (commit d2e193f); equivalence tests only.
+// @ts-nocheck
+const globalThis_ = {};
 // Price of a card + variant + condition in CLP. Shared by the page (<script src>) and the server (import for the CSV).
 // p: { usd: {TCGplayer printing: USD}, eur: {trend, avg30, reverse, holo} } as stored in card_prices
 // cfg: { source: 'tcgplayer' | 'cardmarket', cond: {NM: 1, LP: 0.85…} }, fx: { usd: CLP per USD, eur: CLP per EUR }
@@ -46,5 +49,6 @@
     return { clp: Math.round(nm * mult), nm, src: s === 'usd' ? 'TCGplayer' : 'Cardmarket', approx: r.approx, raw: (s === 'usd' ? 'US$ ' : '€ ') + r.amount };
   }
 
-  globalThis.Pricing = { pick };
+  globalThis_.Pricing = { pick };
 })();
+export const pick = globalThis_.Pricing.pick;

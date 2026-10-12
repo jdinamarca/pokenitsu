@@ -10,9 +10,11 @@ context: |
   Se prepara una alfa privada con testers externos.
 
   Stack:
-  - Node 24 (ESM), Fastify 5, pg. Sin build: `npm start` (node --env-file=.env server/index.js).
-  - Postgres en Docker (contenedor postgres-mac, base `pokemon`). Migraciones SQL numeradas en db/migrations, se aplican solas al arrancar.
-  - Front: un solo archivo public/index.html (JS vanilla, sin framework). public/pricing.js se comparte entre front y servidor.
+  - Monorepo pnpm (Node 24, ESM): apps/api (Fastify 5 + pg, JS), apps/web (front sin build), packages/core (TypeScript 6, reglas puras con Vitest).
+    `pnpm start` compila core y arranca la API; `pnpm test`, `pnpm typecheck`, `pnpm lint`. CI en GitHub Actions.
+  - Postgres en Docker (contenedor postgres-mac, base `pokemon`). Migraciones SQL numeradas en apps/api/db/migrations, se aplican solas al arrancar.
+  - Front: un solo archivo apps/web/public/index.html (JS vanilla); usa window.Core (apps/web/public/core.js, generado desde packages/core).
+  - Toda regla de negocio nueva va en packages/core con pruebas; el front y la API solo la llaman.
   - Fuentes externas: pokemontcg.io (catálogo internacional + precios TCGplayer/Cardmarket), TCGdex (japonesas, ilustradores,
     precios Cardmarket frescos), pokecottage.com (checklists de master sets), exchangerate-api.com y mindicador.cl (tipo de cambio).
 
@@ -31,7 +33,7 @@ context: |
 
   Limitaciones conocidas:
   - Sin login ni separación por usuario: una sola persona por instalación.
-  - Sin pruebas automáticas todavía; se prueba a mano con Chrome headless (CDP).
+  - Pruebas automáticas solo en packages/core; la API y el front se prueban a mano con Chrome headless (CDP).
 
 rules:
   proposal:
