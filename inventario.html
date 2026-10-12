@@ -1,0 +1,887 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Inventario Pokémon</title>
+<style>
+:root{
+  --bg:#f5f4f0;--panel:#fff;--ink:#1d1d1b;--muted:#6b6b66;--line:#e2e1dc;--chip:#efeee9;
+  --accent:#d63a2f;--accent-ink:#fff;--ok:#2e8b57;--warn:#b87700;--err:#c0392b;
+  --holo:#6c4cd6;--rev:#1f7fb8;--norm:#6f6f68;--cell0:#f0efea;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#141413;--panel:#1e1e1c;--ink:#ecebe6;--muted:#9a9993;--line:#34332f;--chip:#2a2a27;
+    --accent:#ef5a4f;--ok:#4cb37a;--warn:#e0a020;--err:#e5604f;--holo:#9a80ff;--rev:#4fb0e8;--norm:#a3a39b;--cell0:#232320}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:6px 12px}
+button:hover{border-color:var(--muted)}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+input,select{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 10px}
+input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px}
+header{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:5}
+header h1{font-size:17px;margin:0}
+.stats{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:13px}
+.stats b{color:var(--ink);font-variant-numeric:tabular-nums}
+.spacer{flex:1}
+.actions{display:flex;gap:6px;flex-wrap:wrap}
+.backup{font-size:12px;color:var(--muted)}
+.backup.warn{color:var(--warn);font-weight:600}
+nav{display:flex;gap:4px;padding:10px 16px 0}
+nav button{border:none;background:none;border-bottom:2px solid transparent;border-radius:0;padding:6px 10px;color:var(--muted)}
+nav button.on{border-color:var(--accent);color:var(--ink);font-weight:600}
+main{padding:14px 16px 40px;max-width:1300px;margin:0 auto}
+.tab{display:none}.tab.on{display:block}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px}
+@media (max-width:860px){.grid2{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+.label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+.setpick{position:relative}
+.setpick input{width:100%}
+.results{position:absolute;left:0;right:0;top:100%;margin-top:4px;background:var(--panel);border:1px solid var(--line);border-radius:10px;max-height:360px;overflow:auto;z-index:4;box-shadow:0 8px 24px rgba(0,0,0,.15);display:none}
+.results.on{display:block}
+.res{display:flex;gap:10px;align-items:center;padding:7px 10px;cursor:pointer}
+.res.sel,.res:hover{background:var(--chip)}
+.res img{width:22px;height:22px;object-fit:contain}
+.res .meta{color:var(--muted);font-size:12px}
+.code{font-family:ui-monospace,Menlo,monospace;font-size:12px;background:var(--chip);border-radius:4px;padding:1px 5px}
+.recent{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.recent button{font-size:12px;padding:3px 8px;border-radius:999px}
+.cur{display:flex;align-items:center;gap:10px;margin:14px 0 8px;min-height:30px}
+.cur img{width:28px;height:28px;object-fit:contain}
+.cur .name{font-weight:600}
+.cur .st{font-size:12px;color:var(--muted)}
+.entry{width:100%;font-size:28px;padding:12px 14px;font-family:ui-monospace,Menlo,monospace;letter-spacing:.03em;transition:border-color .15s,background .15s}
+.entry.okf{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 10%,var(--panel))}
+.entry.errf{border-color:var(--err);background:color-mix(in srgb,var(--err) 12%,var(--panel))}
+.help{font-size:12.5px;color:var(--muted);margin-top:8px;line-height:1.7}
+.help kbd{font-family:ui-monospace,Menlo,monospace;background:var(--chip);border:1px solid var(--line);border-radius:4px;padding:0 5px;color:var(--ink)}
+.msg{margin-top:8px;font-size:14px;min-height:20px}
+.msg.err{color:var(--err)}.msg.warn{color:var(--warn)}
+.preview{text-align:center}
+.preview img{width:100%;max-width:300px;border-radius:12px;aspect-ratio:63/88;object-fit:contain;background:var(--chip)}
+.preview .pname{font-size:18px;font-weight:700;margin-top:8px}
+.preview .pinfo{color:var(--muted);font-size:13px;margin-top:4px}
+.preview .ptags{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:8px}
+.empty{color:var(--muted);text-align:center;padding:30px 10px;font-size:14px}
+.tag{font-size:12px;border-radius:999px;padding:2px 9px;background:var(--chip);white-space:nowrap}
+.v-normal{color:var(--norm)}.v-holo{color:var(--holo)}.v-reverse{color:var(--rev)}
+.vchip{font-size:11.5px;font-weight:700;border:1px solid currentColor;border-radius:999px;padding:1px 7px;white-space:nowrap}
+.log{margin-top:16px}
+.logrow{display:flex;align-items:center;gap:10px;padding:6px 0;border-top:1px solid var(--line);font-size:14px}
+.logrow img{width:30px;height:42px;object-fit:cover;border-radius:3px;background:var(--chip)}
+.logrow .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.logrow .d{font-weight:700;font-variant-numeric:tabular-nums}
+.logrow .d.neg{color:var(--err)}
+.logrow button{padding:2px 8px;font-size:12px}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.toolbar input{flex:1;min-width:180px}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{text-align:left;font-size:12px;color:var(--muted);font-weight:500;padding:6px;border-bottom:1px solid var(--line);white-space:nowrap}
+.tbl td{padding:5px 6px;border-bottom:1px solid var(--line);vertical-align:middle}
+.tbl img{width:34px;height:47px;object-fit:cover;border-radius:3px;background:var(--chip);display:block}
+.qty{display:flex;align-items:center;gap:4px}
+.qty button{padding:0 8px;line-height:22px}
+.qty b{min-width:26px;text-align:center;font-variant-numeric:tabular-nums}
+.tblwrap{overflow-x:auto}
+.hide-sm{}
+@media (max-width:640px){.hide-sm{display:none}}
+.kpis{display:flex;gap:12px;flex-wrap:wrap;margin:10px 0 14px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-width:150px}
+.kpi .v{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}
+.kpi .l{font-size:12px;color:var(--muted)}
+.dex{display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:5px}
+.cell{border-radius:7px;padding:5px 6px;font-size:11px;background:var(--cell0);border:1px dashed var(--line);cursor:pointer;min-height:48px;overflow:hidden}
+.cell .no{color:var(--muted);font-variant-numeric:tabular-nums}
+.cell .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.cell .c{font-weight:700;float:right;font-variant-numeric:tabular-nums}
+.cell.has{border-style:solid;background:color-mix(in srgb,var(--ok) 14%,var(--panel));border-color:color-mix(in srgb,var(--ok) 40%,var(--line))}
+.cell.low{border-style:solid;background:color-mix(in srgb,var(--warn) 16%,var(--panel));border-color:color-mix(in srgb,var(--warn) 45%,var(--line))}
+.cell.sel{outline:2px solid var(--accent)}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted);margin:8px 0;flex-wrap:wrap}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px;background:var(--c)}
+.detail{margin-top:12px}
+.minis{display:flex;gap:8px;flex-wrap:wrap}
+.mini{width:110px;font-size:12px;text-align:center}
+.mini img{width:110px;border-radius:6px;aspect-ratio:63/88;object-fit:cover;background:var(--chip)}
+h2{font-size:16px;margin:18px 0 8px}
+.muted{color:var(--muted)}
+.sound{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:4px}
+.langs{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:10px;font-size:13px}
+.langs button{font-size:12px;padding:3px 9px;border-radius:999px;font-weight:600}
+.langs button.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.lchip{font-family:ui-monospace,Menlo,monospace;font-size:11px;font-weight:700;background:var(--chip);border-radius:4px;padding:1px 5px;white-space:nowrap}
+.lchip.none{color:var(--warn)}
+.banner{border:1px solid var(--warn);background:color-mix(in srgb,var(--warn) 10%,var(--panel));border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:14px}
+.banner .langs{margin-top:8px}
+.tbl select{padding:2px 4px;font-size:12px}
+textarea{font:14px/1.5 ui-monospace,Menlo,monospace;width:100%;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 10px;resize:vertical}
+textarea:focus{outline:2px solid var(--accent);outline-offset:-1px}
+button.danger{color:var(--err);border-color:color-mix(in srgb,var(--err) 50%,var(--line))}
+.group{margin-top:14px}
+.ghead{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin-bottom:10px}
+.ghead .gname{font-size:17px;font-weight:700}
+.ghead .spacer{flex:1}
+.pano{display:grid;gap:0;width:100%}
+.pcell{position:relative;aspect-ratio:63/88;background:var(--chip);overflow:hidden}
+.pcell img{width:100%;height:100%;object-fit:cover;display:block}
+.pcell.miss img{filter:grayscale(1);opacity:.28}
+.pcell .q{position:absolute;right:4px;top:4px;background:var(--ok);color:#fff;font-size:11px;font-weight:700;border-radius:999px;padding:1px 7px}
+.pcell.miss .q{background:var(--err)}
+.pcell .lbl{position:absolute;left:0;right:0;bottom:0;font-size:10.5px;background:rgba(0,0,0,.6);color:#fff;padding:2px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+</style>
+</head>
+<body>
+<header>
+  <h1>Inventario Pokémon</h1>
+  <div class="stats">
+    <span><b id="sTotal">0</b> cartas</span>
+    <span><b id="sUnique">0</b> distintas</span>
+    <span class="v-normal"><b id="sNormal">0</b> normal</span>
+    <span class="v-holo"><b id="sHolo">0</b> holo</span>
+    <span class="v-reverse"><b id="sRev">0</b> reverse</span>
+    <span>Kanto <b id="sKanto">0</b>/151</span>
+  </div>
+  <div class="spacer"></div>
+  <span class="backup" id="backupInfo"></span>
+  <div class="actions">
+    <button id="btnCsv">Exportar CSV</button>
+    <button id="btnJson" class="primary">Respaldo</button>
+    <button id="btnImport">Importar</button>
+    <input type="file" id="fileImport" accept=".json,.csv" hidden>
+  </div>
+</header>
+<nav>
+  <button data-tab="cargar" class="on">Cargar</button>
+  <button data-tab="inventario">Inventario</button>
+  <button data-tab="kits">Kits</button>
+  <button data-tab="grupos">Ilustraciones conectadas</button>
+</nav>
+<main>
+  <!-- CARGAR -->
+  <section class="tab on" id="tab-cargar">
+    <div class="banner" id="noLang" hidden></div>
+    <div class="grid2">
+      <div>
+        <div class="card">
+          <div class="label">1 · Set e idioma (como sale impreso: <span class="code">MEW ES</span>)</div>
+          <div class="setpick">
+            <input id="setSearch" placeholder="ej: MEW ES, PAL EN, 151, Base…" autocomplete="off" spellcheck="false">
+            <div class="results" id="setResults"></div>
+          </div>
+          <div class="langs" id="langPick"></div>
+          <div class="recent" id="recentSets"></div>
+          <div class="cur" id="curSet"><span class="muted">Ningún set elegido</span></div>
+          <div class="label">2 · Número + variante, luego Enter</div>
+          <input id="entry" class="entry" placeholder="25r" autocomplete="off" spellcheck="false" autocapitalize="off">
+          <div class="msg" id="msg"></div>
+          <div class="help">
+            <kbd>25</kbd> automática (normal, u holo si la rareza lo es) · <kbd>25r</kbd> reverse · <kbd>25h</kbd> holo · <kbd>25n</kbd> normal<br>
+            <kbd>25r*4</kbd> o <kbd>25rx4</kbd> 4 copias · <kbd>-25r</kbd> quitar una · <kbd>TG05</kbd>, <kbd>SV001</kbd> también funcionan<br>
+            <kbd>es</kbd>, <kbd>en</kbd>, <kbd>pt</kbd>… + Enter cambia el idioma sin salir del campo · <kbd>Esc</kbd> cambiar set · <kbd>⌘/Ctrl+Z</kbd> con el campo vacío deshace la última entrada
+            <label class="sound"><input type="checkbox" id="soundToggle"> Sonido al cargar (para no mirar la pantalla)</label>
+          </div>
+        </div>
+        <div class="card log">
+          <div class="label">Últimas entradas</div>
+          <div id="logList"><div class="empty">Aún no cargas cartas.</div></div>
+        </div>
+      </div>
+      <div class="card preview" id="preview"><div class="empty">Aquí verás la carta que acabas de cargar para confirmar que es la correcta.</div></div>
+    </div>
+  </section>
+
+  <!-- INVENTARIO -->
+  <section class="tab" id="tab-inventario">
+    <div class="toolbar">
+      <input id="invFilter" placeholder="Filtrar por nombre, set, ilustrador, número…">
+      <select id="invLang"></select>
+      <select id="invVariant"><option value="">Todas las variantes</option><option value="normal">Normal</option><option value="holo">Holo</option><option value="reverse">Reverse</option></select>
+      <select id="invSort"><option value="set">Orden: set y número</option><option value="dex">Orden: Pokédex</option><option value="name">Orden: nombre</option><option value="qty">Orden: cantidad</option><option value="artist">Orden: ilustrador</option></select>
+      <button id="btnReset" class="danger" title="Borra todas las cartas (descarga un respaldo antes)">Vaciar inventario</button>
+    </div>
+    <div class="muted" id="invCount" style="font-size:13px;margin-bottom:6px"></div>
+    <div class="card tblwrap" style="padding:6px 10px">
+      <table class="tbl"><thead><tr><th></th><th>Carta</th><th>Set</th><th>#</th><th>Variante</th><th>Idioma</th><th class="hide-sm">Pokédex</th><th class="hide-sm">Ilustrador</th><th>Cant.</th></tr></thead><tbody id="invBody"></tbody></table>
+      <div style="text-align:center;padding:10px"><button id="invMore" hidden>Mostrar más</button></div>
+    </div>
+  </section>
+
+  <!-- KITS -->
+  <section class="tab" id="tab-kits">
+    <div class="toolbar">
+      <select id="kitRegion"></select>
+      <select id="kitLang"></select>
+      <select id="kitVariant"><option value="">Todas las variantes</option><option value="shiny">Solo holo + reverse (kit premium)</option><option value="normal">Solo normal</option></select>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><div class="v" id="kKits">0</div><div class="l">kits completos posibles</div></div>
+      <div class="kpi"><div class="v" id="kCov">0/0</div><div class="l">especies que tienes</div></div>
+      <div class="kpi"><div class="v" id="kNext">0</div><div class="l" id="kNextL">faltan para el siguiente kit</div></div>
+    </div>
+    <div class="legend">
+      <span style="--c:var(--cell0)">no tienes</span>
+      <span style="--c:color-mix(in srgb,var(--warn) 40%,var(--panel))">te falta para el siguiente kit</span>
+      <span style="--c:color-mix(in srgb,var(--ok) 40%,var(--panel))">alcanza para el siguiente kit</span>
+      <span>El número arriba a la derecha es cuántas copias tienes. Haz clic en una casilla para ver las cartas.</span>
+    </div>
+    <div class="dex" id="dexGrid"></div>
+    <div class="detail" id="dexDetail"></div>
+
+    <h2>Ilustradores</h2>
+    <div class="toolbar"><input id="artFilter" placeholder="Buscar ilustrador, ej: Yuka Morii, Mitsuhiro Arita…"></div>
+    <div class="card tblwrap" style="padding:6px 10px">
+      <table class="tbl"><thead><tr><th>Ilustrador</th><th>Cartas distintas</th><th>Copias</th><th>Pokémon distintos</th></tr></thead><tbody id="artBody"></tbody></table>
+    </div>
+    <div class="detail" id="artDetail"></div>
+  </section>
+
+  <!-- GRUPOS -->
+  <section class="tab" id="tab-grupos">
+    <div class="card">
+      <div class="label" id="gTitle">Nuevo grupo de ilustraciones conectadas</div>
+      <div class="toolbar">
+        <input id="gName" placeholder="Nombre, ej: Panorama bosque Kanto">
+        <label class="muted" style="font-size:13px">Columnas <input id="gCols" type="number" min="1" max="20" value="3" style="width:70px"></label>
+      </div>
+      <textarea id="gCards" rows="4" spellcheck="false" placeholder="Una línea por set: código o id del set y luego los números, en el orden de la imagen (izquierda → derecha, arriba → abajo).
+PFL 12 13 14
+me2 20-22"></textarea>
+      <div class="toolbar" style="margin-top:8px">
+        <button class="primary" id="gSave">Guardar grupo</button>
+        <button id="gCancel" hidden>Cancelar edición</button>
+        <span class="msg" id="gMsg" style="margin:0"></span>
+      </div>
+    </div>
+    <div class="toolbar" style="margin-top:14px"><select id="gLangF"></select><span class="muted" style="font-size:13px">Se cuentan todas las variantes (normal, holo, reverse) de cada carta.</span></div>
+    <div id="groupList"></div>
+  </section>
+</main>
+
+<script>
+const API = 'https://api.pokemontcg.io/v2';
+const LS = { data: 'pkinv.data.v1', sets: 'pkinv.sets.v1', cards: id => 'pkinv.cards.v1.' + id };
+const REGIONS = [['Kanto',1,151],['Johto',152,251],['Hoenn',252,386],['Sinnoh',387,493],['Teselia',494,649],['Kalos',650,721],['Alola',722,809],['Galar',810,905],['Paldea',906,1025]];
+const SUFFIX = { n: 'normal', h: 'holo', r: 'reverse' };
+const VLABEL = { normal: 'Normal', holo: 'Holo', reverse: 'Reverse' };
+const LANGS = ['ES', 'EN', 'PT', 'FR', 'DE', 'IT', 'JA', 'KO', 'ZH'];
+const LNAME = { ES: 'Español', EN: 'Inglés', PT: 'Portugués', FR: 'Francés', DE: 'Alemán', IT: 'Italiano', JA: 'Japonés', KO: 'Coreano', ZH: 'Chino' };
+const langCode = s => { s = String(s || '').trim().toUpperCase(); if (s === 'JP') s = 'JA'; if (s === 'SP') s = 'ES'; return LANGS.includes(s) ? s : null; };
+const lchip = l => l ? `<span class="lchip" title="${LNAME[l] || l}">${esc(l)}</span>` : '<span class="lchip none" title="Sin idioma">¿?</span>';
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+// ---------- storage ----------
+function lsGet(k, def) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : def; } catch (e) { return def; } }
+function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
+
+let data = Object.assign({ inv: {}, log: [], recent: [], lastBackup: null, sinceBackup: 0, sound: false, lang: 'ES', groups: [] }, lsGet(LS.data, {}));
+function save() {
+  if (!lsSet(LS.data, data)) showMsg('⚠️ No se pudo guardar en el navegador. Descarga un respaldo ahora.', 'err');
+  renderBackup();
+}
+
+// ---------- API ----------
+async function fetchJSON(url, tries = 5) {
+  let last;
+  for (let i = 0; i < tries; i++) {
+    try { const r = await fetch(url); if (r.ok) return await r.json(); last = new Error('HTTP ' + r.status); }
+    catch (e) { last = e; }
+    await new Promise(r => setTimeout(r, 700 * (i + 1)));
+  }
+  throw last;
+}
+
+let sets = [], setById = {};
+function applySets(list) { sets = list; setById = Object.fromEntries(list.map(s => [s.id, s])); renderRecent(); renderCur(); }
+async function loadSets(force) {
+  const cached = lsGet(LS.sets, null);
+  if (cached) applySets(cached.sets);
+  if (cached && !force && Date.now() - cached.t < 3 * 864e5) return;
+  try {
+    let page = 1, out = [], total = Infinity;
+    while (out.length < total) {
+      const j = await fetchJSON(`${API}/sets?pageSize=250&page=${page}&orderBy=-releaseDate&select=id,name,series,ptcgoCode,releaseDate,total,printedTotal,images`);
+      total = j.totalCount; if (!j.data.length) break;
+      out.push(...j.data.map(x => ({ id: x.id, name: x.name, series: x.series, code: x.ptcgoCode || '', date: x.releaseDate || '', total: x.total, printed: x.printedTotal || x.total, sym: (x.images && x.images.symbol) || '' })));
+      page++;
+    }
+    lsSet(LS.sets, { t: Date.now(), sets: out });
+    applySets(out);
+  } catch (e) {
+    if (!cached) showMsg('No se pudo cargar la lista de sets (sin conexión o la API falló). Recarga la página para reintentar.', 'err');
+  }
+}
+
+// cards[setId] = { raw: {number: [name, dex[], artist, rarity, img, supertype]}, norm: {NORM: number} }
+const cards = {};
+const norm = s => String(s).trim().toUpperCase().replace(/^([A-Z]*)0+(?=\d)/, '$1');
+function indexCards(raw) { const n = {}; for (const k in raw) n[norm(k)] = k; return { raw, norm: n }; }
+const loading = {};
+function loadCards(setId, force) {
+  if (cards[setId] && !force) return Promise.resolve(cards[setId]);
+  if (!force) {
+    // ignore an empty cached set (e.g. saved during an API hiccup) and download it again
+    const c = lsGet(LS.cards(setId), null);
+    if (c && Object.keys(c).length) return Promise.resolve(cards[setId] = indexCards(c));
+  }
+  if (loading[setId]) return loading[setId];
+  return loading[setId] = (async () => {
+    try {
+      let page = 1, all = {}, got = 0, total = Infinity;
+      while (got < total) {
+        const j = await fetchJSON(`${API}/cards?q=set.id:${encodeURIComponent(setId)}&pageSize=250&page=${page}&select=id,name,number,nationalPokedexNumbers,artist,rarity,images,supertype`);
+        total = j.totalCount; if (!j.data.length) break;
+        for (const x of j.data) all[x.number] = [x.name, x.nationalPokedexNumbers || [], x.artist || '', x.rarity || '', (x.images && x.images.small) || '', x.supertype || ''];
+        got += j.data.length; page++;
+      }
+      if (!got || got < total) throw new Error(`descarga incompleta (${got}/${total})`);
+      lsSet(LS.cards(setId), all);
+      return cards[setId] = indexCards(all);
+    } finally { delete loading[setId]; }
+  })();
+}
+const meta = (sid, num) => cards[sid] && cards[sid].raw[num];
+const bigImg = u => !u ? '' : u.endsWith('/small') ? u.slice(0, -6) + '/large' : u.replace(/\.png$/, '_hires.png');
+
+// ---------- inventory ops ----------
+const keyOf = (sid, num, v, lang) => `${sid}|${num}|${v}|${lang || ''}`;
+const splitKey = k => { const [sid, num, v, lang] = k.split('|'); return { sid, num, v, lang: lang || '' }; };
+// moves qty from one key to another (language/variant fix), merging if the target exists
+function moveKey(from, to) {
+  if (from === to || !data.inv[from]) return;
+  data.inv[to] = (data.inv[to] || 0) + data.inv[from]; delete data.inv[from];
+  for (const e of data.log) if (e.k === from) e.k = to;
+}
+function setLang(l) { data.lang = l; save(); renderLangs(); renderCur(); }
+function addQty(key, delta) {
+  const cur = data.inv[key] || 0;
+  const next = Math.max(0, cur + delta);
+  const real = next - cur;
+  if (next === 0) delete data.inv[key]; else data.inv[key] = next;
+  if (real !== 0) {
+    data.log.push({ k: key, d: real, t: Date.now() });
+    if (data.log.length > 500) data.log.splice(0, data.log.length - 500);
+    data.sinceBackup += Math.abs(real);
+  }
+  return real;
+}
+function undoLast() {
+  const e = data.log.pop(); if (!e) return;
+  const cur = data.inv[e.k] || 0, next = Math.max(0, cur - e.d);
+  if (next === 0) delete data.inv[e.k]; else data.inv[e.k] = next;
+  save(); renderAll(); showMsg('Deshecho: ' + describeKey(e.k), 'warn');
+}
+function describeKey(k) { const { sid, num, v, lang } = splitKey(k); const m = meta(sid, num); return `${m ? m[0] : '?'} #${num} ${VLABEL[v]} ${lang || '¿idioma?'} (${setById[sid] ? setById[sid].name : sid})`; }
+
+// ---------- entry ----------
+let curSet = null;
+function parseEntry(raw) {
+  let s = raw.trim(); if (!s) return null;
+  let sign = 1; if (s[0] === '-') { sign = -1; s = s.slice(1).trim(); }
+  let qty = 1; const mq = s.match(/^(.*?)\s*[*x]\s*(\d+)$/i);
+  if (mq && mq[1]) { s = mq[1]; qty = parseInt(mq[2], 10); }
+  s = s.replace(/\s+/g, '');
+  let base = s, v = null; const last = s.slice(-1).toLowerCase();
+  if (s.length > 1 && SUFFIX[last]) { base = s.slice(0, -1); v = SUFFIX[last]; }
+  return { sign, qty, base, full: s, v };
+}
+function autoVariant(m) {
+  if (!m) return 'normal';
+  const r = m[3].toLowerCase();
+  return (!r || ['common', 'uncommon', 'rare', 'promo'].includes(r)) ? 'normal' : 'holo';
+}
+function commitEntry() {
+  const inp = $('entry'); const raw = inp.value;
+  if (!raw.trim()) return;
+  const L = langCode(raw);
+  if (L) { setLang(L); inp.value = ''; flash('okf'); beep(true); return showMsg(`Idioma: ${LNAME[L]} (${L})`, ''); }
+  if (!curSet) return fail('Primero elige un set (Esc).');
+  const p = parseEntry(raw); if (!p || !p.qty) return fail('No entendí la entrada.');
+  const idx = cards[curSet.id];
+  let num, v = p.v, warn = '';
+  if (idx) {
+    if (idx.norm[norm(p.base)] !== undefined) num = idx.norm[norm(p.base)];
+    else if (idx.norm[norm(p.full)] !== undefined) { num = idx.norm[norm(p.full)]; v = null; }
+    else return fail(`La carta "${p.full}" no existe en ${curSet.name}. ¿Set equivocado?`);
+  } else {
+    num = norm(p.base); warn = ' (sin datos del set: no pude verificar la carta)';
+  }
+  const m = meta(curSet.id, num);
+  if (!v) v = autoVariant(m);
+  const key = keyOf(curSet.id, num, v, data.lang);
+  const real = addQty(key, p.sign * p.qty);
+  if (real === 0) return fail('No había copias de esa carta para quitar.');
+  save();
+  inp.value = '';
+  flash('okf'); beep(true);
+  showMsg(`${real > 0 ? '+' + real : real} · ${describeKey(key)}${warn}`, warn ? 'warn' : '');
+  renderPreview(key); renderLog(); renderStats();
+}
+function fail(t) { flash('errf'); beep(false); showMsg(t, 'err'); }
+function flash(c) { const e = $('entry'); e.classList.remove('okf', 'errf'); void e.offsetWidth; e.classList.add(c); clearTimeout(flash.t); flash.t = setTimeout(() => e.classList.remove(c), 450); }
+function showMsg(t, cls) { const m = $('msg'); m.textContent = t; m.className = 'msg ' + (cls || ''); }
+let actx;
+function beep(ok) {
+  if (!data.sound) return;
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.frequency.value = ok ? 880 : 200; o.type = ok ? 'sine' : 'square';
+    g.gain.value = 0.08; o.connect(g); g.connect(actx.destination);
+    o.start(); o.stop(actx.currentTime + (ok ? 0.06 : 0.22));
+  } catch (e) {}
+}
+
+// ---------- set picker ----------
+let resSel = 0, resList = [], resLang = null;
+// "MEW ES" -> search "MEW" and remember language ES
+function searchSetsLang(q) {
+  const m = q.trim().match(/^(.*\S)\s+([a-z]{2})$/i);
+  if (m && langCode(m[2])) { const r = searchSets(m[1]); if (r.length) { resLang = langCode(m[2]); return r; } }
+  resLang = null; return searchSets(q);
+}
+function searchSets(q) {
+  q = q.trim().toLowerCase(); if (!q) return [];
+  const score = s => {
+    const code = s.code.toLowerCase(), id = s.id.toLowerCase(), name = s.name.toLowerCase();
+    if (code === q || id === q) return 0;
+    if (name === q) return 1;
+    if (name.startsWith(q)) return 2;
+    if (name.includes(q)) return 3;
+    if ((s.series || '').toLowerCase().includes(q) || code.startsWith(q) || id.startsWith(q)) return 4;
+    return 99;
+  };
+  return sets.map(s => [score(s), s]).filter(x => x[0] < 99).sort((a, b) => a[0] - b[0]).slice(0, 14).map(x => x[1]);
+}
+function renderResults() {
+  const box = $('setResults');
+  if (!resList.length) { box.classList.remove('on'); box.innerHTML = ''; return; }
+  box.innerHTML = resList.map((s, i) => `<div class="res ${i === resSel ? 'sel' : ''}" data-id="${esc(s.id)}">
+    ${s.sym ? `<img src="${esc(s.sym)}" alt="">` : '<span style="width:22px"></span>'}
+    <div><div>${esc(s.name)} ${s.code ? `<span class="code">${esc(s.code)}</span>` : ''}</div>
+    <div class="meta">${esc(s.series)} · ${esc(s.date.slice(0, 4))} · ${s.printed} cartas · id ${esc(s.id)}</div></div>${resLang ? `<span style="margin-left:auto">${lchip(resLang)}</span>` : ''}</div>`).join('');
+  box.classList.add('on');
+}
+async function selectSet(id) {
+  const s = setById[id]; if (!s) return;
+  curSet = s;
+  if (resLang) { data.lang = resLang; resLang = null; renderLangs(); }
+  data.recent = [id, ...data.recent.filter(x => x !== id)].slice(0, 10); save();
+  $('setSearch').value = ''; resList = []; renderResults(); renderRecent();
+  renderCur('cargando cartas…');
+  $('entry').focus();
+  try { const c = await loadCards(id); if (curSet === s) renderCur(Object.keys(c.raw).length + ' cartas listas'); renderAll(); }
+  catch (e) { if (curSet === s) renderCur('⚠️ no pude bajar las cartas — puedes cargar igual, sin verificación', true); }
+}
+function renderCur(status, bad) {
+  const el = $('curSet');
+  if (!curSet) { el.innerHTML = '<span class="muted">Ningún set elegido</span>'; return; }
+  const s = curSet;
+  if (status === undefined) status = cards[s.id] ? Object.keys(cards[s.id].raw).length + ' cartas listas' : '';
+  el.innerHTML = `${s.sym ? `<img src="${esc(s.sym)}" alt="">` : ''}<div><div class="name">${esc(s.name)} ${s.code ? `<span class="code">${esc(s.code)}</span>` : ''}</div>
+    <div class="st" style="${bad ? 'color:var(--err)' : ''}">${lchip(data.lang)} ${esc(LNAME[data.lang])} · ${esc(s.series)} · ${esc(status)} <a href="#" id="reloadSet" class="muted" title="Volver a descargar las cartas de este set">↻</a></div></div>`;
+  $('reloadSet').onclick = async ev => { ev.preventDefault(); renderCur('recargando…'); try { await loadCards(s.id, true); renderCur(); } catch (e) { renderCur('⚠️ falló la descarga', true); } };
+}
+function renderLangs() {
+  $('langPick').innerHTML = '<span class="muted">Idioma:</span>' + LANGS.map(l => `<button data-l="${l}" class="${l === data.lang ? 'on' : ''}" title="${LNAME[l]}">${l}</button>`).join('');
+}
+function renderNoLang() {
+  let n = 0; for (const k in data.inv) if (!splitKey(k).lang) n += data.inv[k];
+  const el = $('noLang'); el.hidden = !n; if (!n) return;
+  el.innerHTML = `<b>Tienes ${n.toLocaleString('es-CL')} cartas sin idioma</b> (cargadas antes de que existiera esta opción). ¿De qué idioma son? Si eran mezcla, asígnalas a la mayoría y corrige el resto en la pestaña Inventario.
+    <div class="langs">${LANGS.map(l => `<button data-l="${l}">${l} · ${LNAME[l]}</button>`).join('')}</div>`;
+}
+function renderRecent() {
+  $('recentSets').innerHTML = data.recent.filter(id => setById[id]).map(id => `<button data-id="${esc(id)}">${esc(setById[id].name)}</button>`).join('');
+}
+
+// ---------- render: preview / log / stats ----------
+function regionOf(d) { const r = REGIONS.find(r => d >= r[1] && d <= r[2]); return r ? r[0] : ''; }
+function renderPreview(key) {
+  const { sid, num, v, lang } = splitKey(key); const m = meta(sid, num); const s = setById[sid];
+  const qty = data.inv[key] || 0;
+  const all = ['normal', 'holo', 'reverse'].reduce((a, x) => a + (data.inv[keyOf(sid, num, x, lang)] || 0), 0);
+  const tags = [];
+  if (m) for (const d of m[1]) tags.push(`<span class="tag">${regionOf(d)} #${String(d).padStart(3, '0')}</span>`);
+  if (m && m[2]) tags.push(`<span class="tag">✎ ${esc(m[2])}</span>`);
+  if (m && m[3]) tags.push(`<span class="tag">${esc(m[3])}</span>`);
+  $('preview').innerHTML = `${m && m[4] ? `<img src="${esc(bigImg(m[4]))}" alt="">` : '<div class="empty">Sin imagen</div>'}
+    <div class="pname">${esc(m ? m[0] : 'Carta desconocida')}</div>
+    <div class="pinfo">${esc(s ? s.name : sid)} · #${esc(num)}${s ? '/' + s.printed : ''} · <span class="vchip v-${v}">${VLABEL[v]}</span> ${lchip(lang)}</div>
+    <div class="pinfo">Tienes <b>${qty}</b> de esta variante · <b>${all}</b> en total en ${esc(LNAME[lang] || 'este idioma')}</div>
+    <div class="ptags">${tags.join('')}</div>`;
+}
+function renderLog() {
+  const rows = data.log.slice(-15).reverse();
+  if (!rows.length) { $('logList').innerHTML = '<div class="empty">Aún no cargas cartas.</div>'; return; }
+  $('logList').innerHTML = rows.map((e, i) => {
+    const { sid, num, v, lang } = splitKey(e.k); const m = meta(sid, num);
+    return `<div class="logrow">${m && m[4] ? `<img src="${esc(m[4])}" alt="" loading="lazy">` : '<img alt="">'}
+      <span class="n">${esc(m ? m[0] : '?')} <span class="muted">#${esc(num)} · ${esc(setById[sid] ? setById[sid].name : sid)}</span></span>
+      ${lchip(lang)}<span class="vchip v-${v}">${VLABEL[v]}</span><span class="d ${e.d < 0 ? 'neg' : ''}">${e.d > 0 ? '+' : ''}${e.d}</span>
+      ${i === 0 ? '<button id="undoBtn" title="Deshacer (⌘/Ctrl+Z)">Deshacer</button>' : ''}</div>`;
+  }).join('');
+  const u = $('undoBtn'); if (u) u.onclick = () => { undoLast(); $('entry').focus(); };
+}
+function dexCounts(mode, langF) {
+  // mode: '' all, 'shiny' holo+reverse, 'normal'; langF: '' all languages
+  const map = new Map();
+  for (const k in data.inv) {
+    const { sid, num, v, lang } = splitKey(k);
+    if (langF && lang !== langF) continue;
+    if (mode === 'shiny' && v === 'normal') continue;
+    if (mode === 'normal' && v !== 'normal') continue;
+    const m = meta(sid, num);
+    if (!m || m[5] !== 'Pokémon' || m[1].length !== 1) continue;
+    const d = m[1][0];
+    const e = map.get(d) || { qty: 0, keys: [], name: m[0] };
+    e.qty += data.inv[k]; e.keys.push(k);
+    if (m[0].length < e.name.length) e.name = m[0]; // prefer the shortest name (Pikachu over Pikachu ex)
+    map.set(d, e);
+  }
+  return map;
+}
+function renderStats() {
+  let t = 0, by = { normal: 0, holo: 0, reverse: 0 };
+  for (const k in data.inv) { const q = data.inv[k]; t += q; by[splitKey(k).v] += q; }
+  $('sTotal').textContent = t.toLocaleString('es-CL');
+  $('sUnique').textContent = Object.keys(data.inv).length.toLocaleString('es-CL');
+  $('sNormal').textContent = by.normal.toLocaleString('es-CL');
+  $('sHolo').textContent = by.holo.toLocaleString('es-CL');
+  $('sRev').textContent = by.reverse.toLocaleString('es-CL');
+  const dc = dexCounts(''); let kanto = 0; for (const d of dc.keys()) if (d >= 1 && d <= 151) kanto++;
+  $('sKanto').textContent = kanto;
+}
+function renderBackup() {
+  const el = $('backupInfo');
+  if (!data.lastBackup) { el.textContent = Object.keys(data.inv).length ? 'Sin respaldo aún' : ''; el.className = 'backup' + (data.sinceBackup > 100 ? ' warn' : ''); return; }
+  const mins = Math.round((Date.now() - data.lastBackup) / 60000);
+  const ago = mins < 60 ? `hace ${mins} min` : mins < 2880 ? `hace ${Math.round(mins / 60)} h` : `hace ${Math.round(mins / 1440)} días`;
+  el.textContent = `Respaldo ${ago}` + (data.sinceBackup ? ` · ${data.sinceBackup} cambios sin respaldar` : '');
+  el.className = 'backup' + (data.sinceBackup > 300 ? ' warn' : '');
+}
+
+// ---------- inventory tab ----------
+let invLimit = 200;
+function invRows() {
+  const q = $('invFilter').value.trim().toLowerCase(), vf = $('invVariant').value, lf = $('invLang').value, sort = $('invSort').value;
+  const rows = [];
+  for (const k in data.inv) {
+    const { sid, num, v, lang } = splitKey(k); if (vf && v !== vf) continue; if (lf && lang !== (lf === '-' ? '' : lf)) continue;
+    const m = meta(sid, num) || ['?', [], '', '', '', '']; const s = setById[sid] || { name: sid, code: '', date: '', printed: '' };
+    if (q && !`${m[0]} ${s.name} ${s.code} ${sid} ${num} ${m[2]} ${m[1].join(' ')}`.toLowerCase().includes(q)) continue;
+    rows.push({ k, sid, num, v, lang, m, s, qty: data.inv[k] });
+  }
+  const numCmp = (a, b) => (parseInt(a, 10) || 0) - (parseInt(b, 10) || 0) || a.localeCompare(b);
+  const cmp = {
+    set: (a, b) => b.s.date.localeCompare(a.s.date) || a.sid.localeCompare(b.sid) || numCmp(a.num, b.num) || a.v.localeCompare(b.v) || a.lang.localeCompare(b.lang),
+    dex: (a, b) => (a.m[1][0] || 9999) - (b.m[1][0] || 9999) || a.m[0].localeCompare(b.m[0]),
+    name: (a, b) => a.m[0].localeCompare(b.m[0]),
+    qty: (a, b) => b.qty - a.qty,
+    artist: (a, b) => a.m[2].localeCompare(b.m[2]) || a.m[0].localeCompare(b.m[0]),
+  }[sort];
+  return rows.sort(cmp);
+}
+function renderInv() {
+  const rows = invRows();
+  const total = rows.reduce((a, r) => a + r.qty, 0);
+  $('invCount').textContent = `${rows.length.toLocaleString('es-CL')} filas · ${total.toLocaleString('es-CL')} cartas`;
+  $('invBody').innerHTML = rows.slice(0, invLimit).map(r => `<tr>
+    <td>${r.m[4] ? `<img src="${esc(r.m[4])}" loading="lazy" alt="">` : ''}</td>
+    <td>${esc(r.m[0])}</td>
+    <td>${r.s.code ? `<span class="code">${esc(r.s.code)}</span> ` : ''}${esc(r.s.name)}</td>
+    <td>${esc(r.num)}</td>
+    <td><span class="vchip v-${r.v}">${VLABEL[r.v]}</span></td>
+    <td><select data-lk="${esc(r.k)}" title="Cambiar idioma de estas copias">${r.lang ? '' : '<option value="">¿?</option>'}${LANGS.map(l => `<option ${l === r.lang ? 'selected' : ''}>${l}</option>`).join('')}</select></td>
+    <td class="hide-sm">${r.m[1].map(d => '#' + d).join(', ')}</td>
+    <td class="hide-sm">${esc(r.m[2])}</td>
+    <td><div class="qty"><button data-k="${esc(r.k)}" data-d="-1">−</button><b>${r.qty}</b><button data-k="${esc(r.k)}" data-d="1">+</button></div></td></tr>`).join('')
+    || '<tr><td colspan="9" class="empty">Nada por aquí.</td></tr>';
+  $('invMore').hidden = rows.length <= invLimit;
+}
+
+// ---------- kits tab ----------
+let dexSel = null;
+function renderKits() {
+  const [rname, lo, hi] = REGIONS[$('kitRegion').value];
+  const dc = dexCounts($('kitVariant').value, $('kitLang').value);
+  let have = 0, kits = Infinity;
+  for (let d = lo; d <= hi; d++) { const q = dc.has(d) ? dc.get(d).qty : 0; if (q) have++; kits = Math.min(kits, q); }
+  const n = hi - lo + 1, missingNext = [];
+  for (let d = lo; d <= hi; d++) if ((dc.has(d) ? dc.get(d).qty : 0) <= kits) missingNext.push(d);
+  $('kKits').textContent = kits;
+  $('kCov').textContent = `${have}/${n}`;
+  $('kNext').textContent = missingNext.length;
+  $('kNextL').textContent = `especies faltan para el kit #${kits + 1} de ${rname}`;
+  let html = '';
+  for (let d = lo; d <= hi; d++) {
+    const e = dc.get(d), q = e ? e.qty : 0;
+    const cls = q === 0 ? '' : q > kits ? 'has' : 'low';
+    html += `<div class="cell ${cls} ${dexSel === d ? 'sel' : ''}" data-d="${d}" title="#${d}${e ? ' ' + esc(e.name) : ''}"><span class="c">${q || ''}</span><div class="no">#${String(d).padStart(3, '0')}</div><div class="nm">${e ? esc(e.name) : '—'}</div></div>`;
+  }
+  $('dexGrid').innerHTML = html;
+  renderDexDetail(dc);
+  renderArtists();
+}
+function minis(keys) {
+  return `<div class="minis">${keys.map(k => { const { sid, num, v, lang } = splitKey(k); const m = meta(sid, num) || []; const s = setById[sid];
+    return `<div class="mini">${m[4] ? `<img src="${esc(m[4])}" loading="lazy" alt="">` : ''}<div>${esc(s ? s.name : sid)} #${esc(num)}</div><div><span class="vchip v-${v}">${VLABEL[v]}</span> ${lchip(lang)} ×${data.inv[k]}</div></div>`; }).join('')}</div>`;
+}
+function renderDexDetail(dc) {
+  const el = $('dexDetail');
+  if (dexSel === null) { el.innerHTML = ''; return; }
+  const e = (dc || dexCounts($('kitVariant').value, $('kitLang').value)).get(dexSel);
+  el.innerHTML = `<h2>#${String(dexSel).padStart(3, '0')} ${e ? esc(e.name) : ''}</h2>` + (e ? minis(e.keys) : '<div class="muted">No tienes cartas de este Pokémon (con el filtro actual).</div>');
+}
+let artSel = null;
+function renderArtists() {
+  const q = $('artFilter').value.trim().toLowerCase();
+  const map = new Map();
+  for (const k in data.inv) {
+    const { sid, num } = splitKey(k); const m = meta(sid, num); if (!m || !m[2]) continue;
+    const e = map.get(m[2]) || { cards: new Set(), copies: 0, dex: new Set(), keys: [] };
+    e.cards.add(sid + '|' + num); e.copies += data.inv[k]; m[1].forEach(d => e.dex.add(d)); e.keys.push(k);
+    map.set(m[2], e);
+  }
+  let rows = [...map.entries()].filter(([a]) => !q || a.toLowerCase().includes(q)).sort((a, b) => b[1].cards.size - a[1].cards.size);
+  if (!q) rows = rows.slice(0, 25);
+  $('artBody').innerHTML = rows.map(([a, e]) => `<tr data-a="${esc(a)}" style="cursor:pointer"><td>${esc(a)}</td><td>${e.cards.size}</td><td>${e.copies}</td><td>${e.dex.size}</td></tr>`).join('')
+    || `<tr><td colspan="4" class="empty">${q ? 'No tienes cartas de ese ilustrador.' : 'Aún no hay datos.'}</td></tr>`;
+  const sel = artSel && map.get(artSel);
+  $('artDetail').innerHTML = sel ? `<h2>${esc(artSel)}</h2>` + minis(sel.keys.sort()) : '';
+}
+
+// ---------- connected-art groups ----------
+let gEditing = null;
+function findSet(tok) {
+  const t = tok.toLowerCase();
+  return sets.find(s => s.id.toLowerCase() === t) || sets.find(s => s.code.toLowerCase() === t);
+}
+async function parseGroupCards(text) {
+  const out = [], errs = [];
+  for (const line of text.split('\n')) {
+    const toks = line.trim().split(/[\s,;]+/).filter(Boolean); if (!toks.length) continue;
+    const s = findSet(toks[0]); if (!s) { errs.push(`No encontré el set "${toks[0]}"`); continue; }
+    let idx = null; try { idx = await loadCards(s.id); } catch (e) {}
+    const nums = [];
+    for (const t of toks.slice(1)) {
+      const rg = t.match(/^(\d+)-(\d+)$/);
+      if (rg) { const a = +rg[1], b = +rg[2]; for (let i = Math.min(a, b); i <= Math.max(a, b); i++) nums.push(String(i)); }
+      else nums.push(t);
+    }
+    if (!nums.length) errs.push(`Faltan números para ${s.name}`);
+    for (const n of nums) {
+      if (idx) { const real = idx.norm[norm(n)]; if (real === undefined) { errs.push(`${s.code || s.id} ${n} no existe`); continue; } out.push({ sid: s.id, num: real }); }
+      else out.push({ sid: s.id, num: norm(n) });
+    }
+  }
+  return { out, errs };
+}
+function groupText(g) {
+  // rebuild the textarea text, one line per run of the same set
+  const lines = []; let cur = null;
+  for (const c of g.cards) { if (!cur || cur.sid !== c.sid) { cur = { sid: c.sid, nums: [] }; lines.push(cur); } cur.nums.push(c.num); }
+  return lines.map(l => `${(setById[l.sid] && setById[l.sid].code) || l.sid} ${l.nums.join(' ')}`).join('\n');
+}
+async function saveGroup() {
+  const name = $('gName').value.trim(), cols = Math.max(1, Math.min(20, parseInt($('gCols').value, 10) || 3));
+  const gm = $('gMsg');
+  if (!name) { gm.textContent = 'Ponle un nombre al grupo.'; gm.className = 'msg err'; return; }
+  gm.textContent = 'Revisando cartas…'; gm.className = 'msg';
+  const { out, errs } = await parseGroupCards($('gCards').value);
+  if (errs.length || !out.length) { gm.textContent = errs.length ? errs.join(' · ') : 'Agrega al menos una carta.'; gm.className = 'msg err'; return; }
+  const g = { id: gEditing || 'g' + Date.now().toString(36), name, cols, cards: out };
+  const i = data.groups.findIndex(x => x.id === g.id);
+  if (i >= 0) data.groups[i] = g; else data.groups.unshift(g);
+  save(); resetGroupForm(); gm.textContent = `Grupo "${name}" guardado (${out.length} cartas).`; gm.className = 'msg'; renderGroups();
+}
+function resetGroupForm() {
+  gEditing = null; $('gName').value = ''; $('gCards').value = ''; $('gCols').value = 3;
+  $('gTitle').textContent = 'Nuevo grupo de ilustraciones conectadas'; $('gCancel').hidden = true;
+}
+function cardQty(sid, num, langF) {
+  let q = 0;
+  for (const v of ['normal', 'holo', 'reverse']) for (const l of langF ? [langF] : [...LANGS, '']) q += data.inv[keyOf(sid, num, v, l)] || 0;
+  return q;
+}
+function renderGroups() {
+  const langF = $('gLangF').value, el = $('groupList');
+  if (!data.groups.length) { el.innerHTML = '<div class="empty">Aún no tienes grupos. Crea uno arriba con las cartas cuyas ilustraciones se unen.</div>'; return; }
+  el.innerHTML = data.groups.map(g => {
+    const qs = g.cards.map(c => cardQty(c.sid, c.num, langF));
+    const have = qs.filter(q => q > 0).length, full = Math.min(...qs);
+    return `<div class="card group"><div class="ghead"><span class="gname">${esc(g.name)}</span>
+      <span class="muted">Tienes <b style="color:var(--ink)">${have}/${g.cards.length}</b> · <b style="color:var(--ink)">${full}</b> ${full === 1 ? 'grupo completo' : 'grupos completos'}</span>
+      <span class="spacer"></span><button data-ge="${g.id}">Editar</button><button class="danger" data-gd="${g.id}">Borrar</button></div>
+      <div class="pano" style="grid-template-columns:repeat(${g.cols},minmax(0,1fr));max-width:${g.cols * 190}px">${g.cards.map((c, i) => {
+        const m = meta(c.sid, c.num), s = setById[c.sid], q = qs[i];
+        return `<div class="pcell ${q ? '' : 'miss'}" title="${esc(m ? m[0] : '?')} · ${esc(s ? s.name : c.sid)} #${esc(c.num)}">${m && m[4] ? `<img src="${esc(m[4])}" loading="lazy" alt="">` : ''}
+          <span class="q">${q ? '×' + q : 'falta'}</span><span class="lbl">${esc((s && s.code) || c.sid)} ${esc(c.num)} · ${esc(m ? m[0] : '?')}</span></div>`;
+      }).join('')}</div></div>`;
+  }).join('');
+}
+
+// ---------- export / import ----------
+function download(name, text, type) {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name;
+  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+const today = () => new Date().toISOString().slice(0, 10);
+function markBackup() { data.lastBackup = Date.now(); data.sinceBackup = 0; save(); }
+function exportCsv() {
+  const cell = x => { x = String(x ?? ''); return /[;"\n]/.test(x) ? '"' + x.replace(/"/g, '""') + '"' : x; };
+  const head = ['set_id', 'set_nombre', 'set_codigo', 'numero', 'variante', 'idioma', 'cantidad', 'nombre', 'pokedex', 'ilustrador', 'rareza', 'tipo'];
+  const lines = [head.join(';')];
+  for (const k of Object.keys(data.inv).sort()) {
+    const { sid, num, v, lang } = splitKey(k); const m = meta(sid, num) || ['', [], '', '', '', '']; const s = setById[sid] || {};
+    lines.push([sid, s.name, s.code, num, v, lang, data.inv[k], m[0], m[1].join(','), m[2], m[3], m[5]].map(cell).join(';'));
+  }
+  download(`inventario-pokemon-${today()}.csv`, '﻿' + lines.join('\n'), 'text/csv;charset=utf-8');
+  markBackup();
+}
+function exportJson() {
+  download(`respaldo-inventario-pokemon-${today()}.json`, JSON.stringify({ app: 'inventario-pokemon', version: 1, exported: new Date().toISOString(), inv: data.inv, recent: data.recent, groups: data.groups }, null, 1), 'application/json');
+  markBackup();
+}
+function parseCsv(text) {
+  text = text.replace(/^﻿/, '');
+  const first = text.split('\n')[0]; const d = (first.match(/;/g) || []).length >= (first.match(/,/g) || []).length ? ';' : ',';
+  const rows = []; let row = [], f = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"') q = true; else if (c === d) { row.push(f); f = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; row.push(f); rows.push(row); row = []; f = ''; }
+    else f += c;
+  }
+  if (f || row.length) { row.push(f); rows.push(row); }
+  return rows.filter(r => r.some(x => x.trim()));
+}
+async function importFile(file) {
+  const text = await file.text(); let inv = {}, groups = [];
+  try {
+    if (/\.json$/i.test(file.name)) { const j = JSON.parse(text); inv = j.inv || {}; groups = j.groups || []; }
+    else {
+      const rows = parseCsv(text); const h = rows.shift().map(x => x.trim().toLowerCase());
+      const col = (...names) => names.map(n => h.indexOf(n)).find(i => i >= 0);
+      const cs = col('set_id', 'set'), cn = col('numero', 'number', 'num'), cv = col('variante', 'variant'), cq = col('cantidad', 'qty', 'quantity'), cl = col('idioma', 'lang', 'language');
+      if (cs === undefined || cn === undefined) throw new Error('El CSV necesita columnas set_id y numero');
+      for (const r of rows) {
+        const v = (r[cv] || 'normal').trim().toLowerCase(); const vv = SUFFIX[v[0]] || 'normal';
+        const k = keyOf(r[cs].trim(), r[cn].trim(), vv, cl === undefined ? '' : langCode(r[cl]) || ''); inv[k] = (inv[k] || 0) + (parseInt(r[cq], 10) || 1);
+      }
+    }
+  } catch (e) { alert('No pude leer el archivo: ' + e.message); return; }
+  const n = Object.values(inv).reduce((a, b) => a + b, 0);
+  const replace = Object.keys(data.inv).length ? confirm(`El archivo trae ${n} cartas.\n\nAceptar = REEMPLAZAR el inventario actual.\nCancelar = SUMARLAS al inventario actual.`) : true;
+  if (replace) data.inv = {};
+  for (const k in inv) data.inv[k] = (data.inv[k] || 0) + inv[k];
+  for (const g of groups) { const i = data.groups.findIndex(x => x.id === g.id); if (i >= 0) data.groups[i] = g; else data.groups.push(g); }
+  data.log = []; save(); await ensureMeta(); renderAll();
+  showMsg(`Importadas ${n} cartas.`, '');
+}
+
+function resetInventory() {
+  const n = Object.values(data.inv).reduce((a, b) => a + b, 0);
+  if (!n) { alert('El inventario ya está vacío.'); return; }
+  if (!confirm(`¿Borrar las ${n.toLocaleString('es-CL')} cartas del inventario?\n\nAntes de borrar se descargará un respaldo automático por si te arrepientes. Los grupos de ilustraciones conectadas NO se borran.`)) return;
+  exportJson();
+  data.inv = {}; data.log = []; data.sinceBackup = 0; save(); renderAll();
+  $('preview').innerHTML = '<div class="empty">Inventario vacío. ¡A cargar!</div>';
+  showMsg('Inventario vaciado. Se descargó un respaldo con lo que había.', 'warn');
+}
+
+// ---------- boot ----------
+async function ensureMeta() {
+  const ids = [...new Set([...Object.keys(data.inv).map(k => splitKey(k).sid), ...data.groups.flatMap(g => g.cards.map(c => c.sid))])];
+  const missing = [];
+  for (const id of ids) { const c = lsGet(LS.cards(id), null); if (c && Object.keys(c).length) cards[id] = indexCards(c); else missing.push(id); }
+  renderAll();
+  for (const id of missing) { try { await loadCards(id); renderAll(); } catch (e) {} }
+}
+function renderAll() {
+  renderStats(); renderLog(); renderBackup(); renderNoLang();
+  if ($('tab-inventario').classList.contains('on')) renderInv();
+  if ($('tab-kits').classList.contains('on')) renderKits();
+  if ($('tab-grupos').classList.contains('on')) renderGroups();
+}
+
+$('invLang').innerHTML = '<option value="">Todos los idiomas</option>' + LANGS.map(l => `<option value="${l}">${l} · ${LNAME[l]}</option>`).join('') + '<option value="-">Sin idioma</option>';
+$('kitLang').innerHTML = '<option value="">Todos los idiomas</option>' + LANGS.map(l => `<option value="${l}">Solo ${LNAME[l]}</option>`).join('');
+renderLangs();
+$('langPick').addEventListener('click', e => { const b = e.target.closest('button[data-l]'); if (b) { setLang(b.dataset.l); $('entry').focus(); } });
+$('noLang').addEventListener('click', e => {
+  const b = e.target.closest('button[data-l]'); if (!b) return;
+  for (const k of Object.keys(data.inv)) { const x = splitKey(k); if (!x.lang) moveKey(k, keyOf(x.sid, x.num, x.v, b.dataset.l)); }
+  for (const e2 of data.log) { const x = splitKey(e2.k); if (!x.lang) e2.k = keyOf(x.sid, x.num, x.v, b.dataset.l); }
+  save(); renderAll(); showMsg(`Listo: esas cartas quedaron en ${LNAME[b.dataset.l]}.`, '');
+});
+$('invBody').addEventListener('change', e => {
+  const s = e.target.closest('select[data-lk]'); if (!s || !s.value) return;
+  const x = splitKey(s.dataset.lk); moveKey(s.dataset.lk, keyOf(x.sid, x.num, x.v, s.value)); save(); renderAll();
+});
+$('kitRegion').innerHTML = REGIONS.map((r, i) => `<option value="${i}">${r[0]} (#${r[1]}–#${r[2]})</option>`).join('');
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('nav button').forEach(x => x.classList.toggle('on', x === b));
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.id === 'tab-' + b.dataset.tab));
+  if (b.dataset.tab === 'cargar') $('entry').focus();
+  renderAll();
+});
+$('setSearch').addEventListener('input', e => { resList = searchSetsLang(e.target.value); resSel = 0; renderResults(); });
+$('setSearch').addEventListener('keydown', e => {
+  if (e.key === 'ArrowDown') { resSel = Math.min(resSel + 1, resList.length - 1); renderResults(); e.preventDefault(); }
+  else if (e.key === 'ArrowUp') { resSel = Math.max(resSel - 1, 0); renderResults(); e.preventDefault(); }
+  else if (e.key === 'Enter' && resList[resSel]) selectSet(resList[resSel].id);
+  else if (e.key === 'Escape') { resList = []; renderResults(); if (curSet) $('entry').focus(); }
+});
+$('setResults').addEventListener('mousedown', e => { const r = e.target.closest('.res'); if (r) { e.preventDefault(); selectSet(r.dataset.id); } });
+$('setSearch').addEventListener('blur', () => setTimeout(() => { resList = []; resLang = null; renderResults(); }, 150));
+$('recentSets').addEventListener('click', e => { const b = e.target.closest('button'); if (b) selectSet(b.dataset.id); });
+$('entry').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); commitEntry(); }
+  else if (e.key === 'Escape') { e.preventDefault(); $('setSearch').focus(); $('setSearch').select(); }
+  else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z' && !e.target.value) { e.preventDefault(); undoLast(); }
+});
+$('soundToggle').checked = !!data.sound;
+$('soundToggle').onchange = e => { data.sound = e.target.checked; save(); beep(true); $('entry').focus(); };
+let ft; $('invFilter').addEventListener('input', () => { clearTimeout(ft); ft = setTimeout(() => { invLimit = 200; renderInv(); }, 150); });
+$('invVariant').onchange = $('invLang').onchange = $('invSort').onchange = () => { invLimit = 200; renderInv(); };
+$('invMore').onclick = () => { invLimit += 300; renderInv(); };
+$('invBody').addEventListener('click', e => { const b = e.target.closest('button[data-k]'); if (!b) return; addQty(b.dataset.k, +b.dataset.d); save(); renderInv(); renderStats(); renderLog(); });
+$('kitRegion').onchange = $('kitVariant').onchange = $('kitLang').onchange = () => { dexSel = null; renderKits(); };
+$('dexGrid').addEventListener('click', e => { const c = e.target.closest('.cell'); if (!c) return; dexSel = +c.dataset.d === dexSel ? null : +c.dataset.d; renderKits(); });
+let at; $('artFilter').addEventListener('input', () => { clearTimeout(at); at = setTimeout(renderArtists, 150); });
+$('artBody').addEventListener('click', e => { const r = e.target.closest('tr[data-a]'); if (!r) return; artSel = r.dataset.a === artSel ? null : r.dataset.a; renderArtists(); });
+$('btnReset').onclick = resetInventory;
+$('gLangF').innerHTML = '<option value="">Contar todos los idiomas</option>' + LANGS.map(l => `<option value="${l}">Contar solo ${LNAME[l]}</option>`).join('');
+$('gLangF').onchange = renderGroups;
+$('gSave').onclick = saveGroup;
+$('gCancel').onclick = () => { resetGroupForm(); $('gMsg').textContent = ''; };
+$('groupList').addEventListener('click', e => {
+  const ed = e.target.closest('button[data-ge]'), del = e.target.closest('button[data-gd]');
+  if (ed) {
+    const g = data.groups.find(x => x.id === ed.dataset.ge); if (!g) return;
+    gEditing = g.id; $('gName').value = g.name; $('gCols').value = g.cols; $('gCards').value = groupText(g);
+    $('gTitle').textContent = 'Editando: ' + g.name; $('gCancel').hidden = false; $('gName').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  } else if (del) {
+    const g = data.groups.find(x => x.id === del.dataset.gd);
+    if (g && confirm(`¿Borrar el grupo "${g.name}"? (Las cartas del inventario no se tocan.)`)) { data.groups = data.groups.filter(x => x !== g); save(); renderGroups(); }
+  }
+});
+$('btnCsv').onclick = exportCsv;
+$('btnJson').onclick = exportJson;
+$('btnImport').onclick = () => $('fileImport').click();
+$('fileImport').onchange = e => { const f = e.target.files[0]; if (f) importFile(f); e.target.value = ''; };
+window.addEventListener('beforeunload', e => { if (data.sinceBackup > 300) { e.preventDefault(); e.returnValue = ''; } });
+
+renderAll();
+loadSets().then(() => { renderAll(); if (data.recent[0] && setById[data.recent[0]]) selectSet(data.recent[0]); });
+ensureMeta();
+$('entry').focus();
+</script>
+</body>
+</html>

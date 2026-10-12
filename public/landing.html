@@ -1,0 +1,577 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Challadex · Alfa privada</title>
+<meta name="description" content="Carga miles de cartas Pokémon en minutos, conoce su precio en pesos y arma kits, master sets y lotes listos para vender. Alfa privada con cupos limitados.">
+<meta property="og:title" content="Challadex · Tu challa vale más de lo que crees">
+<meta property="og:description" content="Inventario, precios en CLP, master sets y kits de Pokédex para coleccionistas y vendedores de cartas Pokémon. Únete a la alfa.">
+<meta property="og:image" content="/landing/inventario.jpg">
+<meta name="theme-color" content="#0d0f16">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#0d0f16;--bg2:#121520;--panel:#171a26;--panel2:#1e2232;--line:#2a2f42;
+  --ink:#eef0f8;--muted:#9aa0b8;--dim:#6f7590;
+  --red:#ff5a3c;--red2:#ff7a45;--gold:#ffc83d;--green:#2fd28a;--blue:#5aa8ff;--violet:#a77bff;
+  --r:18px;--maxw:1180px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 Nunito,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+main{overflow-x:clip}
+img{max-width:100%;display:block}
+a{color:inherit}
+h1,h2,h3{font-family:"Bricolage Grotesque",Nunito,system-ui,sans-serif;line-height:1.05;letter-spacing:-.02em;margin:0}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+.kicker{display:inline-flex;align-items:center;gap:8px;font-weight:800;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)}
+.grad{background:linear-gradient(100deg,var(--red) 0%,var(--red2) 40%,var(--gold) 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;font:800 16px/1 Nunito,sans-serif;padding:16px 26px;border-radius:999px;border:0;cursor:pointer;text-decoration:none;transition:transform .15s,box-shadow .15s,background .15s}
+.btn.primary{background:linear-gradient(135deg,var(--red),var(--red2));color:#fff;box-shadow:0 10px 30px -8px rgba(255,90,60,.6)}
+.btn.primary:hover{transform:translateY(-2px);box-shadow:0 16px 40px -8px rgba(255,90,60,.75)}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.ghost:hover{background:var(--panel)}
+.btn:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+
+/* nav */
+.nav{position:sticky;top:0;z-index:50;background:rgba(13,15,22,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(42,47,66,.6)}
+.nav .wrap{display:flex;align-items:center;gap:28px;height:68px}
+.logo{display:flex;align-items:center;gap:10px;font:800 21px "Bricolage Grotesque",sans-serif;text-decoration:none;letter-spacing:-.02em}
+.logo .ball{width:28px;height:28px;border-radius:50%;background:linear-gradient(var(--red) 0 46%,#11131b 46% 54%,#f3f3f3 54%);border:2.5px solid #11131b;box-shadow:0 0 0 2px #fff2;position:relative}
+.logo .ball::after{content:"";position:absolute;inset:50% auto auto 50%;width:9px;height:9px;transform:translate(-50%,-50%);border-radius:50%;background:#fff;border:2.5px solid #11131b}
+.nav .links{display:flex;gap:22px;margin-left:auto;font-weight:700;font-size:15px}
+.nav .links a{text-decoration:none;color:var(--muted)}
+.nav .links a:hover{color:var(--ink)}
+.nav .btn{padding:11px 18px;font-size:14px}
+
+/* hero */
+.hero{position:relative;padding:84px 0 40px;text-align:center;isolation:isolate}
+.hero::before{content:"";position:absolute;inset:-200px -20% auto;height:820px;z-index:-1;
+  background:radial-gradient(40% 50% at 30% 30%,rgba(255,90,60,.28),transparent 70%),radial-gradient(35% 45% at 75% 25%,rgba(255,200,61,.16),transparent 70%),radial-gradient(40% 40% at 55% 70%,rgba(167,123,255,.14),transparent 70%)}
+.badge{display:inline-flex;align-items:center;gap:10px;padding:7px 14px 7px 8px;border-radius:999px;background:var(--panel);border:1px solid var(--line);font-size:14px;font-weight:700;color:var(--muted)}
+.badge b{background:var(--green);color:#06291a;border-radius:999px;padding:3px 10px;font-size:12px;letter-spacing:.04em}
+.hero h1{font-size:clamp(44px,7.4vw,92px);font-weight:800;margin:26px auto 22px;max-width:14ch}
+.hero p.lead{font-size:clamp(18px,2vw,21px);color:var(--muted);max-width:640px;margin:0 auto 34px}
+.hero p.lead b{color:var(--ink)}
+.ctas{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+.trust{margin-top:22px;font-size:14px;color:var(--dim);display:flex;gap:18px;justify-content:center;flex-wrap:wrap}
+.trust span::before{content:"✓ ";color:var(--green);font-weight:800}
+
+.shot-wrap{position:relative;margin:64px auto 0;max-width:1080px}
+.browser{border-radius:16px;overflow:hidden;border:1px solid var(--line);background:var(--panel);box-shadow:0 50px 120px -30px rgba(0,0,0,.8),0 0 0 1px #ffffff08;transform:perspective(1800px) rotateX(8deg);transform-origin:50% 0;transition:transform .8s cubic-bezier(.2,.7,.2,1)}
+.shot-wrap.in .browser{transform:perspective(1800px) rotateX(0)}
+.browser .bar{display:flex;gap:7px;padding:12px 14px;border-bottom:1px solid var(--line);background:var(--panel2)}
+.browser .bar i{width:11px;height:11px;border-radius:50%;background:#3a3f55}
+.browser .bar i:nth-child(1){background:#ff5f57}.browser .bar i:nth-child(2){background:#febc2e}.browser .bar i:nth-child(3){background:#28c840}
+.browser img{width:100%;height:auto;aspect-ratio:1400/860;object-fit:cover;object-position:top}
+.float{position:absolute;display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:14px;background:rgba(23,26,38,.92);backdrop-filter:blur(10px);border:1px solid var(--line);font-weight:700;font-size:15px;box-shadow:0 20px 50px -15px rgba(0,0,0,.7);text-align:left;white-space:nowrap;animation:bob 6s ease-in-out infinite}
+.float small{display:block;color:var(--muted);font-weight:600;font-size:12.5px}
+.float .ic{font-size:22px}
+.f1{left:-40px;top:18%;border-color:rgba(255,200,61,.5)}
+.f2{right:-36px;top:42%;animation-delay:-2s}
+.f3{left:6%;bottom:-28px;animation-delay:-4s}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+
+/* logos / numbers strip */
+.strip{padding:70px 0 30px}
+.nums{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.num{padding:22px;border-radius:var(--r);background:var(--panel);border:1px solid var(--line)}
+.num b{display:block;font:800 clamp(28px,3.6vw,40px) "Bricolage Grotesque",sans-serif;letter-spacing:-.02em}
+.num span{color:var(--muted);font-size:15px}
+
+/* problem */
+.problem{padding:90px 0 40px;text-align:center}
+.problem h2{font-size:clamp(34px,4.8vw,58px);max-width:18ch;margin:16px auto 18px}
+.problem p{color:var(--muted);max-width:640px;margin:0 auto;font-size:19px}
+.pains{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:46px;text-align:left}
+.pain{padding:24px;border-radius:var(--r);background:linear-gradient(180deg,var(--panel),var(--bg2));border:1px solid var(--line)}
+.pain .e{font-size:30px}
+.pain h3{font-size:21px;margin:12px 0 6px}
+.pain p{font-size:16px;margin:0}
+
+/* demo */
+.demo{padding:100px 0}
+.demo-grid{display:grid;grid-template-columns:1fr 1.05fr;gap:56px;align-items:center}
+.demo h2{font-size:clamp(34px,4.4vw,54px);margin:14px 0 18px}
+.demo p{color:var(--muted);font-size:18px}
+.keys{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.keys div{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:14.5px;color:var(--muted)}
+kbd{font:700 14px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-bottom-width:3px;border-radius:7px;padding:1px 7px;margin-right:4px}
+.term{border-radius:var(--r);background:var(--panel);border:1px solid var(--line);padding:22px;box-shadow:0 40px 90px -30px rgba(0,0,0,.8)}
+.term .set{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;background:var(--panel2);font-weight:700}
+.term .set code{font:800 13px ui-monospace,Menlo,monospace;background:#0d0f16;border-radius:6px;padding:2px 7px}
+.term .set span{color:var(--muted);font-weight:600;font-size:14px}
+.term .input{margin:14px 0;height:66px;display:flex;align-items:center;padding:0 18px;border-radius:12px;border:2px solid var(--red);background:#0d0f16;font:800 30px ui-monospace,Menlo,monospace;letter-spacing:.04em}
+.term .input .caret{width:3px;height:32px;background:var(--red);margin-left:3px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.log{display:flex;flex-direction:column;gap:8px;min-height:236px}
+.row{display:grid;grid-template-columns:54px 1fr auto;gap:12px;align-items:center;padding:10px 12px;border-radius:12px;background:var(--bg2);border:1px solid var(--line);animation:pop .35s cubic-bezier(.2,.9,.3,1.3)}
+.row .n{font:800 13px ui-monospace,Menlo,monospace;color:var(--muted)}
+.row b{font-size:15.5px}
+.row small{display:block;color:var(--muted);font-size:13px}
+.tag{font-size:12px;font-weight:800;border-radius:999px;padding:3px 9px;background:var(--panel2);color:var(--muted)}
+.tag.rev{background:#183a5e;color:#9bd0ff}.tag.gold{background:#4a3a0c;color:var(--gold)}.tag.loc{background:#1f2a22;color:#8fe7b8}
+.row.alert{border-color:rgba(255,200,61,.6);background:linear-gradient(90deg,rgba(255,200,61,.12),var(--bg2))}
+@keyframes pop{from{opacity:0;transform:translateY(-8px) scale(.98)}to{opacity:1;transform:none}}
+
+/* features */
+.features{padding:40px 0 60px}
+.feat{display:grid;grid-template-columns:1fr 1.25fr;gap:60px;align-items:center;padding:60px 0}
+.feat.flip{grid-template-columns:1.25fr 1fr}
+.feat.flip .txt{order:2}
+.feat h2{font-size:clamp(30px,3.8vw,46px);margin:14px 0 16px}
+.feat p{color:var(--muted);font-size:18px;margin:0 0 18px}
+.feat ul{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.feat li{position:relative;padding-left:34px;font-size:16.5px}
+.feat li::before{content:"";position:absolute;left:0;top:2px;width:22px;height:22px;border-radius:7px;background:var(--panel2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232fd28a' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center/14px no-repeat;border:1px solid var(--line)}
+.pic{position:relative;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);box-shadow:0 40px 90px -30px rgba(0,0,0,.8);background:var(--panel)}
+.pic{aspect-ratio:16/11}
+/* zoom into the interesting part of each screenshot: --z width, --x / --y offsets (% of the frame width) */
+.pic img{width:var(--z,100%);max-width:none;margin-left:var(--x,0);margin-top:var(--y,0)}
+.pic::after{content:"";position:absolute;inset:auto 0 0;height:30%;background:linear-gradient(transparent,rgba(13,15,22,.85));pointer-events:none}
+.pic .chip{position:absolute;z-index:2;left:18px;bottom:18px;padding:10px 14px;border-radius:12px;background:rgba(23,26,38,.92);border:1px solid var(--line);font-weight:800;font-size:15px;backdrop-filter:blur(8px)}
+.pic .chip span{color:var(--green)}
+.c-gold{color:var(--gold)}.c-red{color:var(--red)}.c-green{color:var(--green)}.c-blue{color:var(--blue)}.c-violet{color:var(--violet)}
+
+/* mini grid of extra features */
+.more{padding:60px 0 100px}
+.more h2{text-align:center;font-size:clamp(32px,4.2vw,50px);margin:14px 0 46px}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.card{padding:26px;border-radius:var(--r);background:var(--panel);border:1px solid var(--line);transition:transform .2s,border-color .2s}
+.card:hover{transform:translateY(-4px);border-color:#3a4060}
+.card .e{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;font-size:24px;background:var(--panel2);border:1px solid var(--line)}
+.card h3{font-size:21px;margin:16px 0 8px}
+.card p{color:var(--muted);font-size:16px;margin:0}
+
+/* who */
+.who{padding:40px 0 100px}
+.who-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.persona{padding:30px;border-radius:24px;border:1px solid var(--line);background:var(--panel);position:relative;overflow:hidden}
+.persona::before{content:"";position:absolute;inset:0 0 auto;height:4px;background:var(--c)}
+.persona .e{font-size:40px}
+.persona h3{font-size:24px;margin:14px 0 8px}
+.persona p{color:var(--muted);margin:0;font-size:16.5px}
+.persona q{display:block;margin-top:18px;padding-top:16px;border-top:1px dashed var(--line);font-style:italic;color:var(--ink);font-size:16px;quotes:none}
+
+/* alpha */
+.alpha{padding:100px 0;position:relative;isolation:isolate}
+.alpha::before{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(50% 60% at 20% 30%,rgba(255,90,60,.18),transparent 70%),radial-gradient(40% 50% at 85% 70%,rgba(255,200,61,.1),transparent 70%)}
+.alpha-grid{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:start}
+.alpha h2{font-size:clamp(36px,4.8vw,60px);margin:14px 0 18px}
+.alpha .sub{color:var(--muted);font-size:19px;margin:0 0 30px}
+.deal{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.deal div{padding:20px;border-radius:16px;background:var(--panel);border:1px solid var(--line)}
+.deal h3{font-size:17px;margin:0 0 10px}
+.deal ul{margin:0;padding-left:18px;color:var(--muted);font-size:15.5px;display:grid;gap:6px}
+.seats{margin-top:22px;padding:16px 18px;border-radius:16px;background:var(--panel);border:1px solid var(--line)}
+.seats .t{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-weight:800;font-size:15px}
+.seats .t span{color:var(--muted);font-weight:700}
+
+form{padding:30px;border-radius:24px;background:var(--panel);border:1px solid var(--line);box-shadow:0 40px 90px -30px rgba(0,0,0,.8);display:grid;gap:16px}
+form h3{font-size:26px}
+form .fine{color:var(--muted);font-size:14px;margin:-6px 0 4px}
+label{display:grid;gap:7px;font-weight:700;font-size:14.5px}
+label .opt{color:var(--dim);font-weight:600}
+input,select,textarea{font:600 16px Nunito,sans-serif;color:var(--ink);background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:13px 14px;width:100%}
+textarea{min-height:90px;resize:vertical}
+input::placeholder,textarea::placeholder{color:var(--dim)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.pills{display:flex;flex-wrap:wrap;gap:8px}
+.pills input{position:absolute;opacity:0;pointer-events:none}
+.pills label{display:inline-flex;font-weight:700;font-size:14.5px;padding:9px 14px;border-radius:999px;border:1px solid var(--line);background:var(--bg2);cursor:pointer;transition:all .15s}
+.pills input:checked+label{background:rgba(255,90,60,.16);border-color:var(--red);color:#fff}
+.pills input:focus-visible+label{outline:3px solid var(--gold);outline-offset:2px}
+.hp{position:absolute;left:-9999px}
+form .btn{width:100%;margin-top:4px;padding:18px}
+.msg{display:none;padding:14px 16px;border-radius:12px;font-weight:700}
+.msg.ok{display:block;background:rgba(47,210,138,.12);border:1px solid rgba(47,210,138,.5);color:#bff3da}
+.msg.err{display:block;background:rgba(255,90,60,.12);border:1px solid rgba(255,90,60,.5);color:#ffd0c6}
+
+/* faq */
+.faq{padding:40px 0 100px}
+.faq h2{text-align:center;font-size:clamp(32px,4vw,48px);margin:14px 0 40px}
+.faq .list{max-width:820px;margin:0 auto;display:grid;gap:12px}
+details{border-radius:16px;background:var(--panel);border:1px solid var(--line);padding:4px 22px}
+summary{cursor:pointer;list-style:none;font-weight:800;font-size:18px;padding:18px 0;display:flex;justify-content:space-between;gap:16px;border-radius:8px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";font-size:26px;line-height:1;color:var(--red);transition:transform .2s}
+details[open] summary::after{transform:rotate(45deg)}
+details p{margin:0 0 20px;color:var(--muted);font-size:16.5px}
+
+/* final cta */
+.final{padding:30px 0 110px}
+.final .box{text-align:center;padding:70px 30px;border-radius:32px;background:linear-gradient(135deg,#2a1410,#1a1424 60%,#141826);border:1px solid #3a2a30;position:relative;overflow:hidden}
+.final .box::before{content:"";position:absolute;width:520px;height:520px;right:-140px;top:-220px;border-radius:50%;background:radial-gradient(rgba(255,90,60,.35),transparent 65%)}
+.final h2{font-size:clamp(36px,5vw,64px);max-width:16ch;margin:0 auto 18px;position:relative}
+.final p{color:var(--muted);font-size:19px;margin:0 auto 30px;max-width:560px;position:relative}
+
+footer{border-top:1px solid var(--line);padding:34px 0 50px;color:var(--dim);font-size:14px}
+footer .wrap{display:flex;gap:24px;justify-content:space-between;flex-wrap:wrap}
+footer p{margin:0;max-width:640px}
+
+/* reveal on scroll */
+.rv{opacity:0;transform:translateY(26px);transition:opacity .7s ease,transform .7s cubic-bezier(.2,.7,.2,1)}
+.rv.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+  .rv{opacity:1;transform:none}
+  .browser{transform:none}
+}
+
+@media (max-width:980px){
+  .nav .links{display:none}
+  .nav .btn{margin-left:auto}
+  .demo-grid,.feat,.feat.flip,.alpha-grid{grid-template-columns:1fr;gap:36px}
+  .feat.flip .txt{order:0}
+  .feat{padding:40px 0}
+  .cards,.who-grid,.pains{grid-template-columns:1fr 1fr}
+  .nums{grid-template-columns:1fr 1fr}
+  .f1{left:-8px}.f2{right:-8px}
+}
+@media (max-width:640px){
+  .wrap{padding:0 16px}
+  body{font-size:16px}
+  .hero{padding-top:56px}
+  .cards,.who-grid,.pains,.deal,.two{grid-template-columns:1fr}
+  .float{font-size:13px;padding:9px 12px}
+  .float small{font-size:11.5px}
+  .f1{top:-26px;left:4px}.f2{display:none}.f3{bottom:-30px;left:auto;right:4px}
+  .shot-wrap{margin-top:56px}
+  .browser{transform:none}
+  .row{grid-template-columns:44px 1fr;}
+  .row .tag{grid-column:2;justify-self:start}
+  .term .input{font-size:24px}
+  form{padding:22px}
+  .ctas .btn{width:100%}
+}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="logo" href="#top" aria-label="Challadex, inicio"><span class="ball" aria-hidden="true"></span>Challadex</a>
+    <nav class="links" aria-label="Secciones">
+      <a href="#como">Cómo funciona</a>
+      <a href="#funciones">Funciones</a>
+      <a href="#para-quien">Para quién</a>
+      <a href="#faq">Preguntas</a>
+    </nav>
+    <a class="btn primary" href="#alfa">Quiero entrar a la alfa</a>
+  </div>
+</header>
+
+<main id="top">
+
+<!-- HERO -->
+<section class="hero">
+  <div class="wrap">
+    <span class="badge"><b>ALFA PRIVADA</b> Cupos limitados para coleccionistas y vendedores</span>
+    <h1>Tu challa vale <span class="grad">más de lo que crees.</span></h1>
+    <p class="lead">Carga miles de cartas Pokémon escribiendo solo el número, conoce su <b>precio en pesos chilenos</b> al instante y arma <b>master sets, kits de Pokédex y lotes</b> listos para vender.</p>
+    <div class="ctas">
+      <a class="btn primary" href="#alfa">Quiero ser alfa tester →</a>
+      <a class="btn ghost" href="#como">Ver cómo funciona</a>
+    </div>
+    <div class="trust"><span>Gratis durante la alfa</span><span>Precios TCGplayer + Cardmarket en CLP</span><span>Cartas internacionales y japonesas</span></div>
+
+    <div class="shot-wrap" id="shot">
+      <div class="browser">
+        <div class="bar" aria-hidden="true"><i></i><i></i><i></i></div>
+        <img src="/landing/inventario.jpg" width="1400" height="1013" alt="Galería de Mi colección: cartas con su variante, idioma, ubicación y precio en pesos">
+      </div>
+      <div class="float f1"><span class="ic">💰</span><div>Vale ~$342.644 · ¡sepárala!<small>Te avisa al cargar una carta valiosa</small></div></div>
+      <div class="float f2"><span class="ic">📍</span><div>Guárdala en: Caja 1<small>Mega Evolution · por número</small></div></div>
+      <div class="float f3"><span class="ic">⭐</span><div>Eevee master set · 11/434<small>Te faltan 423 · costo estimado incluido</small></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- NUMBERS -->
+<section class="strip">
+  <div class="wrap nums">
+    <div class="num rv"><b class="grad">+25.000</b><span>cartas en el catálogo</span></div>
+    <div class="num rv"><b class="grad">+350</b><span>expansiones, incluidas las japonesas</span></div>
+    <div class="num rv"><b class="grad">2</b><span>fuentes de precio: TCGplayer y Cardmarket</span></div>
+    <div class="num rv"><b class="grad">CLP</b><span>todo en pesos, con el dólar y el euro del día</span></div>
+  </div>
+</section>
+
+<!-- PROBLEM -->
+<section class="problem">
+  <div class="wrap">
+    <span class="kicker">El problema</span>
+    <h2>Miles de cartas en cajas de zapatos. <span class="grad">Cero idea de cuánto valen.</span></h2>
+    <p>Las planillas no escalan, las apps gringas te dan precios en dólares y ninguna sabe qué es la challa. Mientras tanto, ese reverse holo que vale $40.000 duerme entre los comunes.</p>
+    <div class="pains">
+      <div class="pain rv"><div class="e">🐢</div><h3>Cargar es eterno</h3><p>Buscar carta por carta en un buscador es imposible cuando tienes 6.000.</p></div>
+      <div class="pain rv"><div class="e">💸</div><h3>Vendes a ciegas</h3><p>Sin precios en pesos, regalas las buenas o espantas compradores con la challa.</p></div>
+      <div class="pain rv"><div class="e">🗃️</div><h3>Nunca encuentras nada</h3><p>Sabes que la tienes… pero ¿en qué caja? ¿en qué carpeta?</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- DEMO -->
+<section class="demo" id="como">
+  <div class="wrap demo-grid">
+    <div class="rv">
+      <span class="kicker">⌨️ Carga ultrarrápida</span>
+      <h2>Escribe el número. <span class="grad">Enter.</span> Siguiente.</h2>
+      <p>Eliges la expansión una vez (como sale impresa en la carta, por ejemplo <b>MEW ES</b>) y después solo tecleas números. La app reconoce la carta, su variante y su precio, y te dice en qué caja guardarla.</p>
+      <div class="keys">
+        <div><kbd>25</kbd> carta normal</div>
+        <div><kbd>25r</kbd> reverse</div>
+        <div><kbd>25*4</kbd> cuatro copias</div>
+        <div><kbd>lp</kbd> cambia el estado</div>
+        <div><kbd>-25</kbd> quita una</div>
+        <div><kbd>⌘Z</kbd> deshacer</div>
+      </div>
+    </div>
+    <div class="term rv" aria-label="Demostración de carga de cartas" role="img">
+      <div class="set"><code>MEW</code> 151 <span>· Español · NM · Guardar en: Automático</span></div>
+      <div class="input"><span id="typed"></span><span class="caret"></span></div>
+      <div class="log" id="log"></div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features" id="funciones">
+  <div class="wrap">
+
+    <div class="feat rv">
+      <div class="txt">
+        <span class="kicker">💰 Precios en pesos</span>
+        <h2>Sabes cuánto vale <span class="grad">cada copia</span>, en CLP.</h2>
+        <p>Precios de TCGplayer y Cardmarket convertidos con el tipo de cambio del día, según la variante exacta y el estado de tu carta.</p>
+        <ul>
+          <li>Descuentos por estado: NM, LP, MP, HP y DMG, con tus propios %.</li>
+          <li>Alerta al cargar una carta que vale más de lo que tú definas.</li>
+          <li>¿Tienes un precio mejor? Escríbelo en dólares y se actualiza solo con el dólar. Te recuerda revisarlo cada semana.</li>
+          <li>Valor total de tu colección y de lo que tienes para vender.</li>
+        </ul>
+      </div>
+      <div class="pic" style="--z:163%;--x:-4.7%;--y:-44%"><img src="/landing/inventario.jpg" alt="Mi colección con el valor de venta y el precio de cada carta" loading="lazy"><div class="chip">Valor de la colección: <span>$325.895</span></div></div>
+    </div>
+
+    <div class="feat flip rv">
+      <div class="txt">
+        <span class="kicker">⭐ Master sets</span>
+        <h2>Tu master set, <span class="grad">variante por variante.</span></h2>
+        <p>Sigue checklists completas (como el master set de Eevee: 434 variantes) con cartas internacionales, japonesas, promos y variantes raras.</p>
+        <ul>
+          <li>Qué tienes, qué te falta y cuánto cuesta completarla.</li>
+          <li>Ordena por lanzamiento, valor, ilustrador o región.</li>
+          <li>Filtra por rareza, precio o idioma.</li>
+        </ul>
+      </div>
+      <div class="pic" style="--z:150%;--x:-44.5%;--y:-14%"><img src="/landing/colecciones.jpg" alt="Colección Eevee con progreso, valor y costo para completarla" loading="lazy"><div class="chip">⭐ Eevee · 11/434 variantes</div></div>
+    </div>
+
+    <div class="feat rv">
+      <div class="txt">
+        <span class="kicker">📍 Ubicaciones inteligentes</span>
+        <h2>La app te dice <span class="grad">dónde guardarla.</span></h2>
+        <p>Define tus cajas y carpetas con reglas simples: por serie, expansión, rareza, precio o colección personal. Cada carta que cargas va a su lugar.</p>
+        <ul>
+          <li>Gana la regla más específica: lo valioso a la carpeta y la challa a su caja.</li>
+          <li>Te avisa si dos ubicaciones se pelean las mismas cartas.</li>
+          <li>¿Buscas una carta? Te dice en qué caja está.</li>
+        </ul>
+      </div>
+      <div class="pic" style="--z:139%;--x:-4%;--y:-31.8%"><img src="/landing/ubicaciones.jpg" alt="Ubicaciones: carpetas y cajas con sus reglas y el valor de cada una" loading="lazy"><div class="chip">📍 8 ubicaciones · orden sugerido</div></div>
+    </div>
+
+    <div class="feat flip rv">
+      <div class="txt">
+        <span class="kicker">🧩 Para vender mejor</span>
+        <h2>Convierte la challa en <span class="grad">kits que se venden.</span></h2>
+        <p>Arma productos curados con lo que ya tienes: Pokédex completas por región, cartas de un mismo ilustrador o ilustraciones que se unen en una imagen más grande.</p>
+        <ul>
+          <li><b>Kits de Pokédex:</b> cuántos puedes armar y qué especies te faltan.</li>
+          <li><b>Ilustradores:</b> todas las cartas de tu artista favorito.</li>
+          <li><b>Artes conectados:</b> sets de cartas que forman un paisaje.</li>
+        </ul>
+      </div>
+      <div class="pic" style="--z:123%;--x:-3.5%;--y:-16%"><img src="/landing/grupos.jpg" alt="Artes conectados: cartas de Neo Discovery cuyas ilustraciones forman una imagen" loading="lazy"><div class="chip">🧩 Ruinas de Eevee · 1/3 piezas</div></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- MORE -->
+<section class="more">
+  <div class="wrap">
+    <div style="text-align:center"><span class="kicker">Y además</span></div>
+    <h2>Todo lo que un vendedor de cartas <span class="grad">necesitaba.</span></h2>
+    <div class="cards">
+      <div class="card rv"><div class="e">📦</div><h3>Lotes de venta y compra</h3><p>Junta cartas, ponles precio al 90% (o al % que quieras) del mercado y al cerrar el trato el inventario se actualiza solo.</p></div>
+      <div class="card rv"><div class="e">🔒</div><h3>Venta vs. personal</h3><p>Separa las copias de tu colección de las que vendes. Los kits y el valor de venta solo cuentan las que vendes.</p></div>
+      <div class="card rv"><div class="e">🎌</div><h3>Japonesas y otros idiomas</h3><p>Cartas en español, inglés, japonés, chino y más, cada una con su expansión y su precio.</p></div>
+      <div class="card rv"><div class="e">✨</div><h3>Variantes de verdad</h3><p>Reverse, holo, 1st Edition, Poké Ball, Master Ball, sellos y más, cada una con su foto.</p></div>
+      <div class="card rv"><div class="e">🎨</div><h3>Ilustrador y rareza</h3><p>Se completan solos para cada carta, así puedes filtrar y ordenar por artista.</p></div>
+      <div class="card rv"><div class="e">📤</div><h3>Tus datos son tuyos</h3><p>Exporta todo a CSV o JSON cuando quieras, con precios incluidos.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- WHO -->
+<section class="who" id="para-quien">
+  <div class="wrap">
+    <div style="text-align:center"><span class="kicker">Para quién es</span></div>
+    <h2 style="text-align:center;font-size:clamp(32px,4.2vw,50px);margin:14px 0 46px">Hecho por un coleccionista <span class="grad">con 6.000 cartas.</span></h2>
+    <div class="who-grid">
+      <div class="persona rv" style="--c:var(--gold)"><div class="e">🏆</div><h3>Coleccionistas</h3><p>Persigues un master set, un Pokémon o un ilustrador y quieres saber exactamente qué te falta.</p><q>Ideal si estás armando un master set.</q></div>
+      <div class="persona rv" style="--c:var(--red)"><div class="e">🛒</div><h3>Vendedores de challa</h3><p>Compras y vendes al por mayor y necesitas precios en pesos, lotes y un inventario ordenado.</p><q>Ideal si cargas cajas completas y separas las buenas.</q></div>
+      <div class="persona rv" style="--c:var(--green)"><div class="e">🏪</div><h3>Tiendas pequeñas</h3><p>Tu stock está repartido en cajas y carpetas, y quieres encontrar cualquier carta en segundos.</p><q>Ideal si tu stock vive en cajas y carpetas.</q></div>
+    </div>
+  </div>
+</section>
+
+<!-- ALPHA -->
+<section class="alpha" id="alfa">
+  <div class="wrap alpha-grid">
+    <div class="rv">
+      <span class="kicker">🧪 Programa alfa</span>
+      <h2>Sé de los primeros. <span class="grad">Dale forma con nosotros.</span></h2>
+      <p class="sub">Estamos abriendo la plataforma a un grupo pequeño de coleccionistas y vendedores. Tú la usas con tus cartas reales y nosotros la mejoramos con lo que nos digas.</p>
+      <div class="deal">
+        <div><h3>🎁 Lo que recibes</h3><ul><li>Acceso gratis durante toda la alfa</li><li>Contacto directo con quien la construye</li><li>Tus ideas pasan al producto</li><li>Precio especial de fundador cuando lancemos</li></ul></div>
+        <div><h3>🤝 Lo que te pedimos</h3><ul><li>Cargar parte de tu colección real</li><li>Contarnos qué falla y qué falta</li><li>Una conversación corta cada tanto</li><li>Paciencia: es una alfa 🙂</li></ul></div>
+      </div>
+      <div class="seats"><div class="t">🎟️ Primera ronda con cupos limitados <span>se abren por orden de postulación</span></div></div>
+    </div>
+
+    <form id="alphaForm" class="rv" novalidate>
+      <h3>Postula a la alfa</h3>
+      <p class="fine">Toma 30 segundos. Te escribimos cuando haya un cupo para ti.</p>
+      <div class="two">
+        <label>Nombre<input name="name" autocomplete="name" placeholder="Cómo te llamas" required maxlength="80"></label>
+        <label>Email<input name="email" type="email" autocomplete="email" placeholder="tu@correo.cl" required maxlength="120"></label>
+      </div>
+      <label><span>Instagram o tienda <span class="opt">(opcional)</span></span><input name="handle" placeholder="@tucuenta" maxlength="80"></label>
+      <div>
+        <label style="margin-bottom:8px">¿Qué haces con tus cartas?</label>
+        <div class="pills" role="radiogroup" aria-label="Qué haces con tus cartas">
+          <input type="radio" name="role" id="r1" value="colecciono" checked><label for="r1">Colecciono</label>
+          <input type="radio" name="role" id="r2" value="vendo"><label for="r2">Vendo</label>
+          <input type="radio" name="role" id="r3" value="ambas"><label for="r3">Ambas</label>
+          <input type="radio" name="role" id="r4" value="tienda"><label for="r4">Tengo tienda</label>
+        </div>
+      </div>
+      <label>¿Cuántas cartas tienes, más o menos?
+        <select name="size">
+          <option value="<500">Menos de 500</option>
+          <option value="500-2000">500 a 2.000</option>
+          <option value="2000-10000" selected>2.000 a 10.000</option>
+          <option value="10000+">Más de 10.000</option>
+        </select>
+      </label>
+      <label><span>¿Qué te gustaría resolver? <span class="opt">(opcional)</span></span><textarea name="note" maxlength="1000" placeholder="Ej: quiero saber cuánto vale mi challa, completar mi master set de Pikachu…"></textarea></label>
+      <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <button class="btn primary" type="submit">Quiero mi cupo →</button>
+      <div class="msg" id="formMsg" role="status" aria-live="polite"></div>
+    </form>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="faq" id="faq">
+  <div class="wrap">
+    <div style="text-align:center"><span class="kicker">Preguntas frecuentes</span></div>
+    <h2>Lo que todos preguntan</h2>
+    <div class="list">
+      <details><summary>¿Cuánto cuesta?</summary><p>Nada durante la alfa. Cuando lancemos habrá un plan pagado, y los alfa testers tendrán precio especial de fundador.</p></details>
+      <details><summary>¿De dónde salen los precios?</summary><p>De TCGplayer (EE.UU.) y Cardmarket (Europa), convertidos a pesos chilenos con el tipo de cambio del día. Puedes elegir qué fuente prefieres, ajustar el descuento por estado y poner tu propio precio a cualquier carta.</p></details>
+      <details><summary>¿Sirve para cartas japonesas o en español?</summary><p>Sí. El catálogo incluye expansiones internacionales y japonesas, y cada copia guarda su idioma. Las cartas en español, portugués y otros idiomas se cargan con la expansión internacional.</p></details>
+      <details><summary>¿Tengo que cargar todo de una?</summary><p>No. Empieza por una caja o por tu carpeta favorita. La carga es tan rápida que una caja de challa se hace en una tarde.</p></details>
+      <details><summary>¿Qué pasa con mis datos?</summary><p>Son tuyos. Puedes exportar tu inventario completo a CSV o JSON cuando quieras, y no los compartimos con nadie.</p></details>
+      <details><summary>¿Cuándo empiezo?</summary><p>Vamos sumando testers por rondas. Postula y te escribimos al correo cuando tengas tu cupo.</p></details>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="final">
+  <div class="wrap">
+    <div class="box rv">
+      <h2>Esa caja de challa <span class="grad">te está esperando.</span></h2>
+      <p>Postula hoy a la alfa privada y descubre cuánto vale de verdad tu colección.</p>
+      <a class="btn primary" href="#alfa">Quiero ser alfa tester →</a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div><b style="color:var(--ink)">Challadex</b> · hecho en Chile 🇨🇱</div>
+    <p>Challadex es un proyecto independiente y no está afiliado, patrocinado ni respaldado por Nintendo, Creatures, GAME FREAK ni The Pokémon Company. Pokémon y sus nombres son marcas de sus respectivos dueños.</p>
+  </div>
+</footer>
+
+<script>
+// reveal on scroll
+const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { threshold: .15 });
+document.querySelectorAll('.rv, #shot').forEach(el => io.observe(el));
+
+
+// loading demo: types card numbers and shows what the app answers
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const DEMO = [
+  { k: '1', n: '001', name: 'Bulbasaur', sub: 'Normal · Español', tag: ['loc', '📍 Caja 1'] },
+  { k: '25r', n: '025', name: 'Pikachu', sub: 'Reverse Holo · Español', tag: ['rev', 'Reverse'] },
+  { k: '133*3', n: '133', name: 'Eevee ×3', sub: 'Normal · Español', tag: ['loc', '📍 Caja 1'] },
+  { k: '199', n: '199', name: 'Charizard ex', sub: 'Special Illustration Rare', tag: ['gold', '💰 ¡Sepárala!'], alert: true },
+  { k: '54r', n: '054', name: 'Psyduck', sub: 'Reverse Holo · Español', tag: ['rev', 'Reverse'] },
+];
+const typed = document.getElementById('typed'), log = document.getElementById('log');
+const wait = ms => new Promise(r => setTimeout(r, ms));
+function addRow(d) {
+  const r = document.createElement('div');
+  r.className = 'row' + (d.alert ? ' alert' : '');
+  r.innerHTML = `<span class="n">#${d.n}</span><div><b>${d.name}</b><small>${d.sub}</small></div><span class="tag ${d.tag[0]}">${d.tag[1]}</span>`;
+  log.prepend(r);
+  while (log.children.length > 4) log.lastChild.remove();
+}
+async function demo() {
+  if (reduce) { DEMO.slice(0, 4).reverse().forEach(addRow); typed.textContent = '25r'; return; }
+  for (;;) {
+    for (const d of DEMO) {
+      for (const ch of d.k) { typed.textContent += ch; await wait(150 + Math.random() * 90); }
+      await wait(380); typed.textContent = ''; addRow(d); await wait(d.alert ? 1800 : 900);
+    }
+    await wait(1200); log.innerHTML = '';
+  }
+}
+new IntersectionObserver(([e], o) => { if (e.isIntersecting) { demo(); o.disconnect(); } }, { threshold: .3 }).observe(document.querySelector('.term'));
+
+// sign-up form
+const form = document.getElementById('alphaForm'), msg = document.getElementById('formMsg');
+form.addEventListener('submit', async ev => {
+  ev.preventDefault();
+  const f = Object.fromEntries(new FormData(form));
+  const show = (cls, t) => { msg.className = 'msg ' + cls; msg.textContent = t; };
+  if (!f.name.trim()) return show('err', 'Cuéntanos tu nombre.');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim())) return show('err', 'Ese email no parece válido.');
+  const btn = form.querySelector('button'); btn.disabled = true; btn.textContent = 'Enviando…';
+  try {
+    const r = await fetch('/api/alpha', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(f) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || 'No se pudo enviar');
+    form.querySelectorAll('input,select,textarea').forEach(el => el.disabled = true);
+    btn.textContent = '¡Listo! ✓';
+    show('ok', `¡Gracias, ${f.name.trim().split(' ')[0]}! Quedaste en la lista. Te escribiremos a ${f.email.trim()} cuando tengas tu cupo.`);
+  } catch (e) {
+    btn.disabled = false; btn.textContent = 'Quiero mi cupo →';
+    show('err', e.message + '. Intenta de nuevo en un rato.');
+  }
+});
+</script>
+</body>
+</html>
