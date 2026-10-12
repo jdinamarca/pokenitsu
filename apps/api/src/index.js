@@ -12,7 +12,9 @@ import { ensureCardPrice, refreshPrices, staleCount, getSetting, putSetting, get
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const LANGS = ['ES', 'EN', 'PT', 'FR', 'DE', 'IT', 'JA', 'KO', 'ZH'];
-const ART_DIR = join(root, 'public', 'art');
+// the web app's static files (apps/web/public); uploaded pictures live in its art/ folder
+const PUBLIC_DIR = join(root, '..', 'web', 'public');
+const ART_DIR = join(PUBLIC_DIR, 'art');
 const IMAGE_EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' };
 
 // card fields the page needs, aliased to the names it uses
@@ -75,7 +77,7 @@ app.setErrorHandler((err, req, reply) => {
   if (code === 500) req.log.error(err);
   reply.code(code).send({ error: err.message });
 });
-app.register(fastifyStatic, { root: join(root, 'public') });
+app.register(fastifyStatic, { root: PUBLIC_DIR });
 app.addContentTypeParser(/^image\//, { parseAs: 'buffer', bodyLimit: 15 * 1024 * 1024 }, (req, body, done) => done(null, body));
 
 // ---------- landing (/alfa) and its alpha sign-ups ----------
@@ -128,7 +130,7 @@ app.post('/api/catalog/sync', async () => {
 });
 
 // ---------- prices ----------
-await import('../public/pricing.js');
+await import('../../web/public/pricing.js');
 const PRICE_CFG = { source: 'tcgplayer', cond: { NM: 1, LP: 0.85, MP: 0.7, HP: 0.5, DMG: 0.3 }, alert: 5000, ownDays: 7 };
 const PRICE_COLS = `c.set_id || '|' || c.number AS k, p.usd, p.eur, p.url, to_char(p.fetched_at, 'YYYY-MM-DD"T"HH24:MI:SSOF') AS at`;
 let priceJob = null;

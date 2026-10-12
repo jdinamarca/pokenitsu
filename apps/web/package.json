@@ -1,0 +1,5 @@
+{
+  "name": "@pokenitsu/web",
+  "private": true,
+  "description": "Front actual (HTML + JS sin build), servido por @pokenitsu/api desde public/"
+}

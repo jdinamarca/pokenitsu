@@ -1,0 +1,15 @@
+{
+  "name": "@pokenitsu/api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node --env-file=../../.env src/index.js",
+    "dev": "node --watch --env-file=../../.env src/index.js",
+    "sync": "node --env-file=../../.env src/sync.js"
+  },
+  "dependencies": {
+    "@fastify/static": "^10.1.6",
+    "fastify": "^5.12.5",
+    "pg": "^8.23.1"
+  }
+}

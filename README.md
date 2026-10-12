@@ -8,17 +8,22 @@ Carga rápida de cartas (expansión + número + variante + idioma) guardada en P
 
 ## Uso
 
+Requiere Node 24 y pnpm (viene con Node a través de corepack):
+
 ```bash
-npm install      # solo la primera vez
-npm start        # abre http://localhost:3000
+corepack enable  # solo la primera vez: activa pnpm
+pnpm install     # solo la primera vez, o cuando cambian las dependencias
+pnpm start       # compila packages/core y abre http://localhost:3000
 ```
 
+Si `corepack enable` falla por permisos, usa `npx pnpm@12 install` / `npx pnpm@12 start`, o instala pnpm con Homebrew.
+
 - Catálogo completo (todas las cartas de todas las expansiones, necesario para la pestaña **Artistas**):
-  `npm run sync` (tarda ~30 min la primera vez; se puede volver a correr para completar lo que falte).
+  `pnpm sync` (tarda ~30 min la primera vez; se puede volver a correr para completar lo que falte).
   También hay un botón **Descargar catálogo completo** en la pestaña Artistas.
 - Base de datos: `pokemon` en el contenedor Docker `postgres-mac` (conexión en `.env`, fuera de git).
-- Las migraciones de `db/migrations/` se aplican solas al arrancar.
-- Para cargar desde el celular en tu wifi: `HOST=0.0.0.0 npm start` y abre `http://<ip-de-tu-mac>:3000`
+- Las migraciones de `apps/api/db/migrations/` se aplican solas al arrancar.
+- Para cargar desde el celular en tu wifi: `HOST=0.0.0.0 pnpm start` y abre `http://<ip-de-tu-mac>:3000`
   (ojo: no tiene login, cualquiera en tu red podría usarlo).
 
 ## Venta vs. colección personal
@@ -67,7 +72,7 @@ Cada fila del inventario tiene una ubicación (`inventory.loc`, 0 = sin ubicaci�
 
 ## Fotos por variante
 
-Si la foto del catálogo no corresponde, puedes cambiarla para esa variante: tocando la imagen en **Mi colección** o con **📷** en la vista previa de Cargar. Sirve un link o una foto de tu carta (se guarda en `public/art/`, tabla `variant_images`). Un ejemplo: en todas las fuentes públicas, el Eevee de Jungle Unlimited aparece con la foto de la 1st Edition.
+Si la foto del catálogo no corresponde, puedes cambiarla para esa variante: tocando la imagen en **Mi colección** o con **📷** en la vista previa de Cargar. Sirve un link o una foto de tu carta (se guarda en `apps/web/public/art/`, tabla `variant_images`). Un ejemplo: en todas las fuentes públicas, el Eevee de Jungle Unlimited aparece con la foto de la 1st Edition.
 Las variantes especiales de una checklist (1st Edition, Poké Ball, misprints…) usan automáticamente la foto de la checklist.
 
 ## Mis colecciones (ej. todos los Eevee)
@@ -108,7 +113,7 @@ WHERE lang = 'ES' AND d BETWEEN 1 AND 151 GROUP BY d ORDER BY d;
 
 ## Landing para alfa testers (`/alfa`)
 
-`public/landing.html` (servida en `http://localhost:3000/alfa`) presenta la app con capturas reales (`public/landing/*.jpg`) y un formulario para postular a la alfa.
+`apps/web/public/landing.html` (servida en `http://localhost:3000/alfa`) presenta la app con capturas reales (`apps/web/public/landing/*.jpg`) y un formulario para postular a la alfa.
 Las postulaciones quedan en la tabla `alpha_signups` (una por email; si alguien postula de nuevo se actualizan sus respuestas):
 
 ```bash

@@ -2,16 +2,16 @@
 
 ## 1. Preparación y respaldo
 
-- [ ] 1.1 Crear la rama `monorepo-core` desde `main` y verificar con `git status` que está limpia
-- [ ] 1.2 Respaldar la base con `pg_dump` en el scratchpad y verificar que el archivo existe y no está vacío
-- [ ] 1.3 Anotar valores de referencia desde la app en marcha (total de cartas y filas, valor total, valor de venta, valor de la colección Eevee, cantidad por ubicación, precios propios) y guardarlos en un archivo para comparar al final
+- [x] 1.1 Crear la rama `monorepo-core` desde `main` y verificar con `git status` que está limpia
+- [x] 1.2 Respaldar la base con `pg_dump` en el scratchpad y verificar que el archivo existe y no está vacío
+- [x] 1.3 Anotar valores de referencia desde la app en marcha (total de cartas y filas, valor total, valor de venta, valor de la colección Eevee, cantidad por ubicación, precios propios) y guardarlos en un archivo para comparar al final
 
 ## 2. Monorepo pnpm
 
-- [ ] 2.1 Activar pnpm con corepack (o `npx pnpm` como respaldo), agregar `packageManager`, `pnpm-workspace.yaml` y los scripts raíz (`build`, `start`, `dev`, `sync`, `test`, `typecheck`, `lint`), y verificar que `pnpm -v` responde
-- [ ] 2.2 Mover `server/` → `apps/api/src/` y `db/` → `apps/api/db/` con `git mv`, crear `apps/api/package.json` (Fastify, pg, scripts con `--env-file=../../.env`) y ajustar las rutas de migraciones, estáticos (`../web/public`) y fotos (`ART_DIR`); verificar que `pnpm install` termina sin errores
-- [ ] 2.3 Mover `public/` → `apps/web/public/` con `git mv` (incluido `art/`) y crear `apps/web/package.json`; verificar con `pnpm start` que la app abre en localhost:3000, que `/alfa` responde 200 y que cada URL `/art/...` guardada en la base responde 200
-- [ ] 2.4 Actualizar `.gitignore` (`dist/`, `apps/web/public/core.js`) y la sección "Uso" del README (`pnpm install`, `pnpm start`, corepack), y verificar siguiendo el README desde cero que la app arranca
+- [x] 2.1 Activar pnpm con corepack (o `npx pnpm` como respaldo), agregar `packageManager`, `pnpm-workspace.yaml` y los scripts raíz (`build`, `start`, `dev`, `sync`, `test`, `typecheck`, `lint`), y verificar que `pnpm -v` responde
+- [x] 2.2 Mover `server/` → `apps/api/src/` y `db/` → `apps/api/db/` con `git mv`, crear `apps/api/package.json` (Fastify, pg, scripts con `--env-file=../../.env`) y ajustar las rutas de migraciones, estáticos (`../web/public`) y fotos (`ART_DIR`); verificar que `pnpm install` termina sin errores
+- [x] 2.3 Mover `public/` → `apps/web/public/` con `git mv` (incluido `art/`) y crear `apps/web/package.json`; verificar con `pnpm start` que la app abre en localhost:3000, que `/alfa` responde 200 y que cada URL `/art/...` guardada en la base responde 200
+- [x] 2.4 Actualizar `.gitignore` (`dist/`, `apps/web/public/core.js`) y la sección "Uso" del README (`pnpm install`, `pnpm start`, corepack), y verificar siguiendo el README desde cero que la app arranca
 
 ## 3. Paquete core y pruebas de equivalencia
 
