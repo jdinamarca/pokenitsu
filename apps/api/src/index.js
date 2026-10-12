@@ -9,6 +9,7 @@ import { norm, ensureSets, syncSets, ensureSetCards, syncAllCards, syncJaDex } f
 import { importChecklist } from './pokecottage.js';
 import { fillDetails, startDetailsJob, detailsJob } from './details.js';
 import { ensureCardPrice, refreshPrices, staleCount, getSetting, putSetting, getFx } from './prices.js';
+import { pickPrice } from '@pokenitsu/core';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const LANGS = ['ES', 'EN', 'PT', 'FR', 'DE', 'IT', 'JA', 'KO', 'ZH'];
@@ -130,7 +131,6 @@ app.post('/api/catalog/sync', async () => {
 });
 
 // ---------- prices ----------
-await import('../../web/public/pricing.js');
 const PRICE_CFG = { source: 'tcgplayer', cond: { NM: 1, LP: 0.85, MP: 0.7, HP: 0.5, DMG: 0.3 }, alert: 5000, ownDays: 7 };
 const PRICE_COLS = `c.set_id || '|' || c.number AS k, p.usd, p.eur, p.url, to_char(p.fetched_at, 'YYYY-MM-DD"T"HH24:MI:SSOF') AS at`;
 let priceJob = null;
@@ -929,7 +929,7 @@ app.get('/api/export.csv', async (req, reply) => {
   const head = 'set_id;set_nombre;set_codigo;numero;variante;idioma;estado;ubicacion;cantidad;personal;nombre;pokedex;ilustrador;rareza;tipo;precio_unitario_clp;precio_total_clp;fuente_precio';
   const lines = rows.map(r => {
     const own = r.own_clp == null ? null : ownClp({ clp: r.own_clp, usd: r.own_usd }, fx);
-    const pr = globalThis.Pricing.pick(r, r.variant, r.cond, cfg, fx, own);
+    const pr = pickPrice(r, r.variant, r.cond, cfg, fx, own);
     return [r.set_id, r.set_name, r.set_code, r.number, r.variant, r.lang, r.cond, r.location, r.qty, r.personal, r.name, r.dex, r.artist, r.rarity, r.supertype,
       pr ? pr.clp : '', pr ? pr.clp * r.qty : '', pr ? pr.src + (pr.approx ? ' (aprox.)' : '') : ''].map(cell).join(';');
   });

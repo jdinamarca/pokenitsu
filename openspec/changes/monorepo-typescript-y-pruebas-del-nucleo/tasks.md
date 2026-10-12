@@ -26,9 +26,9 @@
 
 ## 4. Front y API usan core
 
-- [ ] 4.1 En `apps/web/public/index.html`, cargar `core.js` y reemplazar los cuerpos de las funciones movidas por envoltorios que llaman a `Core` (mismos nombres y firmas); eliminar `pricing.js`; verificar con el chequeo de sintaxis de los `<script>` y con Chrome sin interfaz que todas las pestañas abren sin errores de consola
-- [ ] 4.2 En `apps/api/src`, importar `pickPrice` desde `@pokenitsu/core` para el CSV en vez de `pricing.js`; verificar que `/api/export.csv` entrega los mismos precios que antes para el inventario actual
-- [ ] 4.3 Verificar la carga real en Cargar: entrar y deshacer `25r lp*2` en una expansión de prueba con ubicación Automático y confirmar que la ubicación elegida y el aviso de precio son los mismos que antes; dejar el inventario como estaba
+- [x] 4.1 En `apps/web/public/index.html`, cargar `core.js` y reemplazar los cuerpos de las funciones movidas por envoltorios que llaman a `Core` (mismos nombres y firmas); eliminar `pricing.js`; verificar con el chequeo de sintaxis de los `<script>` y con Chrome sin interfaz que todas las pestañas abren sin errores de consola
+- [x] 4.2 En `apps/api/src`, importar `pickPrice` desde `@pokenitsu/core` para el CSV en vez de `pricing.js`; verificar que `/api/export.csv` entrega los mismos precios que antes para el inventario actual
+- [x] 4.3 Verificar la carga real en Cargar: entrar y deshacer `25r lp*2` en una expansión de prueba con ubicación Automático y confirmar que la ubicación elegida y el aviso de precio son los mismos que antes; dejar el inventario como estaba
 
 ## 5. CI
 
