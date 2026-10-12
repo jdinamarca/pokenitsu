@@ -26,6 +26,27 @@ Si `corepack enable` falla por permisos, usa `npx pnpm@12 install` / `npx pnpm@1
 - Para cargar desde el celular en tu wifi: `HOST=0.0.0.0 pnpm start` y abre `http://<ip-de-tu-mac>:3000`
   (ojo: no tiene login, cualquiera en tu red podría usarlo).
 
+## Estructura y pruebas
+
+Monorepo pnpm:
+
+| Carpeta | Qué es |
+|---|---|
+| `apps/api` | Servidor Fastify (`src/`) y migraciones SQL (`db/migrations/`). Sirve el front y la API en el puerto 3000. |
+| `apps/web` | Front actual: `public/index.html` (sin build), la landing (`landing.html`) y las fotos subidas (`public/art/`). |
+| `packages/core` | Reglas de negocio puras en TypeScript, sin red ni base de datos: precios (`pickPrice`, `parseUsd`), carga (`parseEntry`), rarezas y tipo de carta (ex/V/GX…), series, ubicaciones (gana la más específica) y slots de colección. |
+
+`pnpm build` compila `packages/core` en dos formatos: un módulo para la API (`import { pickPrice } from '@pokenitsu/core'`) y `apps/web/public/core.js`, que el front carga como `window.Core` (archivo generado, fuera de git).
+
+```bash
+pnpm test        # pruebas de packages/core (Vitest)
+pnpm typecheck   # tipos
+pnpm lint        # ESLint + Prettier
+pnpm --filter @pokenitsu/core format   # formatea packages/core
+```
+
+Las pruebas siguen los escenarios de `openspec/specs/` y además comparan `core` con una copia congelada del código anterior (`packages/core/test/legacy/`) sobre todo el catálogo (`test/fixtures/catalog.json`, solo datos públicos). GitHub Actions corre build, tipos, lint y pruebas en cada push y pull request.
+
 ## Venta vs. colección personal
 
 Cada fila del inventario tiene `qty` (copias) y `personal` (cuántas de esas copias son para ti, no para vender).

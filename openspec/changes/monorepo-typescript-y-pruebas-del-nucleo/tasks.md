@@ -37,8 +37,8 @@
 
 ## 6. Verificación final
 
-- [ ] 6.1 Comparar los valores de referencia de 1.3 con la app sobre la rama: deben ser idénticos; verificar también que la base no tiene migraciones nuevas (`schema_migrations` sin filas nuevas)
-- [ ] 6.2 Actualizar README (estructura del repo, cómo correr pruebas, qué vive en `packages/core`) y el contexto de `openspec/config.yaml` (stack y rutas nuevas); verificar que `openspec validate --specs` sigue pasando
+- [x] 6.1 Comparar los valores de referencia de 1.3 con la app sobre la rama: deben ser idénticos; verificar también que la base no tiene migraciones nuevas (`schema_migrations` sin filas nuevas)
+- [x] 6.2 Actualizar README (estructura del repo, cómo correr pruebas, qué vive en `packages/core`) y el contexto de `openspec/config.yaml` (stack y rutas nuevas); verificar que `openspec validate --specs` sigue pasando
 
 ## Workflow follow-up
 
