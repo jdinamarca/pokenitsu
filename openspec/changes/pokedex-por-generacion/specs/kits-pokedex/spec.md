@@ -43,23 +43,23 @@ El sistema SHALL permitir elegir si cuentan todas las copias, solo las copias pa
 - **THEN** cuentan las 3 copias
 
 ### Requirement: Nivel de una copia
-El sistema SHALL clasificar cada copia en un nivel, de menor a mayor: challa, challa holo, con mecánica, variante especial, variocolor, full art, IR, SIR y secreta, según la rareza de la carta, la mecánica de su nombre (ex, GX, V…) y la variante de la copia.
+El sistema SHALL clasificar cada copia en un nivel, de menor a mayor: Challa, Challa holo, ex/V/GX, Edición especial, Variocolor, Full art, Ilustración (IR), Ilustración especial (SIR) y Dorada/Secreta, según la rareza de la carta, si su nombre es ex, V, GX u otra carta de ese tipo, y la variante de la copia.
 
 #### Scenario: Común en normal
-- **WHEN** la copia es una carta común sin mecánica en variante normal
+- **WHEN** la copia es una carta común que no es ex/V/GX, en variante normal
 - **THEN** su nivel es challa
 
 #### Scenario: Doble rara
 - **WHEN** la copia es una ex con rareza Doble rara
-- **THEN** su nivel es con mecánica
+- **THEN** su nivel es ex/V/GX
 
 #### Scenario: Poké Ball
 - **WHEN** la copia es una común en variante Poké Ball
-- **THEN** su nivel es variante especial
+- **THEN** su nivel es Edición especial
 
-#### Scenario: Promo con mecánica
+#### Scenario: Promo ex
 - **WHEN** la copia es una promo cuyo nombre termina en ex
-- **THEN** su nivel es con mecánica
+- **THEN** su nivel es ex/V/GX
 
 ### Requirement: Filtro de niveles
 El sistema SHALL permitir elegir qué niveles cuentan (varios a la vez), con atajos "Solo challa", "Challa + holo", "Solo IR y SIR" y "Todo". Por defecto cuentan todos.
@@ -79,8 +79,8 @@ Cada especie SHALL mostrar la copia de mayor nivel entre las que cuentan, con un
 El sistema SHALL mostrar cuántas especies de la región tienen como mejor carta cada nivel.
 
 #### Scenario: Resumen de Kanto
-- **WHEN** de 151 especies, 120 tienen como mejor carta una challa, 20 una challa holo, 8 una con mecánica y 3 una IR
-- **THEN** el resumen muestra "120 challa · 20 challa holo · 8 con mecánica · 3 IR"
+- **WHEN** de 151 especies, 120 tienen como mejor carta una challa, 20 una challa holo, 8 una ex/V/GX y 3 una IR
+- **THEN** el resumen muestra "120 challa · 20 holo · 8 ex/V/GX · 3 IR"
 
 ### Requirement: Filtros de serie, origen y estado
 El sistema SHALL filtrar el conteo por serie de la expansión (ej. solo Scarlet & Violet), por origen (internacional, japonesa, china…) y por estado mínimo (ej. solo NM, o NM y LP).

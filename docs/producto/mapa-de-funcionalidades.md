@@ -42,21 +42,21 @@ Lo que hace que la plataforma valga la pena. Todo lo demás se apoya en esto.
 ## Conceptos compartidos
 
 ### Nivel de una carta
-La Pokédex por generación clasifica cada copia en un nivel, de menor a mayor. La clasificación se calcula con la rareza, el nombre (mecánica: ex, GX, V…) y la variante de la copia:
+La Pokédex por generación clasifica cada copia en un nivel, de menor a mayor. La clasificación se calcula con la rareza, el nombre (si es ex, V, GX…) y la variante de la copia. En las insignias y el resumen se usa el nombre corto:
 
-| Nivel | Qué incluye |
-|---|---|
-| Challa | Común, poco común y rara, sin mecánica, en variante normal |
-| Challa holo | Lo mismo en holo o reverse, y las raras holo sin mecánica |
-| Con mecánica | ex, EX, GX, V, VMAX, VSTAR, BREAK, LV.X, Prisma, Radiante, Mega… que no son full art (incluye Doble rara) |
-| Variante especial | 1st Edition, Poké Ball, Master Ball, sellos y otras variantes de checklist |
-| Variocolor | Variocolor (shiny) |
-| Full art | Ultra rara, full art, AS Táctico |
-| IR | Ilustración rara, Galería de entrenador, Character Rare |
-| SIR | Ilustración rara especial |
-| Secreta | Hiper rara (dorada), arcoíris, secreta, asombrosa, estrella |
+| # | Nivel | Corto | Qué incluye |
+|---|---|---|---|
+| 1 | Challa | Challa | Común, poco común y rara que no son ex/V/GX, en variante normal |
+| 2 | Challa holo | Holo | Lo mismo en holo o reverse, y las raras holo que no son ex/V/GX |
+| 3 | ex/V/GX | ex/V/GX | ex, EX, GX, V, VMAX, VSTAR, BREAK, LV.X, Prisma, Radiante, Mega… en su versión normal, no full art (incluye la Doble rara) |
+| 4 | Edición especial | Especial | 1st Edition, Poké Ball, Master Ball, sellos y otras variantes de checklist |
+| 5 | Variocolor | Variocolor | Variocolor (shiny) |
+| 6 | Full art | Full art | Ultra rara, full art, AS Táctico |
+| 7 | Ilustración (IR) | IR | Ilustración rara, Galería de entrenador, Character Rare |
+| 8 | Ilustración especial (SIR) | SIR | Ilustración rara especial |
+| 9 | Dorada/Secreta | Dorada | Hiper rara (dorada), arcoíris, secreta, asombrosa, estrella (★) |
 
-Las promos se clasifican por sus características (con mecánica, holo o challa).
+Las promos se clasifican por lo que son: una promo ex cuenta como ex/V/GX y una promo holo como challa holo.
 
 ### Modos de completitud de una expansión
 - **Base**: los números impresos (ej. 165/165).

@@ -7,10 +7,10 @@ La Pokédex por región es parte de la columna vertebral: el usuario quiere sabe
 ## What Changes
 
 - Filtro **Copias**: todas, para vender (como hoy) o personales.
-- Cada copia se clasifica en un **nivel**: challa, challa holo, con mecánica, variante especial, variocolor, full art, IR, SIR o secreta. La definición está en `docs/producto/mapa-de-funcionalidades.md`.
+- Cada copia se clasifica en un **nivel**: Challa, Challa holo, ex/V/GX, Edición especial, Variocolor, Full art, Ilustración (IR), Ilustración especial (SIR) o Dorada/Secreta. La definición está en `docs/producto/mapa-de-funcionalidades.md`.
 - Filtro **Niveles que cuentan** (multi-selección), con atajos: "Solo challa", "Challa + holo", "Solo IR y SIR", "Todo".
 - **Mejor carta por especie**: cada casilla muestra la copia de mayor nivel entre las que cuentan, con una insignia del nivel.
-- **Resumen por nivel** de la región: "120 challa · 20 holo · 8 con mecánica · 3 IR" (contando la mejor carta de cada especie).
+- **Resumen por nivel** de la región: "120 challa · 20 holo · 8 ex/V/GX · 3 IR" (contando la mejor carta de cada especie).
 - Más filtros: **idioma** (ya existe), **serie** (ej. solo Scarlet & Violet), **origen** (internacional o japonesa…), **estado mínimo** (ej. solo NM) y **cartas con varios Pokémon** (contar los TAG TEAM para cada especie o no).
 - La variante pasa a ser parte de los niveles: se elimina el filtro "Todas las variantes / Solo holo + reverse / Solo normal".
 - Se mantiene el conteo de **kits completos posibles** y "especies que faltan para el siguiente kit", ahora según los filtros.
