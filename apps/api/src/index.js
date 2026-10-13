@@ -7,8 +7,8 @@ import { dirname, join } from 'node:path';
 import { pool, tx, migrate } from './db.js';
 import { norm, ensureSets, syncSets, ensureSetCards, syncAllCards, syncJaDex } from './catalog.js';
 import { importChecklist } from './pokecottage.js';
-import { fillDetails, startDetailsJob, detailsJob } from './details.js';
-import { ensureCardPrice, refreshPrices, staleCount, getSetting, putSetting, getFx } from './prices.js';
+import { fillDetails, startDetailsJob, detailsJob, startVariantsJob, variantsJob, startVariantsForMySets } from './details.js';
+import { ensureCardPrice, ensureSetPrices, refreshPrices, staleCount, getSetting, putSetting, getFx } from './prices.js';
 import { pickPrice } from '@pokenitsu/core';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -106,11 +106,27 @@ app.get('/api/sets', async () => {
   return rows;
 });
 app.post('/api/sets/refresh', async () => ({ sets: await syncSets() }));
+// variants: standard variants of each card (null while unknown), vguess: deduced from the rarity
 app.get('/api/sets/:id/cards', async req => {
   await ensureSetCards(req.params.id, req.query.refresh === '1');
-  const { rows } = await pool.query(`SELECT ${CARD_COLS} FROM cards c WHERE c.set_id = $1`, [req.params.id]);
+  const { rows } = await pool.query(`SELECT ${CARD_COLS}, c.variants, c.variants_guessed AS vguess FROM cards c WHERE c.set_id = $1`, [req.params.id]);
   return rows;
 });
+// master-set totals of every expansion (card × standard variant; unknown = cards whose variants are not known yet),
+// and the variants of each card in the expansions where I have cards (to tell which of my copies fill a slot)
+app.get('/api/sets/master', async () => {
+  const [tot, mine] = await Promise.all([
+    pool.query(`SELECT set_id, coalesce(sum(cardinality(variants)), 0)::int AS total, count(*) FILTER (WHERE variants IS NULL)::int AS unknown FROM cards GROUP BY set_id`),
+    pool.query(`SELECT c.set_id, c.number, c.variants FROM cards c
+                WHERE c.set_id IN (SELECT DISTINCT x.set_id FROM inventory i JOIN cards x ON x.id = i.card_id) AND c.variants IS NOT NULL`),
+  ]);
+  const variants = {};
+  for (const r of mine.rows) (variants[r.set_id] = variants[r.set_id] || {})[r.number] = r.variants;
+  return { totals: Object.fromEntries(tot.rows.map(r => [r.set_id, { total: r.total, unknown: r.unknown }])), variants };
+});
+// downloads the variants of an expansion's cards (master set); poll it with GET
+app.post('/api/sets/:id/variants', async req => ({ job: startVariantsJob(req.params.id) }));
+app.get('/api/sets/:id/variants', async req => ({ job: variantsJob(req.params.id) }));
 
 // full-catalog download, started from the page and polled via GET /api/catalog
 let syncJob = null;
@@ -165,6 +181,13 @@ app.get('/api/prices/card', async req => {
     pool.query(`SELECT ${CARD_COLS} FROM cards c WHERE c.id = $1`, [card.id]),
   ]);
   return { ...(rows[0] || {}), card: c };
+});
+// every card of an expansion (e.g. the ones missing to complete it)
+// pending: TCGdex is still completing prices in the background (ask again in a while)
+app.get('/api/prices/set/:id', async req => {
+  const pending = await ensureSetPrices(req.params.id);
+  const { rows } = await pool.query(`SELECT ${PRICE_COLS} FROM card_prices p JOIN cards c ON c.id = p.card_id WHERE c.set_id = $1`, [req.params.id]);
+  return { pending, prices: Object.fromEntries(rows.map(({ k, ...r }) => [k, r])) };
 });
 app.post('/api/prices/refresh', async req => { startPriceJob(!!req.body?.force); await getFx(true); return { job: priceJob }; });
 app.put('/api/prices/settings', async req => {
@@ -955,4 +978,5 @@ await migrate(join(root, 'db', 'migrations'));
 const port = Number(process.env.PORT || 3000), host = process.env.HOST || '127.0.0.1';
 await app.listen({ port, host });
 startDetailsJob();
+startVariantsForMySets().catch(e => app.log.warn(e));
 console.log(`Inventario Pokémon listo en http://${host === '0.0.0.0' ? 'localhost' : host}:${port}`);

@@ -5,6 +5,7 @@
 import { pool } from './db.js';
 import { fetchJSON } from './catalog.js';
 import { tcgdexSetOf, tcgdexCardIds } from './prices.js';
+import { guessVariants, standardVariants } from '@pokenitsu/core';
 
 const TCGDEX = 'https://api.tcgdex.net/v2';
 const SUPERTYPE = { Pokemon: 'Pokémon', Trainer: 'Trainer', Energy: 'Energy' };
@@ -12,12 +13,17 @@ const MISSING = `(c.artist IS NULL OR c.artist = '') AND c.details_at IS NULL AN
 const MINE = `(EXISTS (SELECT 1 FROM inventory i WHERE i.card_id = c.id) OR EXISTS (SELECT 1 FROM collection_cards cc WHERE cc.card_id = c.id)
   OR EXISTS (SELECT 1 FROM lot_items l WHERE l.card_id = c.id))`;
 
+// TCGdex variants {normal: true, reverse: true, holo: false, firstEdition: false, wPromo: false} → ['normal', 'reverse']
+const variantsOf = x => (x && x.variants ? standardVariants(Object.keys(x.variants).filter(k => x.variants[k])) : null);
 async function apply(cardId, x) {
+  const vs = variantsOf(x);
   await pool.query(
     `UPDATE cards SET artist = coalesce(nullif(artist, ''), $2), rarity = coalesce(nullif(rarity, ''), $3),
        dex = CASE WHEN cardinality(dex) = 0 AND $4::int[] IS NOT NULL THEN $4::int[] ELSE dex END,
-       supertype = coalesce(supertype, $5), details_at = now() WHERE id = $1`,
-    [cardId, x?.illustrator || null, x?.rarity && x.rarity !== 'None' ? x.rarity : null, x?.dexId?.length ? x.dexId : null, SUPERTYPE[x?.category] || null]);
+       supertype = coalesce(supertype, $5), details_at = now(),
+       variants = CASE WHEN $6::text[] IS NOT NULL AND cardinality($6::text[]) > 0 THEN $6::text[] ELSE variants END,
+       variants_guessed = CASE WHEN $6::text[] IS NOT NULL AND cardinality($6::text[]) > 0 THEN false ELSE variants_guessed END WHERE id = $1`,
+    [cardId, x?.illustrator || null, x?.rarity && x.rarity !== 'None' ? x.rarity : null, x?.dexId?.length ? x.dexId : null, SUPERTYPE[x?.category] || null, vs]);
 }
 const tried = id => pool.query('UPDATE cards SET details_at = now() WHERE id = $1', [id]);
 
@@ -66,4 +72,46 @@ export function startDetailsJob() {
     }
   })().then(() => { job.running = false; }, e => Object.assign(job, { running: false, error: e.message }));
   return job;
+}
+
+// ---------- standard variants of every card of an expansion (master-set progress) ----------
+// One TCGdex request per card, a few at a time; cards TCGdex does not know get variants deduced from their rarity.
+const variantJobs = new Map();
+export const variantsJob = setId => variantJobs.get(setId) || null;
+async function cardVariants(c, ids) {
+  const url = c.source === 'tcgdex-ja' ? `${TCGDEX}/ja/cards/${encodeURIComponent(c.id.replace(/^ja-/, ''))}`
+    : ids[c.number_norm] ? `${TCGDEX}/en/cards/${encodeURIComponent(ids[c.number_norm])}` : null;
+  const x = url ? await fetchJSON(url, 2).catch(() => null) : null;
+  const vs = variantsOf(x);
+  if (vs && vs.length) await pool.query('UPDATE cards SET variants = $2, variants_guessed = false WHERE id = $1', [c.id, vs]);
+  else await pool.query('UPDATE cards SET variants = $2, variants_guessed = true WHERE id = $1 AND variants IS NULL', [c.id, guessVariants(c.rarity)]);
+}
+export function startVariantsJob(setId) {
+  const cur = variantJobs.get(setId);
+  if (cur?.running) return cur;
+  const job = { running: true, done: 0, total: 0 };
+  variantJobs.set(setId, job);
+  (async () => {
+    const { rows } = await pool.query(
+      `SELECT c.id, c.number_norm, c.rarity, s.source FROM cards c JOIN sets s ON s.id = c.set_id
+       WHERE c.set_id = $1 AND c.variants IS NULL AND s.source IN ('ptcg', 'tcgdex-ja')`, [setId]);
+    job.total = rows.length;
+    if (!rows.length) return;
+    const td = rows[0].source === 'ptcg' ? await tcgdexSetOf(setId).catch(() => null) : null;
+    const ids = td ? await tcgdexCardIds(td).catch(() => ({})) : {};
+    let i = 0;
+    const worker = async () => { while (i < rows.length) { const c = rows[i++]; await cardVariants(c, ids).catch(() => {}); job.done++; } };
+    await Promise.all([worker(), worker(), worker(), worker()]);
+  })().then(() => { job.running = false; }, e => Object.assign(job, { running: false, error: e.message }));
+  return job;
+}
+// at start: the expansions where I have cards, one after another
+export async function startVariantsForMySets() {
+  const { rows } = await pool.query(
+    `SELECT DISTINCT c.set_id FROM inventory i JOIN cards c ON c.id = i.card_id JOIN sets s ON s.id = c.set_id
+     WHERE s.source IN ('ptcg', 'tcgdex-ja') AND EXISTS (SELECT 1 FROM cards x WHERE x.set_id = c.set_id AND x.variants IS NULL)`);
+  for (const r of rows) {
+    const job = startVariantsJob(r.set_id);
+    while (job.running) await new Promise(res => setTimeout(res, 1000));
+  }
 }

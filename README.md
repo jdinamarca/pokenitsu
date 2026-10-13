@@ -106,6 +106,21 @@ Un lote junta las cartas de un trato y les pone precio a un % del valor de merca
 - **Cerrar** descuenta las copias para vender del inventario (venta) o las agrega (compra), y guarda los precios cerrados. **Reabrir** lo deshace.
 - Tablas: `lots`, `lot_items`.
 
+## Expansiones (cuánto te falta para completarlas)
+
+Pestaña **📚 Expansiones**: cada expansión donde tienes cartas, con su avance, ordenadas por lo cerca que estás de completarlas (también por faltantes o por fecha). Tres modos:
+- **Base**: los números impresos (151: 165/165).
+- **Con secretas**: todas las cartas, también las que pasan del número impreso y las subcolecciones (151: 207).
+- **Master set**: cada variante estándar de cada carta (normal, reverse, holo, 1st Edition), según el catálogo (151: 362).
+
+Las subcolecciones (Trainer Gallery, Galarian Gallery, Shiny Vault), las Classic Collection y las promos cuentan todas sus cartas en Base. Filtros: copias (todas / para vender / mi colección), idioma (solo afecta a las internacionales), serie, origen, mostrar también las que no tienes e incluir promos.
+
+Al abrir una expansión ves todas sus cartas en orden (las que faltan en blanco y negro; en master set, cada variante marcada si la tienes) y cuánto cuesta completarla en NM. Los precios de toda la expansión se descargan en una sola consulta a pokemontcg.io; si es nueva y no los tiene, se completan desde TCGdex en segundo plano.
+
+Las variantes de cada carta (`cards.variants`) vienen de TCGdex y se descargan solas para las expansiones donde tienes cartas (o al abrir una); si TCGdex no tiene la carta se deducen por rareza (`cards.variants_guessed`).
+
+En **Cargar**, la expansión activa muestra su avance (en el modo elegido en Expansiones) y avisa "¡Nueva! 89/165" cuando la carta no la tenías; al completarla hay una celebración.
+
 ## Ubicaciones (cajas y carpetas)
 
 Cada fila del inventario tiene una ubicación (`inventory.loc`, 0 = sin ubicación), así que copias de la misma carta pueden estar en lugares distintos.
