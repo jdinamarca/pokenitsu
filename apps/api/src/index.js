@@ -201,13 +201,15 @@ app.put('/api/prices/own', async req => {
   return { ok: true };
 });
 
-// one representative card per Pokédex number (prefers recent commons), used to show species you don't own yet
+// one representative card per Pokédex number (prefers recent commons from regular expansions), used to show species you don't own yet.
+// Promos, McDonald's, Rumble, trainer kits… go last: several of their images are missing at pokemontcg.io (404) or look odd
 app.get('/api/dex', async () => {
   const { rows } = await pool.query(
     `SELECT DISTINCT ON (d) d AS dex, c.name, c.image_small AS img
      FROM cards c JOIN sets s ON s.id = c.set_id, unnest(c.dex) d
      WHERE s.source = 'ptcg' AND c.supertype = 'Pokémon' AND cardinality(c.dex) = 1 AND c.image_small IS NOT NULL
-     ORDER BY d, (position(' ' in c.name) = 0 OR c.name LIKE 'Nidoran%' OR c.name LIKE 'Mr. %') DESC, (c.rarity = 'Common') DESC, length(c.name), s.release_date DESC NULLS LAST`);
+     ORDER BY d, (s.id ~ '^(mcd|ru1|tk|bp|fut20)' OR s.name ~* 'promo') ASC,
+              (position(' ' in c.name) = 0 OR c.name LIKE 'Nidoran%' OR c.name LIKE 'Mr. %') DESC, (c.rarity = 'Common') DESC, length(c.name), s.release_date DESC NULLS LAST`);
   return rows;
 });
 

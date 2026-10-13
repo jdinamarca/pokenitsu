@@ -1950,7 +1950,7 @@ function renderKits() {
       // missing: the reference card in black and white
       const name = ref ? ref.name : '';
       html += `<button class="slot miss ${dexSel === d ? 'sel' : ''}" data-d="${d}" title="${no} ${esc(name)} · te falta">
-        <div class="pic">${ref && ref.img ? `<img src="${esc(ref.img)}" loading="lazy" alt="">` : ''}<span class="no">${no}</span></div>
+        <div class="pic">${ref && ref.img ? `<img src="${esc(ref.img)}" loading="lazy" alt="" onerror="this.remove()">` : ''}<span class="no">${no}</span></div>
         <div class="cap"><b>${esc(name) || '—'}</b></div></button>`;
     }
   }
