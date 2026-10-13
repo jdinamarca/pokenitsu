@@ -9,6 +9,8 @@ Al cargar cartas una por una, el usuario solo ve qué carta era después de pres
 - Mientras se escribe en el campo del número, la vista previa muestra la carta que se cargaría (marcada como "Vista previa", con borde punteado) y una línea dice qué hará Enter: "Se cargará: Flareon #3 Holo ES (Jungle) → Caja 5", cuántas cartas tiene un rango, que un número no existe o que Enter cambia el idioma/estado.
 - Si se escriben letras, aparece una lista con las cartas de la expansión activa cuyo nombre coincide (miniatura, número, rareza, variante que se cargará, cuántas tienes). ↑/↓ eligen y la vista previa sigue a la elegida; Enter o un clic la cargan; Tab pone su número en el campo para agregarle `r`, `*2`, `lp`…
 - Un clic en la carta de la vista previa también la carga.
+- En expansiones japonesas (nombres solo en japonés) la búsqueda también usa el nombre en inglés del Pokémon según su número de Pokédex, y se muestra al lado (ヒトカゲ · Charmander).
+- Las cartas sin imagen (3.500 de las 4.435 japonesas; TCGdex no la tiene) muestran una imagen de referencia del mismo Pokémon, atenuada y rotulada.
 - `Esc` con texto en el campo lo borra; con el campo vacío sigue abriendo la búsqueda de expansión.
 
 **Fuera del alcance:**

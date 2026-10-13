@@ -18,7 +18,18 @@ Mientras el usuario escribe en el campo del número, la pantalla SHALL mostrar, 
 - **THEN** se carga como si hubiera presionado Enter
 
 ### Requirement: Buscar la carta por nombre
-Si lo escrito tiene letras y no es un número de la expansión ni un comando de idioma o estado, el sistema SHALL listar las cartas de la expansión activa cuyo nombre lo contiene (sin distinguir mayúsculas ni tildes), primero las que empiezan así, con su número, rareza, variante automática y cuántas tiene el usuario. ↑/↓ SHALL elegir y la vista previa SHALL mostrar la elegida; Enter o un clic SHALL cargarla con su variante automática; Tab SHALL poner su número en el campo.
+Si lo escrito tiene letras y no es un número de la expansión ni un comando de idioma o estado, el sistema SHALL listar las cartas de la expansión activa cuyo nombre, o el nombre en inglés de su Pokémon según su número de Pokédex, lo contiene (sin distinguir mayúsculas ni tildes), primero las que empiezan así, con su número, rareza, variante automática y cuántas tiene el usuario.
+
+#### Scenario: Nombre en inglés en una expansión japonesa
+- **WHEN** en Rocket Gang el usuario escribe `charmander`
+- **THEN** la lista muestra ヒトカゲ · Charmander #012
+
+#### Scenario: Comando de idioma
+- **WHEN** el usuario escribe exactamente `es`
+- **THEN** no aparece la lista y Enter cambia el idioma a Español, como antes
+
+### Requirement: Elegir y cargar desde la lista de nombres
+En la lista de nombres, ↑/↓ SHALL elegir una carta y la vista previa SHALL mostrar la elegida; Enter o un clic SHALL cargarla con su variante automática; Tab SHALL poner su número en el campo para agregarle variante, cantidad o estado.
 
 #### Scenario: Dos cartas con el mismo nombre
 - **WHEN** en Jungle el usuario escribe `flar`, presiona ↓ y Enter
@@ -28,9 +39,12 @@ Si lo escrito tiene letras y no es un número de la expansión ni un comando de 
 - **WHEN** el usuario escribe `flar`, presiona Tab, escribe `r` y Enter
 - **THEN** se carga una Flareon #3 reverse
 
-#### Scenario: Comando de idioma
-- **WHEN** el usuario escribe exactamente `es`
-- **THEN** no aparece la lista y Enter cambia el idioma a Español, como antes
+### Requirement: Imagen de referencia para cartas sin foto
+Cuando una carta no tiene imagen (muchas japonesas antiguas), la vista previa, la lista de nombres y "Últimas cargas" SHALL mostrar una imagen del mismo Pokémon de otra expansión, atenuada, y la vista previa SHALL indicar que es una imagen de referencia.
+
+#### Scenario: Carta japonesa sin foto
+- **WHEN** el usuario escribe `12` en Rocket Gang y la carta no tiene imagen
+- **THEN** la vista previa muestra un Charmander de otra expansión, atenuado, con la etiqueta "Imagen de referencia"
 
 ## MODIFIED Requirements
 

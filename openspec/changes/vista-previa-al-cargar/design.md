@@ -21,7 +21,12 @@ Coincidencia por "contiene" sin mayúsculas ni tildes; orden: empieza con lo esc
 ### 5. Teclado y accesibilidad
 El campo es un `combobox` con `aria-expanded`/`aria-controls`; la lista usa `role="listbox"`/`option`. ↑/↓ y Tab solo actúan con la lista abierta; `Esc` borra el texto si hay, si no abre la búsqueda de expansión. La lista se cierra al salir del campo y vuelve al entrar.
 
+### 6. Nombres en inglés e imagen de referencia (tras probar con expansiones japonesas)
+Las cartas japonesas solo traen su nombre en japonés y ~80 % no tiene imagen en TCGdex. Se reutiliza `dexRef` (`/api/dex`: una carta internacional representativa por número de Pokédex, ya usada por el álbum de Pokédex): `speciesOf(m)` da los nombres en inglés de los números de Pokédex de la carta, que `nameMatches` también compara, y `refImg(m)` la imagen de referencia (solo si la carta es de un único Pokémon). `dexRef` se carga al elegir expansión.
+
 ## Risks / Trade-offs
+
+- [La imagen de referencia se confunde con la carta] → atenuada en gris, y en la vista previa con la etiqueta "Imagen de referencia · esta carta no tiene foto".
 
 - [Escribir letras que antes daban "no existe"] → ahora muestran la búsqueda o "Ninguna carta se llama así"; ninguna entrada con número cambia de comportamiento.
 - [Vista previa en cada tecla] → se recalcula 80 ms después de la última tecla.

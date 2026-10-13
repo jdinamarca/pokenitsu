@@ -328,6 +328,9 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
 .sugfoot{display:flex;gap:6px 14px;flex-wrap:wrap;padding:8px 10px 4px;border-top:1px solid var(--line);margin-top:4px;color:var(--muted);font-size:12px}
 .sugfoot kbd{font-family:ui-monospace,Menlo,monospace;background:var(--chip);border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:0 5px;color:var(--ink);font-size:11px}
 .entrybox.suggesting .keyline{visibility:hidden}
+.sug img.ref,.logrow img.ref{filter:grayscale(.7);opacity:.5}
+.preview .pimg img.ref{filter:grayscale(.7);opacity:.45}
+.preview .reflbl{position:absolute;left:8px;right:8px;bottom:8px;background:rgba(10,12,20,.75);color:#fff;font-size:12px;font-weight:700;border-radius:8px;padding:5px 8px;text-align:center}
 .preview.pending{border:2px dashed var(--blue)}
 .preview .pendhead{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;font-weight:800;color:var(--blue);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;text-align:left}
 .preview .pendhead span{text-transform:none;letter-spacing:0;color:var(--muted);font-weight:700}
@@ -1262,7 +1265,7 @@ function undoLast() {
   });
   renderAll(); showMsg('Deshecho: ' + (group.length > 1 ? `rango de ${group.length} cartas` : describeKey(e.k)), 'warn');
 }
-function describeKey(k) { const { sid, num, v, lang, cond, loc } = splitKey(k); const m = meta(sid, num); return `${m ? m[0] : '?'} #${num} ${vlabel(v)} ${lang || '¿idioma?'}${cond !== 'NM' ? ' ' + cond : ''} (${setById[sid] ? setById[sid].name : sid})${loc ? ' → 📍 ' + locName(loc) : ''}`; }
+function describeKey(k) { const { sid, num, v, lang, cond, loc } = splitKey(k); const m = meta(sid, num); return `${m ? m[0] + alsoNamed(m) : '?'} #${num} ${vlabel(v)} ${lang || '¿idioma?'}${cond !== 'NM' ? ' ' + cond : ''} (${setById[sid] ? setById[sid].name : sid})${loc ? ' → 📍 ' + locName(loc) : ''}`; }
 // copies of one printed card across variants and (optionally one) language
 function cardQty(sid, num, langF, map = data.inv) {
   return idxGet(buildIdx().card[map === data.pers ? 'pers' : 'inv'][sid + '|' + num], langF);
@@ -1895,12 +1898,22 @@ function loadOne(num, p, batch) {
 }
 // accent- and case-insensitive text, for matching card names
 const fold = s => String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-// cards of the active expansion whose name contains q: names starting with it first, then by number
+// English species names of a card (from its Pokédex numbers): Japanese cards only carry their Japanese name
+const speciesOf = m => (m && m[1] || []).map(d => dexRef && dexRef[d] && dexRef[d].name).filter(Boolean);
+// " · Charmander" after a Japanese name (nothing when the name already says it)
+const alsoNamed = m => { const sp = speciesOf(m).filter(n => !fold(m[0] || '').includes(fold(n))).join(' / '); return sp ? ' · ' + sp : ''; };
+// a reference picture of the same Pokémon (another expansion) for cards without an image
+const refImg = m => { const d = m && m[1] && m[1].length === 1 ? m[1][0] : null; return d && dexRef && dexRef[d] ? dexRef[d].img : ''; };
+// cards of the active expansion whose name (or English species name) contains q: names starting with it first, then by number
 function nameMatches(q) {
   const idx = cards[curSet.id], f = fold(q.trim()), out = [];
   for (const num in idx.raw) {
-    const n = fold(idx.raw[num][0] || ''), i = n.indexOf(f);
-    if (i >= 0) out.push({ num, m: idx.raw[num], rank: i === 0 ? 0 : /[\s.'-]/.test(n[i - 1]) ? 1 : 2 });
+    let rank = 9;
+    for (const n of [idx.raw[num][0] || '', ...speciesOf(idx.raw[num])].map(fold)) {
+      const i = n.indexOf(f);
+      if (i >= 0) rank = Math.min(rank, i === 0 ? 0 : /[\s.'-]/.test(n[i - 1]) ? 1 : 2);
+    }
+    if (rank < 9) out.push({ num, m: idx.raw[num], rank });
   }
   out.sort((a, b) => a.rank - b.rank || numSort(a.num, b.num));
   return { list: out.slice(0, 8), total: out.length };
@@ -1962,9 +1975,10 @@ function renderEntryPreview() {
   box.hidden = !list.length; inp.setAttribute('aria-expanded', String(!!list.length)); inp.closest('.entrybox').classList.toggle('suggesting', !!list.length);
   if (list.length) {
     box.innerHTML = `<div class="sughead">${r.total > list.length ? `${list.length} de ${r.total}` : r.total} carta${r.total > 1 ? 's' : ''} en ${esc(curSet.name)}</div>` + list.map((x, i) => {
-      const v = autoVariant(x.m), img = imgFor(curSet.id, x.num, v), have = cardQty(curSet.id, x.num, data.lang), rr = x.m[3] && rarityOf(x.m[3]);
-      return `<button type="button" class="sug ${i === sugSel ? 'on' : ''}" role="option" aria-selected="${i === sugSel}" data-num="${esc(x.num)}">${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : '<span class="noimg"></span>'}
-        <span class="t"><b>${esc(x.m[0])}</b> <span class="muted">#${esc(x.num)}</span><small>${rr ? esc(rr[1]) + ' · ' : ''}se carga ${esc(vlabel(v))} · ${have ? `tienes ${have}` : 'no la tienes'}</small></span></button>`;
+      const v = autoVariant(x.m), img = imgFor(curSet.id, x.num, v), ref = !img && refImg(x.m), have = cardQty(curSet.id, x.num, data.lang), rr = x.m[3] && rarityOf(x.m[3]);
+      const sp = alsoNamed(x.m);
+      return `<button type="button" class="sug ${i === sugSel ? 'on' : ''}" role="option" aria-selected="${i === sugSel}" data-num="${esc(x.num)}">${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : ref ? `<img class="ref" src="${esc(ref)}" alt="" loading="lazy" title="Imagen de referencia: esta carta no tiene foto">` : '<span class="noimg"></span>'}
+        <span class="t"><b>${esc(x.m[0])}</b>${sp ? ` <span class="muted">${esc(sp)}</span>` : ''} <span class="muted">#${esc(x.num)}</span><small>${rr ? esc(rr[1]) + ' · ' : ''}se carga ${esc(vlabel(v))} · ${have ? `tienes ${have}` : 'no la tienes'}</small></span></button>`;
     }).join('') + '<div class="sugfoot"><span><kbd>↑</kbd> <kbd>↓</kbd> elegir</span><span><kbd>Enter</kbd> o clic: cargar</span><span><kbd>Tab</kbd> poner el número (para agregar r, *2…)</span></div>';
   }
   if (key) renderPreview(key, true);
@@ -2100,7 +2114,7 @@ function renderResults() {
 async function selectSet(id) {
   const s = setById[id]; if (!s) return;
   if (!curSet || curSet.id !== id) lastEntry = null;
-  curSet = s; setPicking(false);
+  curSet = s; setPicking(false); ensureDexRef();
   if (resLang) { data.lang = resLang; resLang = null; renderLangs(); }
   else if (s.lang && data.lang !== s.lang) { data.lang = s.lang; renderLangs(); }
   data.recent = [id, ...data.recent.filter(x => x !== id)].slice(0, 8); save();
@@ -2176,9 +2190,9 @@ function renderPreview(key, pending = false) {
     const total = artistTotals[m[2]], owned = ownedByArtist('')[m[2]] || 0;
     art = `<div class="artp"><div class="row"><span>🎨 <a data-artist="${esc(m[2])}">${esc(m[2])}</a></span><span class="muted">${total ? `${owned}/${total}` : ''}</span></div>${total ? bar(owned, total) : ''}</div>`;
   }
-  el.innerHTML = `${pending ? '<div class="pendhead">Vista previa <span>Enter o clic en la carta para cargarla</span></div>' : ''}<div class="pimg ${v === 'holo' ? 'shine' : v === 'reverse' ? 'shine rev' : ''}">${imgFor(sid, num, v) ? `<img src="${esc(bigImg(imgFor(sid, num, v)))}" alt="">` : ''}</div>
+  el.innerHTML = `${pending ? '<div class="pendhead">Vista previa <span>Enter o clic en la carta para cargarla</span></div>' : ''}<div class="pimg ${v === 'holo' ? 'shine' : v === 'reverse' ? 'shine rev' : ''}">${imgFor(sid, num, v) ? `<img src="${esc(bigImg(imgFor(sid, num, v)))}" alt="">` : refImg(m) ? `<img class="ref" src="${esc(bigImg(refImg(m)))}" alt=""><span class="reflbl">Imagen de referencia · esta carta no tiene foto</span>` : ''}</div>
     <div style="text-align:center;margin-top:6px"><button class="ghost" data-img="${esc(`${sid}|${num}|${v}`)}" style="font-size:12.5px;padding:3px 10px">📷 ${hasOwnImg(sid, num, v) ? 'Tu foto · cambiar' : '¿No es la foto correcta? Cámbiala'}</button></div>
-    <div class="pname">${esc(m ? m[0] : 'Carta desconocida')}</div>
+    <div class="pname">${esc(m ? m[0] : 'Carta desconocida')}${m && alsoNamed(m) ? `<span class="muted" style="font-size:15px;font-weight:700">${esc(alsoNamed(m))}</span>` : ''}</div>
     ${s && eraLabel(s) ? `<div class="pinfo">Serie <b>${esc(eraLabel(s))}</b> · expansión <b>${esc(s.name)}</b>${s.code ? ` (${esc(s.code)})` : ''}</div>` : ''}
     <div class="pinfo">${esc(s ? s.name : sid)} · #${esc(num)}${s ? '/' + s.printed : ''} ${vchip(v)} ${lchip(lang)} ${cchip(cond, true)}</div>
     <div class="pinfo">💰 ${priceHtml(key, true)}</div>
@@ -2192,7 +2206,7 @@ function renderLog() {
   if (!rows.length) { $('logList').innerHTML = '<div class="empty" style="padding:16px">Todavía no cargas cartas. ¡Elige una expansión y empieza! 🚀</div>'; return; }
   paint($('logList'), rows.map((e, i) => {
     const { sid, num, v, lang, cond } = splitKey(e.k); const m = meta(sid, num);
-    return `<div class="logrow">${imgFor(sid, num, v) ? `<img src="${esc(imgFor(sid, num, v))}" alt="" loading="lazy">` : '<img alt="">'}
+    return `<div class="logrow">${imgFor(sid, num, v) ? `<img src="${esc(imgFor(sid, num, v))}" alt="" loading="lazy">` : refImg(m) ? `<img class="ref" src="${esc(refImg(m))}" alt="" loading="lazy" title="Imagen de referencia">` : '<img alt="">'}
       <span class="n"><b>${esc(m ? m[0] : '?')}</b> <span class="muted">#${esc(num)} · ${esc(setById[sid] ? setById[sid].name : sid)}</span></span>
       ${lchip(lang)}${cchip(cond)}${vchip(v)}<span class="d ${e.d < 0 ? 'neg' : ''}">${e.d > 0 ? '+' : ''}${e.d}</span>
       ${i === 0 ? '<button id="undoBtn" title="Deshacer (⌘/Ctrl+Z)">↶ Deshacer</button>' : ''}</div>`;
@@ -2351,6 +2365,7 @@ async function ensureDexRef() {
   if (dexRef) return;
   try { dexRef = Object.fromEntries((await api('GET', '/dex')).map(r => [r.dex, r])); } catch (e) { dexRef = {}; }
   if ($('tab-kits').classList.contains('on')) renderKits();
+  if (curSet) { renderLog(); if ($('entry').value) renderEntryPreview(); else if (previewKey) renderPreview(previewKey); }
 }
 function renderKits() {
   ensureDexRef();
