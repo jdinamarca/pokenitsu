@@ -854,6 +854,15 @@ function toast(text, cls = '') {
   $('toasts').appendChild(t); setTimeout(() => t.remove(), 3200);
 }
 
+// Puts html in el only when it changed: re-rendering an identical gallery would rebuild every image and make it blink.
+// The DOM is checked too (first child and child count), in case something else changed it since.
+function paint(el, html) {
+  if (!el) return false;
+  if (el._painted === html && el.firstChild === el._first && el.childNodes.length === el._count) return false;
+  el.innerHTML = html;
+  el._painted = html; el._first = el.firstChild; el._count = el.childNodes.length;
+  return true;
+}
 // ---------- server API ----------
 async function api(method, path, body) {
   const r = await fetch('/api' + path, { method, headers: body ? { 'content-type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined });
@@ -1140,11 +1149,17 @@ function invValue() {
   return { sale, pers, missing, priced };
 }
 async function loadPrices() {
+  // while prices download in the background this runs every few seconds: repaint only when something changed
+  // (the download time of each price is left out: a refresh that brings the same values changes nothing on screen)
+  const sig = x => JSON.stringify([Object.entries(x.prices || {}).map(([k, v]) => [k, v.usd, v.eur]), x.own, x.ownUsd, x.ownAt, x.fx && x.fx.usd, x.fx && x.fx.eur, x.cfg]);
+  const was = P.loaded ? sig(P) : null;
   try { Object.assign(P, await api('GET', '/prices'), { loaded: true }); }
   catch (e) { P.loaded = true; console.warn('precios:', e.message); return; }
-  const pv = $('invPrice').value; $('invPrice').innerHTML = PRICE_FILTER_OPTS(); $('invPrice').value = pv;
-  renderAll(); if (previewKey) renderPreview(previewKey); renderPriceDlg();
+  renderPriceDlg();
   clearTimeout(loadPrices.t); if (P.job?.running) loadPrices.t = setTimeout(loadPrices, 4000);
+  if (was === sig(P)) return;
+  const pv = $('invPrice').value; $('invPrice').innerHTML = PRICE_FILTER_OPTS(); $('invPrice').value = pv;
+  renderAll(); if (previewKey) renderPreview(previewKey);
 }
 // just loaded: download its price if missing, then warn if it's worth something
 // quiet: no alert toast (a range shows one summary); returns { name, clp } when the copy is worth at least the alert
@@ -1575,7 +1590,7 @@ function renderLocations() {
       <div class="acts"><button data-locshow="${l.id}">Ver cartas</button><button data-locedit="${l.id}">Editar</button>
         <button data-locup="${l.id}" ${i ? '' : 'disabled'} title="Subir (solo importa si empata con otra)">↑</button><button data-locdown="${l.id}" ${i < LOCS.length - 1 ? '' : 'disabled'} title="Bajar (solo importa si empata con otra)">↓</button>
         <button data-locdel="${l.id}" class="danger">Borrar</button></div></div>`; }).join('')}</div>`;
-  $('locView').innerHTML = html;
+  paint($('locView'), html);
 }
 function openLocForm(l) {
   locEditing = l ? l.id : null;
@@ -1853,13 +1868,13 @@ function renderPreview(key) {
 function renderLog() {
   const rows = data.log.slice(-12).reverse();
   if (!rows.length) { $('logList').innerHTML = '<div class="empty" style="padding:16px">Todavía no cargas cartas. ¡Elige una expansión y empieza! 🚀</div>'; return; }
-  $('logList').innerHTML = rows.map((e, i) => {
+  paint($('logList'), rows.map((e, i) => {
     const { sid, num, v, lang, cond } = splitKey(e.k); const m = meta(sid, num);
     return `<div class="logrow">${imgFor(sid, num, v) ? `<img src="${esc(imgFor(sid, num, v))}" alt="" loading="lazy">` : '<img alt="">'}
       <span class="n"><b>${esc(m ? m[0] : '?')}</b> <span class="muted">#${esc(num)} · ${esc(setById[sid] ? setById[sid].name : sid)}</span></span>
       ${lchip(lang)}${cchip(cond)}${vchip(v)}<span class="d ${e.d < 0 ? 'neg' : ''}">${e.d > 0 ? '+' : ''}${e.d}</span>
       ${i === 0 ? '<button id="undoBtn" title="Deshacer (⌘/Ctrl+Z)">↶ Deshacer</button>' : ''}</div>`;
-  }).join('');
+  }).join(''));
   const u = $('undoBtn'); if (u) u.onclick = () => { undoLast(); $('entry').focus(); };
 }
 // ---------- Pokédex by region: which copies count, and the level of each one (challa → dorada) ----------
@@ -1980,16 +1995,16 @@ function renderInv() {
     $('invGrid').innerHTML = `<div class="empty" style="grid-column:1/-1"><span class="big">🗂️</span>${Object.keys(data.inv).length ? 'Nada coincide con el filtro.' : 'Tu colección está vacía. Ve a <b>Cargar</b> para empezar.'}</div>`;
     $('invBody').innerHTML = '<tr><td colspan="13" class="empty">Nada por aquí.</td></tr>';
   } else if (grid) {
-    $('invGrid').innerHTML = page.map(r => `<div class="tile">
+    paint($('invGrid'), page.map(r => `<div class="tile">
       <div class="img" data-edit="${esc(r.k)}" title="Toca para editar: variante, idioma, estado, ubicación, foto…" style="cursor:pointer">${imgFor(r.sid, r.num, r.v) ? `<img src="${esc(imgFor(r.sid, r.num, r.v))}" loading="lazy" alt="">` : ''}${rcorner(r.m[3])}<span class="q">×${r.qty}</span></div>
       <div class="t1" title="${esc(r.m[0])}">${esc(r.m[0])}</div>
       <div class="t2" title="Serie ${esc(eraLabel(r.s))} · ${esc(r.s.name)}">${esc(r.s.code || r.sid)} #${esc(r.num)} · ${esc(r.s.name)}</div>
       <div class="badges">${vchip(r.v)} ${lchip(r.lang)} ${cchip(r.cond)} ${rchip(r.m[3], r.m[0])} ${locchip(r.loc)}</div>
       <div>${priceHtml(r.k)}</div>
       <div class="qctl"><button data-k="${esc(r.k)}" data-d="-1" title="Quitar una">−</button><b>${r.qty}</b><button data-k="${esc(r.k)}" data-d="1" title="Agregar una">+</button>${lockBtn(r.k)}${lotBtn(r.k)}</div>
-    </div>`).join('');
+    </div>`).join(''));
   } else {
-    $('invBody').innerHTML = page.map(r => `<tr>
+    paint($('invBody'), page.map(r => `<tr>
       <td data-edit="${esc(r.k)}" title="Toca para editar: variante, idioma, estado, ubicación, foto…" style="cursor:pointer">${imgFor(r.sid, r.num, r.v) ? `<img src="${esc(imgFor(r.sid, r.num, r.v))}" loading="lazy" alt="">` : ''}</td>
       <td><b>${esc(r.m[0])}</b> ${rchip(r.m[3], r.m[0])}</td>
       <td>${r.s.code ? `<span class="code">${esc(r.s.code)}</span> ` : ''}${esc(r.s.name)}${eraLabel(r.s) ? `<div class="muted" style="font-size:11.5px">Serie ${esc(eraLabel(r.s))}</div>` : ''}</td>
@@ -2001,7 +2016,7 @@ function renderInv() {
       <td>${priceHtml(r.k)}</td>
       <td class="hide-sm">${r.m[1].map(d => '#' + d).join(', ')}</td>
       <td class="hide-sm">${esc(r.m[2])}</td>
-      <td><div class="qty"><button data-k="${esc(r.k)}" data-d="-1">−</button><b>${r.qty}</b><button data-k="${esc(r.k)}" data-d="1">+</button></div></td><td>${lockBtn(r.k)}${lotBtn(r.k)}</td></tr>`).join('');
+      <td><div class="qty"><button data-k="${esc(r.k)}" data-d="-1">−</button><b>${r.qty}</b><button data-k="${esc(r.k)}" data-d="1">+</button></div></td><td>${lockBtn(r.k)}${lotBtn(r.k)}</td></tr>`).join(''));
   }
   $('invMore').hidden = rows.length <= invLimit;
   renderInvLot(rows);
@@ -2064,7 +2079,7 @@ function renderKits() {
         <div class="cap"><b>${esc(name) || '—'}</b></div></button>`;
     }
   }
-  $('dexGrid').innerHTML = html;
+  paint($('dexGrid'), html);
   renderDexDetail(dc);
 }
 function tiles(keys, extra = () => '') {
@@ -2146,7 +2161,7 @@ function renderExpansions() {
     : f.sort === 'new' ? (a, b) => (b.s.date || '').localeCompare(a.s.date || '')
     : f.sort === 'old' ? (a, b) => (a.s.date || '').localeCompare(b.s.date || '')
     : (a, b) => pc(b) - pc(a) || (b.s.date || '').localeCompare(a.s.date || ''));
-  $('expGrid').innerHTML = rows.length ? rows.slice(0, 500).map(({ s, p }) => {
+  paint($('expGrid'), rows.length ? rows.slice(0, 500).map(({ s, p }) => {
     const done = p.have >= p.total && !p.unknown;
     return `<button class="expitem ${done ? 'done' : ''}" data-sid="${esc(s.id)}">
       <div class="top">${s.sym ? `<img class="sym" src="${esc(s.sym)}" alt="" loading="lazy">` : ''}<div style="min-width:0"><div class="nm">${esc(s.name)} ${s.code ? `<span class="code">${esc(s.code)}</span>` : ''}</div>
@@ -2154,7 +2169,7 @@ function renderExpansions() {
       <div class="expbar"><i style="width:${pct(p.have, p.total)}%"></i></div>
       <div class="nums"><span><b>${fmt(p.have)}</b> / ${fmt(p.total)}${p.unknown ? ` <span title="Variantes por descargar">· calculando…</span>` : ''}</span>${done ? '<span class="ok">✓ Completa</span>' : `<span>${Math.floor(pct(p.have, p.total))}%</span>`}</div>
     </button>`; }).join('')
-    : `<div class="empty">${f.all ? 'No hay expansiones con estos filtros.' : 'Todavía no tienes cartas en ninguna expansión con estos filtros.'}</div>`;
+    : `<div class="empty">${f.all ? 'No hay expansiones con estos filtros.' : 'Todavía no tienes cartas en ninguna expansión con estos filtros.'}</div>`);
 }
 async function openExpansion(sid) {
   expSel = sid; expShow = 'all'; renderExpansions(); window.scrollTo(0, 0);
@@ -2228,7 +2243,7 @@ function renderExpDetail() {
       const chips = x.vs ? `<div class="vchips">${x.vs.map(g => `<span class="${g.ok ? 'have' : ''}" title="${esc(vlabel(g.v))}${g.ok ? ': la tienes' : ': te falta'}">${esc(vlabel(g.v))}</span>`).join('')}</div>` : '';
       return `<div class="slot ${x.have || x.any ? '' : 'miss'}" title="${esc(no + ' ' + (x.m[0] || ''))}"><div class="pic">${img ? `<img src="${esc(img)}" loading="lazy" alt="" onerror="this.remove()">` : ''}${x.have || x.any ? '' : `<span class="no">${esc(no)}</span>`}</div>
         <div class="cap"><b>${esc(x.m[0] || '?')}</b><span>${esc(no)}</span></div>${chips}</div>`; }).join('')}</div>`;
-  $('expDetail').innerHTML = html;
+  paint($('expDetail'), html);
   $('expBack').onclick = () => { expSel = null; renderExpansions(); };
   $('expModeD').onclick = e => { const b = e.target.closest('[data-m]'); if (b) setExp({ mode: b.dataset.m }); };
   $('expShow').onclick = e => { const b = e.target.closest('[data-s]'); if (b) { expShow = b.dataset.s; renderExpDetail(); } };
@@ -2326,7 +2341,7 @@ function renderArtists() {
   const cmp = { name: (a, b) => a.name.localeCompare(b.name), total: (a, b) => b.total - a.total, mine: (a, b) => b.have - a.have || b.total - a.total,
     value: (a, b) => val(b) - val(a) || b.have - a.have, owned: (a, b) => b.have - a.have || pct(b.have, b.total) - pct(a.have, a.total) || b.total - a.total }[f.sort];
   list.sort((a, b) => (favArtists.has(b.name) - favArtists.has(a.name)) || cmp(a, b));
-  $('artList').innerHTML = list.slice(0, artLimit).map(a => {
+  paint($('artList'), list.slice(0, artLimit).map(a => {
     const fav = favArtists.has(a.name), img = coverOf(a.name, a.st);
     return `<div class="artcard ${a.have ? '' : 'none'}" data-a="${esc(a.name)}" role="button" tabindex="0">
       <button class="favbtn ${fav ? 'on' : ''}" data-fav="${esc(a.name)}" aria-label="${fav ? 'Quitar de favoritos' : 'Marcar como favorito'}" aria-pressed="${fav}">${STAR(fav)}</button>
@@ -2335,7 +2350,7 @@ function renderArtists() {
         <div class="expbar"><i style="width:${pct(a.have, a.total)}%"></i></div>
         <div class="nums"><span><b>${fmt(a.have)}</b> / ${fmt(a.total)}</span>${a.st && a.st.best && a.have ? tierChip(a.st.best.tier) : ''}</div>
         ${f.copies === 'venta' && a.st && a.st.kitCopies ? `<div class="kit">Kit: ${fmt(a.st.kitCopies)} para vender · ~${clp(a.st.kitValue)}</div>` : ''}</div></div>`; }).join('')
-    || `<div class="empty">${f.fav ? 'Todavía no tienes ilustradores favoritos: toca la estrella de uno.' : 'No encontré ilustradores con estos filtros.'}</div>`;
+    || `<div class="empty">${f.fav ? 'Todavía no tienes ilustradores favoritos: toca la estrella de uno.' : 'No encontré ilustradores con estos filtros.'}</div>`);
   $('artMore').innerHTML = list.length > artLimit ? `<button id="artMoreBtn" style="margin-top:14px">Ver más (${fmt(list.length - artLimit)})</button>` : '';
 }
 async function openArtist(name) {
@@ -2381,7 +2396,7 @@ function renderArtView() {
   }
   if (open) html += '</div>';
   if (!shown.length) html += '<div class="empty">Nada en este filtro.</div>';
-  el.innerHTML = html;
+  paint(el, html);
   bindArtView();
   renderCatNote('catNote2');
 }
@@ -2482,7 +2497,7 @@ function renderGroups() {
   // groups closest to completion first
   const list = data.groups.map(g => { const qs = g.cards.map(c => cardQty(c.sid, c.num, langF)); return { g, qs, have: qs.filter(q => q > 0).length }; })
     .sort((a, b) => b.have / b.g.cards.length - a.have / a.g.cards.length || b.have - a.have);
-  el.innerHTML = list.map(({ g, qs, have }) => {
+  paint(el, list.map(({ g, qs, have }) => {
     const full = Math.min(...qs);
     return `<div class="panel group"><div class="ghead"><span class="gname">${esc(g.name)}</span>
       <span class="muted"><b style="color:var(--ink)">${have}/${g.cards.length}</b> piezas${full ? ` · <b style="color:var(--ok)">${full} ${full === 1 ? 'completo' : 'completos'}</b>` : ''}</span>${bar(have, g.cards.length)}
@@ -2495,7 +2510,7 @@ function renderGroups() {
       }).join('')}</div>
       ${g.image ? `<figure class="gart"><a href="${esc(g.image)}" target="_blank" rel="noopener"><img src="${esc(g.image)}" loading="lazy" alt="Arte unido de ${esc(g.name)}"></a><figcaption>Así se ve el arte unido</figcaption></figure>` : ''}
       </div></div>`;
-  }).join('');
+  }).join(''));
 }
 
 // ---------- export / import ----------
@@ -2906,12 +2921,12 @@ function colValue(col, list) {
 const countLang = (col, c) => c.set_lang ? '' : col.lang;
 function renderColList() {
   if (!colls.length) { $('colList').innerHTML = '<div class="empty" style="padding:16px">Aún no tienes colecciones.<br>Crea una, por ejemplo <b>Eevee</b>.</div>'; return; }
-  $('colList').innerHTML = colls.map(c => {
+  paint($('colList'), colls.map(c => {
     const st = c.id === colSel && colCards.length ? colStats(c, colCards) : c;
     return `<button class="arow ${c.id === colSel ? 'on' : ''}" data-c="${c.id}">
       <div class="top"><span>${esc(c.name)} <span class="muted" style="font-weight:600">#${c.dex}${c.lang ? ' · ' + c.lang : ''}${c.checklist_url ? ' · 📋' : ''}</span></span><span>${st.owned}/${st.total}</span></div>${bar(st.owned, st.total)}
       ${c.id === colSel && colCards.length ? `<div class="muted" style="font-size:12px;margin-top:4px">💰 ${clp(colValue(c, colCards).have)}</div>` : ''}</button>`;
-  }).join('');
+  }).join(''));
 }
 async function openCollection(id) {
   colSel = id; colCards = []; colShow = 'all'; colManual = false; colCameo = false;
@@ -3066,7 +3081,7 @@ function renderColView() {
   if (cam.total || shown.some(c => c.role === 'cameo')) {
     html += `<div class="colsec cameo">🎭 Cameos <span class="muted">${cam.owned}/${cam.total} · ${esc(col.name)} aparece en el arte, pero la carta es de otro Pokémon o un entrenador</span></div>${colGrid(col, shown.filter(c => c.role === 'cameo'))}`;
   }
-  el.innerHTML = html;
+  paint(el, html);
   $('colRarity').value = rf; $('colRarity').onchange = renderColView;
   $('colPrice').value = pf; $('colPrice').onchange = renderColView;
   const sb = $('colStaleBtn'); if (sb) sb.onclick = e => { e.preventDefault(); $('colPrice').value = 'stale'; renderColView(); };
@@ -3185,6 +3200,8 @@ window.addEventListener('hashchange', () => { const t = location.hash.slice(1); 
 loadSets().then(() => { renderAll(); if (data.recent[0] && setById[data.recent[0]]) selectSet(data.recent[0]); });
 loadState().then(() => { loadLots(); loadPrices(); }).catch(e => showMsg('No pude leer el inventario: ' + e.message + '. ¿Está corriendo el servidor (npm start)?', 'err'));
 loadArtists();
+// the Pokédex reference cards (missing species): ready before opening the tab, so it paints once
+ensureDexRef();
 </script>
 </body>
 </html>
