@@ -28,7 +28,10 @@ Si `corepack enable` falla por permisos, usa `npx pnpm@12 install` / `npx pnpm@1
 
 ## Cargar cartas
 
-Eliges la expansión (como sale impresa en la carta, ej. `MEW ES`) y escribes números + Enter:
+Eliges la expansión (como sale impresa en la carta, ej. `MEW ES`) y escribes números + Enter.
+
+La pantalla muestra arriba la expansión activa con su avance y cuatro botones con los ajustes de carga (**Idioma**, **Estado**, **Guardar en** y **Para**: vender o colección personal); cada uno abre sus opciones al tocarlo. Un estado distinto de NM y la colección personal se ven destacados. Con una expansión elegida la búsqueda se esconde: "Cambiar expansión" o `Esc` la abren junto con tus expansiones recientes. Debajo del número hay una línea con los atajos más usados y "Todos los atajos" (con la opción de sonido). "Últimas cargas" muestra 5 y "Ver las 12". En el celular la carta recién cargada aparece justo debajo del número.
+
 
 | Entrada | Qué hace |
 |---|---|
