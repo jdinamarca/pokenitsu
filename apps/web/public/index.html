@@ -28,9 +28,9 @@
 html{scroll-behavior:smooth}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 Nunito,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
 button,input,select,textarea{font:inherit;color:inherit}
-button{cursor:pointer;border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:7px 14px;font-weight:700;transition:border-color .15s,background .15s,transform .05s}
+button{cursor:pointer;border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:7px 14px;font-weight:700;transition:border-color .15s,background .15s,transform .16s var(--ease-out)}
 button:hover{border-color:var(--muted)}
-button:active{transform:translateY(1px)}
+button:active{transform:scale(.97)}
 button.primary{background:var(--red);border-color:var(--red);color:var(--red-ink)}
 button.primary:hover{filter:brightness(1.06)}
 button.ghost{border-color:transparent;background:transparent}
@@ -59,6 +59,8 @@ code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
 .menu summary::-webkit-details-marker{display:none}
 .menu[open] summary{border-color:var(--muted)}
 .menu-pop{position:absolute;right:0;top:calc(100% + 6px);background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-lg);padding:6px;min-width:230px;display:flex;flex-direction:column;z-index:30}
+/* menus open from their trigger corner (animated from JS on toggle); closing is instant */
+.menu-pop,.colmenu .items{transform-origin:top right}
 .menu-pop button{border:0;background:none;text-align:left;font-weight:600;padding:9px 12px;border-radius:8px}
 .menu-pop button:hover{background:var(--chip)}
 .menu-pop hr{border:0;border-top:1px solid var(--line);margin:6px 4px}
@@ -72,7 +74,7 @@ code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
 
 /* ---------- layout ---------- */
 main{max-width:1320px;margin:0 auto;padding:18px 16px 60px}
-.tab{display:none;animation:fade .2s ease}.tab.on{display:block}
+.tab{display:none;animation:fade .2s var(--ease-out)}.tab.on{display:block}
 @keyframes fade{from{opacity:0;transform:translateY(4px)}}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:16px}
 .panel + .panel{margin-top:14px}
@@ -258,7 +260,7 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
 .manual{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;padding:12px;border-radius:12px;background:var(--panel2);margin-bottom:14px}
 .manual label{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--muted)}
 .bar{height:8px;background:var(--track);border-radius:99px;overflow:hidden}
-.bar > i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--gold),var(--red));transition:width .6s cubic-bezier(.2,.8,.2,1)}
+.bar > i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--gold),var(--red))}
 .bar.lg{height:12px}
 .bar.done > i{background:linear-gradient(90deg,var(--ok),#7ad97a)}
 
@@ -566,6 +568,7 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
   dialog.dlg,dialog.dlg[open],.toast,.toast.out,.tile:hover .img,.cell:hover,.slot:hover .pic{transform:none}
   @starting-style{dialog.dlg[open],.toast{transform:none}}
   .entry.errf{animation:none}
+  button:active{transform:none}
 }
 </style>
 </head>
@@ -982,6 +985,23 @@ function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return 
 let data = Object.assign({ inv: {}, pers: {}, added: {}, log: [], groups: [], recent: [], sound: false, lang: 'ES', invView: 'grid', tab: 'cargar', personal: false, colOrder: 'date', locPick: 'auto' }, lsGet(PREFS, {}));
 data.cond = 'NM'; // every session starts loading NM
 function save() { lsSet(PREFS, { recent: data.recent, sound: data.sound, lang: data.lang, invView: data.invView, tab: data.tab, personal: data.personal, colOrder: data.colOrder, lot: data.lot, locPick: data.locPick, invSort: data.invSort, colSort: data.colSort, kit: data.kit, exp: data.exp, art: data.art, grp: data.grp }); }
+
+// ---------- views ----------
+// unhide a list/detail view; fade it in only when it was hidden, so re-renders don't replay it
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+// short fade-in; with reduced motion only the fade, no movement
+function enter(el, from) {
+  el.animate(reduceMotion.matches ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 0, transform: from }, { opacity: 1, transform: 'none' }], { duration: 200, easing: 'cubic-bezier(.23,1,.32,1)' });
+}
+function showView(el) {
+  if (!el.hidden) return;
+  el.hidden = false; enter(el, 'translateY(6px)');
+}
+// menus: CSS can't see the reopen (closed <details> content skips style updates), so animate on toggle
+document.addEventListener('toggle', e => {
+  const d = e.target; if (!d.open || !d.matches?.('.menu, .colmenu')) return;
+  const p = d.querySelector('.menu-pop, .items'); if (p) enter(p, 'scale(.95)');
+}, true);
 
 // ---------- toasts ----------
 function toast(text, cls = '') {
@@ -2278,7 +2298,7 @@ async function loadExpMaster() {
 }
 function renderExpansions() {
   if (expSel) return renderExpDetail();
-  $('expListView').hidden = false; $('expDetail').hidden = true;
+  $('expDetail').hidden = true; showView($('expListView'));
   const f = expFilters();
   if (f.mode === 'master' && !expMaster) loadExpMaster();
   for (const b of $('expMode').children) b.classList.toggle('on', b.dataset.m === f.mode);
@@ -2342,7 +2362,7 @@ async function expPrices(sid) {
 // numbers in printed order: 1, 2… 165, 166… then TG01…
 const numSort = (a, b) => { const x = /^\d+$/.test(a), y = /^\d+$/.test(b); return x && y ? +a - +b : x ? -1 : y ? 1 : a.localeCompare(b, 'en', { numeric: true }); };
 function renderExpDetail() {
-  $('expListView').hidden = true; $('expDetail').hidden = false;
+  $('expListView').hidden = true; showView($('expDetail'));
   const s = setById[expSel], f = expFilters(), own = ownedBySet(f)[expSel], idx = cards[expSel];
   if (!s) { expSel = null; return renderExpansions(); }
   const p = expProgress(s, own, f.mode);
@@ -2458,7 +2478,7 @@ function artistStats(f, only = null) {
 const coverOf = (name, st) => { if (st && st.best) { const b = splitKey(st.best.key); return imgFor(b.sid, b.num, b.v); } return artCovers[name]; };
 function renderArtists() {
   if (artSel) return renderArtView();
-  $('artListView').hidden = false; $('artView').hidden = true;
+  $('artView').hidden = true; showView($('artListView'));
   if (!artists) { $('artList').innerHTML = '<div class="empty">Cargando ilustradores…</div>'; loadArtists(); return; }
   const f = artFilters();
   for (const b of $('artCopies').children) b.classList.toggle('on', b.dataset.c === f.copies);
@@ -2502,7 +2522,7 @@ async function openArtist(name) {
   renderArtView();
 }
 function renderArtView() {
-  $('artListView').hidden = true; $('artView').hidden = false;
+  $('artListView').hidden = true; showView($('artView'));
   const el = $('artView'), f = artFilters(), fav = favArtists.has(artSel);
   const st = artistStats(f, artSel)[artSel], cardsOwned = st ? st.cards : new Map();
   const head = `<div class="arthead2"><div class="t"><button id="artBack">← Ilustradores</button><div><h1>${esc(artSel)}</h1><div class="muted">${fmt(artistTotals[artSel] || artCards.length)} cartas en el catálogo</div></div>
@@ -2688,7 +2708,7 @@ function panoHtml(g, langF, labels = true) {
 const priceOrDash = (v, n) => v ? '~' + clp(v) + (n ? ` · ${n} sin precio` : '') : 'sin precio';
 function renderGroups() {
   if (grpSel) return renderGroupView();
-  $('grpListView').hidden = false; $('grpView').hidden = true;
+  $('grpView').hidden = true; showView($('grpListView'));
   const f = grpFilters(), el = $('groupList');
   for (const b of $('grpShow').children) b.classList.toggle('on', b.dataset.v === f.show);
   $('grpSort').value = f.sort; $('gLangF').value = f.lang; $('grpKind').value = f.kind;
@@ -2716,7 +2736,7 @@ function renderGroups() {
 function renderGroupView() {
   const g = data.groups.find(x => x.id === grpSel);
   if (!g) { grpSel = null; return renderGroups(); }
-  $('grpListView').hidden = true; $('grpView').hidden = false;
+  $('grpListView').hidden = true; showView($('grpView'));
   const f = grpFilters(), x = groupInfo(g, f.lang);
   const kit = x.kitMissing === 0
     ? `<span>Tienes una copia para vender de cada pieza · valor ~<b>${clp(x.pieces.reduce((a, p) => a + (p.saleKey ? (priceOf(p.saleKey) || {}).clp || 0 : 0), 0))}</b></span><button class="primary" id="grpLot">📦 Crear lote de venta</button>`
@@ -3152,8 +3172,8 @@ function loadCameos(dex, force) {
 }
 function renderCollections() {
   if (!colls) { $('colList').innerHTML = '<div class="empty">Cargando…</div>'; loadCollections(); return; }
-  if (colSel || camDex) { $('colListView').hidden = true; $('colView').hidden = false; return renderColView(); }
-  $('colListView').hidden = false; $('colView').hidden = true; renderColList();
+  if (colSel || camDex) { $('colListView').hidden = true; showView($('colView')); return renderColView(); }
+  $('colView').hidden = true; showView($('colListView')); renderColList();
 }
 const colOf = id => colls && colls.find(c => c.id === id);
 // owned / personal counted locally, so they react right away to what you load. role: 'main' or 'cameo'

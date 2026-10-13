@@ -64,7 +64,7 @@ Las pruebas siguen los escenarios de `openspec/specs/` y además comparan `core`
 
 ### Animaciones
 
-La interfaz anima poco y con propósito (criterio de las skills de animación de Emil Kowalski): los diálogos entran con un fade y una escala sutil (250 ms, salen en 150 ms), y los avisos suben desde abajo y bajan por el mismo borde. Lo que se usa muchas veces al día (búsqueda, ingreso de cartas, grillas) no se anima. Todo es CSS (`@starting-style`); los navegadores sin soporte muestran todo al instante.
+La interfaz anima poco y con propósito (criterio de las skills de animación de Emil Kowalski): los diálogos entran con un fade y una escala sutil (250 ms, salen en 150 ms), y los avisos suben desde abajo y bajan por el mismo borde. Los menús ("Datos ▾", "⋯" de una colección) crecen desde su botón, al entrar o salir del detalle de una expansión, ilustrador, grupo o colección el contenido aparece con un fade corto, y los botones se encogen levemente al presionarlos. Lo que se usa muchas veces al día (búsqueda, ingreso de cartas, grillas) no se anima. Todo es CSS (`@starting-style`); los navegadores sin soporte muestran todo al instante.
 
 - Con **reducir movimiento** activado en el sistema, el brillo holo se detiene y solo quedan fades cortos.
 - El efecto de levantar las cartas al pasar el mouse solo funciona con mouse; en el celular no se queda pegado.
