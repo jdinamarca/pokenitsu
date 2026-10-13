@@ -444,6 +444,11 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
 .pcell{position:relative;aspect-ratio:245/342;background:var(--chip);overflow:hidden}
 .pcell img{width:100%;height:100%;object-fit:cover;display:block}
 .pcell.miss img{filter:grayscale(1);opacity:.38}
+/* cameo / same scene: the cards side by side, not joined */
+.pano.sep{gap:8px;background:none;border-radius:0;overflow:visible}
+.pano.sep .pcell{border-radius:8px;box-shadow:0 3px 10px rgba(0,0,0,.3)}
+.kindchip{display:inline-block;font-size:11.5px;font-weight:800;border-radius:999px;padding:2px 9px;background:var(--chip);color:var(--ink)}
+.gnote{font-size:13.5px;color:var(--muted);font-style:italic}
 .pcell .q{position:absolute;right:5px;top:5px;background:var(--ok);color:#fff;font-size:11px;font-weight:800;border-radius:999px;padding:1px 8px}
 .pcell .no{position:absolute;left:0;right:0;bottom:0;padding:5px;text-align:center;font-size:11px;font-weight:900;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.7))}
 .grpsum{font-size:13.5px;color:var(--muted);margin:0 0 14px}
@@ -707,11 +712,12 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
   <section class="tab" id="tab-grupos">
     <div id="grpListView">
       <div class="dexhead">
-        <div><h1>Artes conectados</h1><p>Cartas cuyas ilustraciones se unen en una imagen más grande.</p></div>
+        <div><h1>Artes conectados</h1><p>Cartas cuyas ilustraciones se unen en una imagen, se aparecen una en la otra o muestran la misma escena.</p></div>
         <button class="primary" id="gNew">＋ Nuevo grupo</button>
       </div>
       <div class="exptools">
         <div class="seg dexseg" id="grpShow" role="group" aria-label="Qué grupos ver"><button data-v="all">Todos</button><button data-v="done">Completos</button><button data-v="miss">Me faltan</button></div>
+        <select id="grpKind" aria-label="Tipo de arte"><option value="">Todos los tipos</option><option value="panorama">🧩 Panorama</option><option value="cameo">👀 Cameo cruzado</option><option value="escena">🎬 Misma escena / continuación</option></select>
         <select id="grpSort" aria-label="Orden"><option value="pct">Más cerca de completarse</option><option value="value">Más valiosos</option><option value="cost">Menos cuesta completarlos</option><option value="name">A → Z</option></select>
         <button class="dexfbtn" id="grpFiltersBtn" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Filtros<span class="n" id="grpFiltersN"></span></button>
       </div>
@@ -730,10 +736,13 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
       <div class="gdlg-form">
         <h2 id="gTitle">Nuevo grupo</h2>
         <label>Nombre<input type="text" id="gName" placeholder="Ej: Ruinas de Eevee"></label>
+        <label>Tipo
+          <select id="gKind"><option value="panorama">🧩 Panorama: las cartas forman una sola imagen</option><option value="cameo">👀 Cameo cruzado: cada Pokémon aparece en la carta del otro</option><option value="escena">🎬 Misma escena o continuación: el mismo lugar o historia vista desde cada carta</option></select></label>
         <label>Cartas, en el orden de la imagen (izquierda → derecha, arriba → abajo)
           <textarea id="gCards" rows="5" spellcheck="false" placeholder="Una línea por expansión: código y números&#10;N2 20 38 32&#10;30C 130-133"></textarea></label>
         <label class="inline">Columnas <input id="gCols" type="number" min="1" max="20" value="3" style="width:76px"></label>
-        <label>Imagen del arte unido (opcional)<input type="text" id="gImgUrl" placeholder="Pega una URL…" spellcheck="false"></label>
+        <label>Cómo se conectan (opcional)<input type="text" id="gNote" placeholder="Ej: Hypno hipnotiza a Clefairy, y Clefairy aparece en la carta de Hypno" maxlength="500"></label>
+        <label>Imagen de referencia (opcional)<input type="text" id="gImgUrl" placeholder="Pega una URL…" spellcheck="false"></label>
         <div class="row"><label class="filebtn">…o sube un archivo<input type="file" id="gImgFile" accept="image/jpeg,image/png,image/webp,image/gif" hidden></label><span class="muted" id="gImgName" style="font-size:13px"></span></div>
         <div class="msg" id="gMsg"></div>
         <div class="row gdlg-actions">
@@ -980,7 +989,7 @@ async function loadState() {
   setGroups(s.groups);
   renderAll();
 }
-function setGroups(list) { data.groups = list.map(g => ({ id: String(g.id), name: g.name, cols: g.cols, image: g.image_url || '', cards: g.cards.map(c => { putMeta(c); return { sid: c.sid, num: c.num }; }) })); }
+function setGroups(list) { data.groups = list.map(g => ({ id: String(g.id), name: g.name, cols: g.cols, image: g.image_url || '', kind: g.kind || 'panorama', note: g.note || '', cards: g.cards.map(c => { putMeta(c); return { sid: c.sid, num: c.num }; }) })); }
 
 // ---------- inventory ops ----------
 // one inventory row: card + variant + language + condition + location (0 = not assigned)
@@ -2518,7 +2527,7 @@ async function saveGroup() {
   if (errs.length || !out.length) { gm.textContent = errs.length ? errs.join(' · ') : 'Agrega al menos una carta.'; gm.className = 'msg err'; return; }
   const file = $('gImgFile').files[0];
   try {
-    const body = { name, cols, cards: out, image_url: $('gImgUrl').value.trim() || null };
+    const body = { name, cols, cards: out, image_url: $('gImgUrl').value.trim() || null, kind: $('gKind').value, note: $('gNote').value.trim() };
     let r = gEditing ? await api('PUT', '/groups/' + gEditing, body) : await api('POST', '/groups', body);
     if (file) {
       gm.textContent = 'Subiendo imagen…';
@@ -2532,7 +2541,7 @@ async function saveGroup() {
   resetGroupForm(); toast(`🧩 Grupo "${name}" guardado (${out.length} cartas)`); renderGroups();
 }
 function resetGroupForm() {
-  gEditing = null; $('gName').value = ''; $('gCards').value = ''; $('gCols').value = 3;
+  gEditing = null; $('gName').value = ''; $('gCards').value = ''; $('gCols').value = 3; $('gKind').value = 'panorama'; $('gNote').value = '';
   $('gImgUrl').value = ''; $('gImgFile').value = ''; $('gImgName').textContent = ''; $('gMsg').textContent = ''; $('gMsg').className = 'msg';
   $('gTitle').textContent = 'Nuevo grupo'; $('gDelete').hidden = true; $('gPreview').innerHTML = '';
   $('gPrevInfo').textContent = 'Vista previa: escribe las cartas y aquí verás el panorama armado.';
@@ -2541,7 +2550,7 @@ function resetGroupForm() {
 function openGroupForm(g) {
   resetGroupForm();
   if (g) {
-    gEditing = g.id; $('gName').value = g.name; $('gCols').value = g.cols; $('gCards').value = groupText(g); $('gImgUrl').value = g.image;
+    gEditing = g.id; $('gName').value = g.name; $('gCols').value = g.cols; $('gCards').value = groupText(g); $('gImgUrl').value = g.image; $('gKind').value = g.kind || 'panorama'; $('gNote').value = g.note || '';
     $('gTitle').textContent = 'Editar grupo'; $('gDelete').hidden = false;
   }
   $('gDlg').showModal(); $('gName').focus(); groupPreview();
@@ -2556,13 +2565,15 @@ function groupPreview() {
     const { out, errs } = await parseGroupCards(text);
     if (my !== gPrevN) return;
     $('gPrevInfo').innerHTML = `${out.length} ${out.length === 1 ? 'carta' : 'cartas'} en ${cols} ${cols === 1 ? 'columna' : 'columnas'}` + (errs.length ? ` · <span style="color:var(--err)">${esc(errs.join(' · '))}</span>` : '');
-    $('gPreview').innerHTML = out.length ? panoHtml({ cards: out, cols }, grpLang(), false) : '';
+    $('gPreview').innerHTML = out.length ? panoHtml({ cards: out, cols, kind: $('gKind').value }, grpLang(), false) : '';
   }, 300);
 }
 
 // ---------- connected art: list, detail, kit ----------
 let grpSel = null;
-function grpFilters() { const g = data.grp || {}; return { show: g.show || 'all', sort: g.sort || 'pct', lang: g.lang || '', series: g.series || '' }; }
+const GROUP_KINDS = { panorama: '🧩 Panorama', cameo: '👀 Cameo cruzado', escena: '🎬 Misma escena' };
+const kindChip = k => `<span class="kindchip">${GROUP_KINDS[k] || GROUP_KINDS.panorama}</span>`;
+function grpFilters() { const g = data.grp || {}; return { show: g.show || 'all', sort: g.sort || 'pct', lang: g.lang || '', series: g.series || '', kind: g.kind || '' }; }
 const grpLang = () => grpFilters().lang;
 function setGrp(patch) { data.grp = { ...grpFilters(), ...patch }; save(); renderGroups(); }
 // a piece's NM price (its automatic variant), like the cost of completing an expansion
@@ -2586,7 +2597,7 @@ function groupInfo(g, langF) {
 }
 // the pieces joined with no gaps, in their columns; missing ones in black and white
 function panoHtml(g, langF, labels = true) {
-  return `<div class="pano" style="grid-template-columns:repeat(${g.cols},minmax(0,1fr))">${g.cards.map(c => {
+  return `<div class="pano ${g.kind && g.kind !== 'panorama' ? 'sep' : ''}" style="grid-template-columns:repeat(${g.cols},minmax(0,1fr))">${g.cards.map(c => {
     const m = meta(c.sid, c.num), s = setById[c.sid], q = cardQty(c.sid, c.num, langF);
     return `<div class="pcell ${q ? '' : 'miss'}" title="${esc(m ? m[0] : '?')} · ${esc(s ? s.name : c.sid)} #${esc(c.num)}${q ? '' : ' · te falta'}">${m && m[4] ? `<img src="${esc(m[4])}" loading="lazy" alt="" onerror="this.remove()">` : ''}${labels && q > 1 ? `<span class="q">×${q}</span>` : ''}${labels && !q ? `<span class="no">#${esc(c.num)}</span>` : ''}</div>`;
   }).join('')}</div>`;
@@ -2597,13 +2608,13 @@ function renderGroups() {
   $('grpListView').hidden = false; $('grpView').hidden = true;
   const f = grpFilters(), el = $('groupList');
   for (const b of $('grpShow').children) b.classList.toggle('on', b.dataset.v === f.show);
-  $('grpSort').value = f.sort; $('gLangF').value = f.lang;
+  $('grpSort').value = f.sort; $('gLangF').value = f.lang; $('grpKind').value = f.kind;
   const eras = [...new Set(data.groups.flatMap(g => g.cards.map(c => eraOf(setById[c.sid]))).filter(Boolean))];
   $('grpSeries').innerHTML = '<option value="">Todas las series</option>' + eras.map(e => `<option value="${esc(e)}">${esc(e)}</option>`).join('');
   $('grpSeries').value = f.series;
   $('grpFiltersN').textContent = [f.lang, f.series].filter(Boolean).length || '';
   if (!data.groups.length) { $('grpSum').innerHTML = ''; el.innerHTML = '<div class="empty"><span class="big">🧩</span>Aún no tienes grupos. Crea uno con <b>＋ Nuevo grupo</b>.</div>'; return; }
-  const all = data.groups.filter(g => !f.series || g.cards.some(c => eraOf(setById[c.sid]) === f.series)).map(g => groupInfo(g, f.lang));
+  const all = data.groups.filter(g => (!f.series || g.cards.some(c => eraOf(setById[c.sid]) === f.series)) && (!f.kind || g.kind === f.kind)).map(g => groupInfo(g, f.lang));
   const done = all.filter(x => x.done).length, missPieces = all.reduce((a, x) => a + x.missing.length, 0), missCost = all.reduce((a, x) => a + x.cost, 0);
   $('grpSum').innerHTML = `<b>${all.length}</b> grupos · <b>${done}</b> ${done === 1 ? 'completo' : 'completos'} · faltan <b>${fmt(missPieces)}</b> piezas${missCost ? ` · completarlos cuesta <b>~${clp(missCost)}</b>` : ''}`;
   const list = all.filter(x => f.show === 'all' || (f.show === 'done' ? x.done : !x.done));
@@ -2613,7 +2624,7 @@ function renderGroups() {
     const sets = [...new Set(x.g.cards.map(c => (setById[c.sid] || {}).name || c.sid))].join(' · ');
     return `<button class="grpcard ${x.done ? 'done' : ''}" data-g="${esc(x.g.id)}">
       <div class="cover"><div style="width:${Math.min(100, x.g.cols * 34)}%">${panoHtml(x.g, f.lang, false)}</div></div>
-      <div><div class="nm">${esc(x.g.name)}</div><div class="sub">${esc(sets)}</div></div>
+      <div><div class="nm">${esc(x.g.name)}</div><div class="sub">${kindChip(x.g.kind)} ${esc(sets)}</div></div>
       <div class="expbar"><i style="width:${pct(x.have, x.total)}%"></i></div>
       <div class="nums"><span><b>${x.have}</b> / ${x.total} piezas</span>${x.done ? '<span class="ok">✓ Completo</span>' : `<span>falta ${priceOrDash(x.cost)}</span>`}</div>
       <div class="sub">Valor del grupo: ${priceOrDash(x.value, x.noPrice)}</div>
@@ -2632,13 +2643,13 @@ function renderGroupView() {
         <div>${p.qty ? Object.entries(p.locs).map(([l, n]) => locchip(+l, true) + (n > 1 ? ` ×${n}` : '')).join(' ') : '<span class="muted">Te falta</span>'}</div></div>
       <div class="r">${p.qty ? `<b>×${p.qty}</b><br>` : ''}${p.pr ? clp(p.pr.clp) : '<span class="muted">sin precio</span>'}</div></div>`).join('');
   paint($('grpView'), `<div class="expdhead"><div class="t"><button id="grpBack">← Artes conectados</button><div><h1>${esc(g.name)}</h1>
-      <div class="muted">${x.have}/${x.total} piezas · valor ${priceOrDash(x.value, x.noPrice)}</div></div></div>
+      <div class="muted">${kindChip(g.kind)} ${x.have}/${x.total} piezas · valor ${priceOrDash(x.value, x.noPrice)}</div>${g.note ? `<div class="gnote">${esc(g.note)}</div>` : ''}</div></div>
       <div class="row"><button id="grpEdit">✏️ Editar</button>${x.missing.length ? '<button id="grpCopy">📋 Copiar lista de faltantes</button>' : ''}</div></div>
     <div class="dexsum"><div class="expbar"><i style="width:${pct(x.have, x.total)}%"></i></div>
       <div class="dexkits">${x.done ? '<b>✓ Completo</b>' : `Te faltan <b>${x.missing.length}</b> ${x.missing.length === 1 ? 'pieza' : 'piezas'} · completarlo cuesta <b>${priceOrDash(x.cost)}</b>`}</div>
       <div class="artkit">${kit}</div></div>
     <div class="grpdet"><div class="big">${panoHtml(g, f.lang)}
-      ${g.image ? `<figure class="gart" style="margin-top:16px"><a href="${esc(g.image)}" target="_blank" rel="noopener"><img src="${esc(g.image)}" loading="lazy" alt="Arte unido de ${esc(g.name)}"></a><figcaption>Así se ve el arte unido</figcaption></figure>` : ''}</div>
+      ${g.image ? `<figure class="gart" style="margin-top:16px"><a href="${esc(g.image)}" target="_blank" rel="noopener"><img src="${esc(g.image)}" loading="lazy" alt="Arte unido de ${esc(g.name)}"></a><figcaption>${g.kind === 'panorama' ? 'Así se ve el arte unido' : 'Imagen de referencia'}</figcaption></figure>` : ''}</div>
       <div class="side"><div class="pieces">${pieces}</div></div></div>`);
 }
 async function groupLot(g) {
@@ -2990,7 +3001,8 @@ $('tab-artistas').addEventListener('keydown', e => { const c = e.target.closest(
 $('gNew').onclick = () => openGroupForm(null);
 $('gSave').onclick = saveGroup;
 $('gCancel').onclick = resetGroupForm;
-$('gCards').addEventListener('input', groupPreview); $('gCols').addEventListener('input', groupPreview);
+$('gCards').addEventListener('input', groupPreview); $('gCols').addEventListener('input', groupPreview); $('gKind').addEventListener('change', groupPreview);
+$('grpKind').onchange = () => setGrp({ kind: $('grpKind').value });
 $('gImgFile').onchange = e => { const f = e.target.files[0]; $('gImgName').textContent = f ? f.name : ''; };
 $('gDelete').onclick = () => {
   const g = data.groups.find(x => x.id === gEditing);
@@ -3001,7 +3013,7 @@ $('gLangF').onchange = () => setGrp({ lang: $('gLangF').value });
 $('grpSeries').onchange = () => setGrp({ series: $('grpSeries').value });
 $('grpSort').onchange = () => setGrp({ sort: $('grpSort').value });
 $('grpShow').addEventListener('click', e => { const b = e.target.closest('[data-v]'); if (b) setGrp({ show: b.dataset.v }); });
-$('grpClear').onclick = () => setGrp({ lang: '', series: '' });
+$('grpClear').onclick = () => setGrp({ lang: '', series: '', kind: '' });
 $('grpFiltersBtn').onclick = () => { const open = $('grpFilters').hidden; $('grpFilters').hidden = !open; $('grpFiltersBtn').setAttribute('aria-expanded', open); };
 $('tab-grupos').addEventListener('click', async e => {
   const card = e.target.closest('.grpcard'); if (card) { grpSel = card.dataset.g; renderGroups(); window.scrollTo(0, 0); return; }

@@ -60,3 +60,14 @@ El detalle SHALL permitir copiar la lista de piezas que faltan (expansión, núm
 #### Scenario: Copiar faltantes
 - **WHEN** faltan Espeon y Umbreon de Neo Discovery
 - **THEN** se copia "Ruinas de Eevee — me faltan: Neo Discovery #20 Espeon, Neo Discovery #32 Umbreon"
+
+### Requirement: Tipos de arte conectado
+Cada grupo SHALL tener un tipo: **Panorama** (las cartas forman una sola imagen), **Cameo cruzado** (cada Pokémon aparece en la carta del otro) o **Misma escena / continuación** (el mismo lugar o historia vista desde cada carta, o una continuación años después), y una nota opcional que explica la conexión. Los panoramas se muestran con las piezas unidas; los otros dos tipos, con las cartas lado a lado y separadas. La lista SHALL poder filtrarse por tipo.
+
+#### Scenario: Cameo cruzado
+- **WHEN** el usuario crea el grupo Clefairy + Hypno (BREAKpoint) como cameo cruzado
+- **THEN** las dos cartas se ven lado a lado separadas, con la insignia "Cameo cruzado" y su nota
+
+#### Scenario: Filtrar por tipo
+- **WHEN** el usuario elige "Misma escena / continuación"
+- **THEN** solo se ven los grupos de ese tipo

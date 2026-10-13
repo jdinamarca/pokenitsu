@@ -115,7 +115,12 @@ Pestaña **🎨 Artistas**: cada ilustrador del catálogo internacional como una
 
 ## Artes conectados
 
-Grupos de cartas cuyas ilustraciones se unen en una imagen más grande (tablas `art_groups`, `art_group_cards`).
+Grupos de cartas cuyo arte se conecta (tablas `art_groups`, `art_group_cards`), de tres tipos (`art_groups.kind`):
+- **🧩 Panorama**: las cartas forman una sola imagen (se muestran unidas, sin espacios).
+- **👀 Cameo cruzado**: cada Pokémon aparece en la carta del otro (ej. Clefairy + Hypno de BREAKpoint).
+- **🎬 Misma escena / continuación**: el mismo lugar visto desde cada carta, o una continuación años después (ej. Marshadow de Cosmic Eclipse y de Mega Evolution).
+
+Cada grupo puede llevar una nota de cómo se conectan. Las cartas que no están en ningún catálogo (ej. promos japonesas SM-P) se agregan como cartas a mano con su imagen.
 - **Álbum**: cada grupo es una tarjeta con el panorama armado (las piezas juntas, sin espacios, en sus columnas; las que faltan en blanco y negro), piezas tenidas, cuánto falta y el valor del grupo. Todos / Completos / Me faltan, orden (más cerca de completarse, más valiosos, menos cuesta completarlos, A→Z), filtros de idioma y serie, y un resumen de todos los grupos.
 - **Detalle**: el panorama en grande, la imagen del arte unido si la tiene, y cada pieza con sus copias, dónde están guardadas y su precio. **📋 Copiar lista de faltantes** para buscarlas o pedirlas.
 - **Kit**: si tienes una copia para vender de cada pieza, **📦 Crear lote de venta** arma "Kit <grupo>" con una copia de cada una (NM primero).

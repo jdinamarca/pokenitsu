@@ -11,6 +11,7 @@ Artes conectados muestra los 28 grupos del usuario como paneles enormes uno deba
 - **Orden, filtros y resumen**: Todos / Completos / Me faltan; orden por más cerca de completar, valor, costo de lo que falta o nombre; filtros de idioma y serie; resumen "28 grupos · 1 completo · faltan 60 piezas · ~$X para completarlos".
 - **Valor y kits**: valor del grupo (suma de sus piezas en NM), costo de las que faltan, **Crear lote de venta** cuando hay una copia para vender de cada pieza (una por pieza), y **Copiar lista de faltantes**.
 - **Crear y editar con vista previa**: en una ventana; mientras escribes las cartas ves el panorama armado y los errores al instante. Borrar pasa a la ventana de edición, con confirmación.
+- **Tipos**: Panorama (forman una imagen), Cameo cruzado (se aparecen uno en el otro) y Misma escena / continuación, con una nota de cómo se conectan y filtro por tipo.
 - Los precios de las cartas de los grupos se descargan como los del inventario.
 
 **Fuera del alcance:** elegir piezas tocando cartas de una expansión (se sigue escribiendo `<expansión> <números>`), reordenar piezas arrastrándolas, y grupos con piezas de distintas variantes.

@@ -21,6 +21,10 @@
 
 - [x] 5.1 Actualizar README (Artes conectados) y verificar que lo describe
 
+## 6. Tipos de arte conectado
+
+- [x] 6.1 Migración `art_groups.kind` y `note`, API y respaldo; tipo y nota en la ventana de edición, insignia y filtro por tipo, piezas separadas en cameos y escenas; verificar con los 7 ejemplos del usuario (4 cameos, 3 escenas) y el filtro por tipo
+
 ## Workflow follow-up
 
 - Archivar el cambio con `/opsx:archive` cuando el usuario lo apruebe.
