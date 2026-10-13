@@ -238,14 +238,26 @@ app.get('/api/dex', async () => {
 
 // ---------- artists ----------
 // owned = distinct cards of that artist with at least one copy (optionally only in one language)
+// img: a cover from the catalog (their newest card from a regular expansion; promos and McDonald's often have no picture)
 app.get('/api/artists', async req => {
   const lang = req.query.lang ? checkLang(req.query.lang, false) : null;
   const { rows } = await pool.query(
     `SELECT c.artist AS name, count(*)::int AS total,
-            count(*) FILTER (WHERE EXISTS (SELECT 1 FROM inventory i WHERE i.card_id = c.id AND ($1::text IS NULL OR i.lang = $1)))::int AS owned
+            count(*) FILTER (WHERE EXISTS (SELECT 1 FROM inventory i WHERE i.card_id = c.id AND ($1::text IS NULL OR i.lang = $1)))::int AS owned,
+            (array_agg(c.image_small ORDER BY (s.id ~ '^(mcd|ru1|tk|bp|fut20)' OR s.name ~* 'promo'), s.release_date DESC NULLS LAST)
+               FILTER (WHERE c.image_small IS NOT NULL))[1] AS img
      FROM cards c JOIN sets s ON s.id = c.set_id WHERE coalesce(c.artist, '') <> '' AND s.source = 'ptcg'
      GROUP BY c.artist ORDER BY count(*) DESC, c.artist`, [lang]);
   return rows;
+});
+// favorite illustrators: shown first; loading one of their cards says so
+app.get('/api/artists/favorites', async () => (await pool.query('SELECT name FROM favorite_artists ORDER BY created_at')).rows.map(r => r.name));
+app.put('/api/artists/favorites', async req => {
+  const name = String(req.body?.name ?? '').trim().slice(0, 200);
+  if (!name) throw bad('Falta el nombre del ilustrador');
+  if (req.body?.on === false) await pool.query('DELETE FROM favorite_artists WHERE name = $1', [name]);
+  else await pool.query('INSERT INTO favorite_artists (name) VALUES ($1) ON CONFLICT DO NOTHING', [name]);
+  return (await pool.query('SELECT name FROM favorite_artists ORDER BY created_at')).rows.map(r => r.name);
 });
 app.get('/api/artists/cards', async req => {
   const name = String(req.query.name || '');

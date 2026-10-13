@@ -394,6 +394,27 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
 .vchips span.have{background:var(--ok);color:#fff}
 .curprog{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);margin-top:4px}
 .curprog .expbar{flex:1;max-width:220px;height:6px}
+/* Illustrators */
+.artgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}
+.artcard{position:relative;display:flex;flex-direction:column;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);cursor:pointer;color:inherit;font:inherit;padding:0}
+.artcard:hover{border-color:var(--muted)}
+.artcard .cover{aspect-ratio:16/10;overflow:hidden;background:var(--chip)}
+.artcard .cover img{width:100%;height:100%;object-fit:cover;object-position:50% 22%;transform:scale(1.55);transform-origin:50% 24%;display:block}
+.artcard.none .cover img{filter:grayscale(1);opacity:.45}
+.artcard .body{padding:10px 12px 12px;display:flex;flex-direction:column;gap:6px}
+.artcard .nm{font-weight:800;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:4px}
+.artcard .nums{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted)}
+.artcard .nums b{color:var(--ink)}
+.artcard .kit{font-size:12.5px;color:var(--ok);font-weight:700}
+.favbtn{position:absolute;top:8px;right:8px;z-index:2;width:36px;height:36px;border-radius:999px;border:0;background:rgba(17,19,27,.7);color:#c9cde0;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer}
+.favbtn.on{color:var(--gold)}
+.favbtn svg{width:19px;height:19px}
+.arthead2{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;margin:4px 0 14px}
+.arthead2 .t{display:flex;gap:12px;align-items:center}
+.arthead2 h1{margin:0;font-size:26px;font-weight:900}
+.arthead2 .favbtn{position:static;background:var(--chip)}
+.artkit{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;font-size:13.5px}
+.yeargrp2{font-weight:900;font-size:15px;color:var(--muted);margin:18px 0 10px}
 .cell.has{border-color:color-mix(in srgb,var(--ok) 55%,transparent)}
 .cell.sel{outline:3px solid var(--blue)}
 .detail{margin-top:16px}
@@ -630,19 +651,30 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
 
   <!-- ARTISTAS -->
   <section class="tab" id="tab-artistas">
-    <div class="artists">
-      <aside class="panel artlist">
-        <div class="panel-h">🎨 Artistas</div>
-        <div id="catNote"></div>
-        <input id="artFilter" placeholder="🔎 Buscar artista: Yuka Morii, Arita…" style="margin-bottom:8px">
-        <div class="toolbar" style="margin-bottom:8px">
-          <select id="artSort"><option value="owned">Más avance</option><option value="total">Más cartas</option><option value="name">A → Z</option></select>
-          <select id="artLang"></select>
+    <div id="artListView">
+      <div class="dexhead">
+        <div><h1>Ilustradores</h1><p>Las cartas de cada ilustrador: cuáles tienes, con qué nivel y cuánto vale su kit.</p></div>
+        <div class="seg dexseg" id="artCopies" role="group" aria-label="Qué copias cuentan"><button data-c="todas">Todas mis cartas</button><button data-c="venta">Para vender</button><button data-c="personales">Mi colección</button></div>
+      </div>
+      <div class="exptools">
+        <input id="artFilter" type="search" placeholder="Buscar ilustrador: Yuka Morii, Arita…" aria-label="Buscar ilustrador" style="flex:1;min-width:220px;max-width:380px">
+        <select id="artSort" aria-label="Orden"><option value="owned">Más avance</option><option value="mine">Más cartas mías</option><option value="value">Kit más valioso</option><option value="total">Más cartas en el catálogo</option><option value="name">A → Z</option></select>
+        <button class="dexfbtn" id="artFiltersBtn" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Filtros<span class="n" id="artFiltersN"></span></button>
+      </div>
+      <div class="dexfilters expfilters" id="artFilters" hidden>
+        <div class="row">
+          <select id="artLang" aria-label="Idioma"></select>
+          <select id="artSeries" aria-label="Serie"></select>
+          <label class="kitopt"><input type="checkbox" id="artFav"> Solo mis favoritos</label>
         </div>
-        <div class="scroll" id="artList"></div>
-      </aside>
-      <section class="panel" id="artView"></section>
+        <div class="tierbar" id="artTiers"></div>
+        <button class="dexclear" id="artClear">Quitar filtros</button>
+      </div>
+      <div id="catNote"></div>
+      <div class="artgrid" id="artList"></div>
+      <div id="artMore"></div>
     </div>
+    <div id="artView" hidden></div>
   </section>
 
   <!-- ARTES CONECTADOS -->
@@ -814,7 +846,7 @@ function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return 
 // inv[key] = copies, pers[key] = how many of them are for my personal collection (not for sale)
 let data = Object.assign({ inv: {}, pers: {}, added: {}, log: [], groups: [], recent: [], sound: false, lang: 'ES', invView: 'grid', tab: 'cargar', personal: false, colOrder: 'date', locPick: 'auto' }, lsGet(PREFS, {}));
 data.cond = 'NM'; // every session starts loading NM
-function save() { lsSet(PREFS, { recent: data.recent, sound: data.sound, lang: data.lang, invView: data.invView, tab: data.tab, personal: data.personal, colOrder: data.colOrder, lot: data.lot, locPick: data.locPick, invSort: data.invSort, colSort: data.colSort, kit: data.kit, exp: data.exp }); }
+function save() { lsSet(PREFS, { recent: data.recent, sound: data.sound, lang: data.lang, invView: data.invView, tab: data.tab, personal: data.personal, colOrder: data.colOrder, lot: data.lot, locPick: data.locPick, invSort: data.invSort, colSort: data.colSort, kit: data.kit, exp: data.exp, art: data.art }); }
 
 // ---------- toasts ----------
 function toast(text, cls = '') {
@@ -1644,6 +1676,7 @@ function commitEntry() {
   showMsg(`${repeated ? `Repetido: ${raw.trim()} · ` : ''}${real > 0 ? '+' + real : real}${real > 0 && data.personal ? ' 🔒' : ''} · ${describeKey(key)}${news}${warn}`, warn ? 'warn' : '');
   renderPreview(key); renderLog(); renderStats();
   if (real > 0 && wasNew && m && m[2]) celebrateArtist(m[2]);
+  if (real > 0 && m && favArtists.has(m[2])) favNotice([m[2]]);
   if (real > 0 && m && ['ir', 'sir', 'secret'].includes(rgroupOf(m[3]))) { const r = rarityOf(m[3]); toast(`✨ ¡${r[0]}! ${r[1]}: ${m[0]}`, 'gold'); }
   if (real > 0) checkPrice(key, real);
 }
@@ -1671,6 +1704,8 @@ async function commitRange(p, raw, repeated) {
     noCopies.length ? `${noCopies.length} sin copias para quitar` : ''].filter(Boolean);
   showMsg(`${repeated ? `Repetido: ${raw.trim()} · ` : ''}${copies > 0 ? '+' : ''}${copies} ${Math.abs(copies) === 1 ? 'copia' : 'copias'} de ${loaded.length} cartas (${p.range.from}–${p.range.to}) · ${p.v ? vlabel(p.v) : 'variante automática'} ${data.lang || ''}${(p.cond || data.cond) !== 'NM' ? ' ' + (p.cond || data.cond) : ''}${data.personal && copies > 0 ? ' 🔒' : ''}${news}${extra.length ? ' · ' + extra.join(' · ') : ''}`, extra.length ? 'warn' : '');
   renderPreview(loaded[loaded.length - 1].key); renderLog(); renderStats();
+  const favs = [...new Set(loaded.filter(r => r.real > 0 && r.m && favArtists.has(r.m[2])).map(r => r.m[2]))];
+  if (favs.length) favNotice(favs);
   if (artists.size === 1) celebrateArtist([...artists][0]);
   else if (artists.size) toast(`🎨 ${artists.size} ilustradores con su primera carta: ${[...artists].slice(0, 5).join(', ')}${artists.size > 5 ? '…' : ''}`);
   if (specials.length) toast(`✨ ${specials.length === 1 ? 'Carta especial' : specials.length + ' cartas especiales'}: ${specials.slice(0, 5).join(', ')}${specials.length > 5 ? '…' : ''}`, 'gold');
@@ -1679,6 +1714,12 @@ async function commitRange(p, raw, repeated) {
     const found = (await Promise.all(loaded.map(r => checkPrice(r.key, r.real, true)))).filter(Boolean).sort((a, b) => b.clp - a.clp);
     if (found.length) toast(`💰 ${found.length === 1 ? '1 carta valiosa' : found.length + ' cartas valiosas'} · ¡sepáralas!: ${found.slice(0, 4).map(f => `${f.name} ~${clp(f.clp)}`).join(', ')}${found.length > 4 ? '…' : ''}`, 'gold');
   }
+}
+// a card by an illustrator I follow
+function favNotice(names) {
+  const own = ownedByArtist('');
+  toast(names.length === 1 ? `⭐ Carta de ${names[0]}, tu ilustrador favorito · ${own[names[0]] || 0}/${artistTotals[names[0]] || '?'}`
+    : `⭐ Cartas de tus ilustradores favoritos: ${names.join(', ')}`, 'gold');
 }
 function celebrateArtist(artist) {
   const total = artistTotals[artist]; if (!total) return;
@@ -2205,15 +2246,26 @@ function renderCurProg() {
 }
 
 // ---------- artistas ----------
-let artists = null, artistTotals = {}, artSel = null, artCards = [], artShow = 'all';
+let artists = null, artistTotals = {}, artCovers = {}, artSel = null, artCards = [], artShow = 'all', artLevel = null, artLimit = 60;
+let favArtists = new Set();
+const STAR = on => `<svg viewBox="0 0 24 24" fill="${on ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg>`;
 async function loadArtists() {
   try {
     artists = await api('GET', '/artists');
     artistTotals = Object.fromEntries(artists.map(a => [a.name, a.total]));
+    artCovers = Object.fromEntries(artists.map(a => [a.name, a.img]));
   } catch (e) { artists = []; }
+  try { favArtists = new Set(await api('GET', '/artists/favorites')); } catch (e) {}
   if ($('tab-artistas').classList.contains('on')) renderArtists();
 }
-// distinct cards owned per artist, computed live from the local inventory
+async function toggleFav(name) {
+  const on = !favArtists.has(name);
+  on ? favArtists.add(name) : favArtists.delete(name); renderArtists();
+  try { favArtists = new Set(await api('PUT', '/artists/favorites', { name, on })); } catch (e) { toast('No se guardó el favorito: ' + e.message); }
+  renderArtists();
+  if (on) toast(`⭐ ${name} quedó en tus favoritos: te aviso cuando cargues una carta suya`);
+}
+// distinct cards owned per artist, computed live from the local inventory (used by the load notices)
 function ownedByArtist(langF) {
   const sets = {};
   for (const k in data.inv) {
@@ -2223,24 +2275,72 @@ function ownedByArtist(langF) {
   }
   return Object.fromEntries(Object.entries(sets).map(([a, s]) => [a, s.size]));
 }
+function artFilters() {
+  const a = data.art || {};
+  return { copies: a.copies || 'todas', sort: a.sort || 'owned', lang: a.lang || '', series: a.series || '', tiers: a.tiers || null, fav: !!a.fav };
+}
+function setArt(patch) { data.art = { ...artFilters(), ...patch }; save(); artLimit = 60; renderArtists(); }
+// one pass over the inventory: per artist the cards that count, the best copy (cover) and the kit (copies for sale)
+function artistStats(f, only = null) {
+  const out = {};
+  for (const k in data.inv) {
+    const { sid, num, v, lang } = splitKey(k), s = setById[sid];
+    if (!s || s.source !== 'ptcg') continue;
+    const m = meta(sid, num); if (!m || !m[2] || (only && m[2] !== only)) continue;
+    if (f.lang && lang !== f.lang) continue;
+    if (f.series && eraOf(s) !== f.series) continue;
+    const tier = Core.cardTier({ name: m[0], rarity: m[3] }, v);
+    if (f.tiers && !f.tiers.includes(tier.id)) continue;
+    const a = out[m[2]] || (out[m[2]] = { cards: new Map(), best: null, kitCopies: 0, kitCards: new Set(), kitValue: 0, kitKeys: [] });
+    const clp = (priceOf(k) || {}).clp || 0, sale = forSale(k);
+    if (sale) { a.kitCopies += sale; a.kitCards.add(sid + '|' + num); a.kitValue += clp * sale; a.kitKeys.push(k); }
+    const q = copiesOf(k, f.copies); if (!q) continue;
+    const c = a.cards.get(sid + '|' + num) || { q: 0, best: null };
+    c.q += q;
+    if (!c.best || tier.rank > c.best.tier.rank || (tier.rank === c.best.tier.rank && clp > c.best.clp)) c.best = { key: k, tier, clp };
+    a.cards.set(sid + '|' + num, c);
+    if (!a.best || tier.rank > a.best.tier.rank || (tier.rank === a.best.tier.rank && clp > a.best.clp)) a.best = { key: k, tier, clp };
+  }
+  return out;
+}
+const coverOf = (name, st) => { if (st && st.best) { const b = splitKey(st.best.key); return imgFor(b.sid, b.num, b.v); } return artCovers[name]; };
 function renderArtists() {
-  if (!artists) { $('artList').innerHTML = '<div class="empty">Cargando artistas…</div>'; loadArtists(); return; }
+  if (artSel) return renderArtView();
+  $('artListView').hidden = false; $('artView').hidden = true;
+  if (!artists) { $('artList').innerHTML = '<div class="empty">Cargando ilustradores…</div>'; loadArtists(); return; }
+  const f = artFilters();
+  for (const b of $('artCopies').children) b.classList.toggle('on', b.dataset.c === f.copies);
+  $('artSort').value = f.sort; $('artLang').value = f.lang; $('artFav').checked = f.fav;
+  const eras = [...new Set(Object.values(setById).filter(x => x.source === 'ptcg').map(eraOf).filter(Boolean))];
+  $('artSeries').innerHTML = '<option value="">Todas las series</option>' + eras.map(e => `<option value="${esc(e)}">${esc(e)}</option>`).join('');
+  $('artSeries').value = f.series;
+  const on = id => !f.tiers || f.tiers.includes(id);
+  $('artTiers').innerHTML = '<span class="lbl">Niveles que cuentan:</span>' + TIER_QUICK.map(([l, t], i) => `<button class="quick ${JSON.stringify(t) === JSON.stringify(f.tiers) ? 'primary' : ''}" data-q="${i}">${l}</button>`).join('')
+    + ' ' + Core.TIERS.map(t => `<button class="tier t-${t.id} ${on(t.id) ? 'on' : ''}" data-t="${t.id}">${esc(t.label)}</button>`).join('');
+  $('artFiltersN').textContent = [f.lang, f.series, f.fav, f.tiers].filter(Boolean).length || '';
   renderCatNote();
-  const q = $('artFilter').value.trim().toLowerCase(), sort = $('artSort').value, owned = ownedByArtist($('artLang').value);
-  let list = artists.filter(a => !q || a.name.toLowerCase().includes(q)).map(a => ({ ...a, owned: owned[a.name] || 0 }));
-  list.sort(sort === 'name' ? (a, b) => a.name.localeCompare(b.name)
-    : sort === 'total' ? (a, b) => b.total - a.total
-    : (a, b) => b.owned - a.owned || pct(b.owned, b.total) - pct(a.owned, a.total) || b.total - a.total);
-  $('artList').innerHTML = list.slice(0, 300).map(a => `<button class="arow ${a.name === artSel ? 'on' : ''}" data-a="${esc(a.name)}">
-      <div class="top"><span>${esc(a.name)}</span><span>${a.owned}/${a.total}</span></div>${bar(a.owned, a.total)}</button>`).join('')
-    || '<div class="empty">No encontré ese artista.</div>';
-  renderArtView();
+  const st = artistStats(f), q = $('artFilter').value.trim().toLowerCase();
+  let list = artists.filter(a => (!q || a.name.toLowerCase().includes(q)) && (!f.fav || favArtists.has(a.name)))
+    .map(a => { const x = st[a.name]; return { ...a, have: x ? x.cards.size : 0, st: x }; });
+  const val = a => (a.st ? a.st.kitValue : 0);
+  const cmp = { name: (a, b) => a.name.localeCompare(b.name), total: (a, b) => b.total - a.total, mine: (a, b) => b.have - a.have || b.total - a.total,
+    value: (a, b) => val(b) - val(a) || b.have - a.have, owned: (a, b) => b.have - a.have || pct(b.have, b.total) - pct(a.have, a.total) || b.total - a.total }[f.sort];
+  list.sort((a, b) => (favArtists.has(b.name) - favArtists.has(a.name)) || cmp(a, b));
+  $('artList').innerHTML = list.slice(0, artLimit).map(a => {
+    const fav = favArtists.has(a.name), img = coverOf(a.name, a.st);
+    return `<div class="artcard ${a.have ? '' : 'none'}" data-a="${esc(a.name)}" role="button" tabindex="0">
+      <button class="favbtn ${fav ? 'on' : ''}" data-fav="${esc(a.name)}" aria-label="${fav ? 'Quitar de favoritos' : 'Marcar como favorito'}" aria-pressed="${fav}">${STAR(fav)}</button>
+      <div class="cover">${img ? `<img src="${esc(img)}" loading="lazy" alt="" onerror="this.remove()">` : ''}</div>
+      <div class="body"><div class="nm">${esc(a.name)}</div>
+        <div class="expbar"><i style="width:${pct(a.have, a.total)}%"></i></div>
+        <div class="nums"><span><b>${fmt(a.have)}</b> / ${fmt(a.total)}</span>${a.st && a.st.best && a.have ? tierChip(a.st.best.tier) : ''}</div>
+        ${f.copies === 'venta' && a.st && a.st.kitCopies ? `<div class="kit">Kit: ${fmt(a.st.kitCopies)} para vender · ~${clp(a.st.kitValue)}</div>` : ''}</div></div>`; }).join('')
+    || `<div class="empty">${f.fav ? 'Todavía no tienes ilustradores favoritos: toca la estrella de uno.' : 'No encontré ilustradores con estos filtros.'}</div>`;
+  $('artMore').innerHTML = list.length > artLimit ? `<button id="artMoreBtn" style="margin-top:14px">Ver más (${fmt(list.length - artLimit)})</button>` : '';
 }
 async function openArtist(name) {
-  artSel = name; artCards = []; artShow = 'all';
-  showTab('artistas');
-  $('artView').innerHTML = '<div class="empty">Cargando cartas…</div>';
-  renderArtists();
+  artSel = name; artCards = []; artShow = 'all'; artLevel = null;
+  showTab('artistas'); window.scrollTo(0, 0);
   try {
     const list = await api('GET', '/artists/cards?name=' + encodeURIComponent(name));
     if (artSel !== name) return;
@@ -2248,40 +2348,66 @@ async function openArtist(name) {
     artCards = list;
   } catch (e) { $('artView').innerHTML = `<div class="empty">No pude cargar las cartas: ${esc(e.message)}</div>`; return; }
   renderArtView();
-  if (innerWidth < 900) $('artView').scrollIntoView({ behavior: 'smooth' });
 }
 function renderArtView() {
-  const el = $('artView');
-  if (!artSel) { el.innerHTML = `<div class="empty"><span class="big">🎨</span>Elige un artista para ver <b>todas</b> sus cartas.<br>Las que tienes salen a color; las que te faltan, en blanco y negro.</div>`; return; }
-  if (!artCards.length) return;
-  const langF = $('artLang').value;
-  const withQty = artCards.map(c => ({ ...c, q: cardQty(c.sid, c.num, langF) }));
-  const have = withQty.filter(c => c.q > 0).length, total = withQty.length;
-  const rf = $('artRarity') ? $('artRarity').value : '';
-  const shown = withQty.filter(c => rarityMatch(rf, c.rarity, c.name) && (artShow === 'all' || (artShow === 'have' ? c.q > 0 : c.q === 0)));
-  let html = `<div class="arthead"><div><h2>${esc(artSel)}</h2><div class="muted">${total} cartas en el catálogo${langF ? ` · contando solo ${LNAME[langF]}` : ''}</div></div>
-    <div class="big">${have}<span class="muted" style="font-size:18px">/${total}</span></div>${bar(have, total, 'lg')}</div>
-    <div class="toolbar"><div class="seg" id="artShow">
-      <button data-s="all" class="${artShow === 'all' ? 'on' : ''}">Todas (${total})</button>
-      <button data-s="have" class="${artShow === 'have' ? 'on' : ''}">Las tengo (${have})</button>
-      <button data-s="miss" class="${artShow === 'miss' ? 'on' : ''}">Me faltan (${total - have})</button></div>
-      <select id="artRarity" title="Rareza">${rarityOpts('Todas las rarezas')}</select></div>`;
+  $('artListView').hidden = true; $('artView').hidden = false;
+  const el = $('artView'), f = artFilters(), fav = favArtists.has(artSel);
+  const st = artistStats(f, artSel)[artSel], cardsOwned = st ? st.cards : new Map();
+  const head = `<div class="arthead2"><div class="t"><button id="artBack">← Ilustradores</button><div><h1>${esc(artSel)}</h1><div class="muted">${fmt(artistTotals[artSel] || artCards.length)} cartas en el catálogo</div></div>
+    <button class="favbtn ${fav ? 'on' : ''}" data-fav="${esc(artSel)}" aria-label="${fav ? 'Quitar de favoritos' : 'Marcar como favorito'}" aria-pressed="${fav}">${STAR(fav)}</button></div>
+    <div class="seg dexseg" id="artCopiesD">${[['todas', 'Todas mis cartas'], ['venta', 'Para vender'], ['personales', 'Mi colección']].map(([c, l]) => `<button data-c="${c}" class="${f.copies === c ? 'on' : ''}">${l}</button>`).join('')}</div></div>`;
+  if (!artCards.length) { el.innerHTML = head + '<div class="empty">Cargando cartas…</div>'; bindArtView(); return; }
+  const total = artCards.length, have = artCards.filter(c => cardsOwned.has(c.sid + '|' + c.num)).length;
+  // level of each card I have (its best copy) → summary, like the Pokédex
+  const byTier = {};
+  for (const c of artCards) { const o = cardsOwned.get(c.sid + '|' + c.num); if (o) byTier[o.best.tier.id] = (byTier[o.best.tier.id] || 0) + 1; }
+  const tiers = Core.TIERS.filter(t => byTier[t.id]);
+  const kit = st && st.kitCopies ? `<span>Para vender: <b>${fmt(st.kitCopies)}</b> ${st.kitCopies === 1 ? 'copia' : 'copias'} de <b>${fmt(st.kitCards.size)}</b> ${st.kitCards.size === 1 ? 'carta' : 'cartas'} · ~<b>${clp(st.kitValue)}</b></span><button class="primary" id="artLot">📦 Crear lote de venta</button>`
+    : '<span class="muted">No tienes copias para vender de este ilustrador (con estos filtros).</span>';
+  const shown = artCards.filter(c => { const o = cardsOwned.get(c.sid + '|' + c.num);
+    if (artLevel && !(o && o.best.tier.id === artLevel)) return false;
+    return artShow === 'all' || (artShow === 'have' ? !!o : !o); });
+  let html = head + `<div class="dexsum"><div class="dexsum-top"><div class="dexcount"><b>${fmt(have)}</b><span>/ ${fmt(total)} cartas</span></div>
+      <div class="seg" id="artShow"><button data-s="all" class="${artShow === 'all' ? 'on' : ''}">Todas</button><button data-s="have" class="${artShow === 'have' ? 'on' : ''}">Tengo</button><button data-s="miss" class="${artShow === 'miss' ? 'on' : ''}">Me faltan</button></div></div>
+    <div class="dexstack">${tiers.map(t => `<i class="t-${t.id}" style="width:${byTier[t.id] / total * 100}%"></i>`).join('')}</div>
+    <div class="dexlevels">${tiers.length ? `<span class="hint">${artLevel ? 'Mostrando solo:' : 'Toca un nivel para ver solo esas:'}</span>` + tiers.map(t => `<button class="${artLevel === t.id ? 'on' : ''}" data-lvl="${t.id}"><i class="t-${t.id}"></i>${esc(t.label)} <b>${byTier[t.id]}</b></button>`).join('') + (artLevel ? '<button data-lvl="">Ver todos los niveles</button>' : '') : '<span class="hint">Todavía no tienes cartas de este ilustrador con estos filtros.</span>'}</div>
+    <div class="artkit">${kit}</div></div><div id="catNote2"></div>`;
   let year = null, open = false;
   for (const c of shown) {
-    if (c.year !== year) { if (open) html += '</div>'; year = c.year; html += `<div class="yeargrp">${esc(year || 'Sin fecha')}</div><div class="cardgrid">`; open = true; }
-    html += `<div class="tile ${c.q ? '' : 'miss'}" title="${esc(c.name)} · ${esc(c.set_name)} #${esc(c.num)}">
-      <div class="img">${c.img ? `<img src="${esc(c.img)}" loading="lazy" alt="">` : ''}${rcorner(c.rarity)}${c.q ? `<span class="q">×${c.q}</span>` : ''}</div>
-      <div class="t1">${esc(c.name)} ${mechOf(c.name) ? rchip('', c.name) : ''}</div><div class="t2">${esc(c.set_code || c.sid)} #${esc(c.num)} · ${esc(c.set_name)}</div></div>`;
+    if (c.year !== year) { if (open) html += '</div>'; year = c.year; html += `<div class="yeargrp2">${esc(year || 'Sin fecha')}</div><div class="album">`; open = true; }
+    const o = cardsOwned.get(c.sid + '|' + c.num), b = o && splitKey(o.best.key), img = (b && imgFor(b.sid, b.num, b.v)) || c.img;
+    html += `<div class="slot ${o ? '' : 'miss'}" title="${esc(c.name)} · ${esc(c.set_name)} #${esc(c.num)}"><div class="pic">${img ? `<img src="${esc(img)}" loading="lazy" alt="" onerror="this.remove()">` : ''}${o ? tierChip(o.best.tier) + (o.q > 1 ? `<span class="q">×${o.q}</span>` : '') : `<span class="no">#${esc(c.num)}</span>`}</div>
+      <div class="cap"><b>${esc(c.name)}</b><span>${esc(c.set_code || c.sid)}</span></div></div>`;
   }
   if (open) html += '</div>';
   if (!shown.length) html += '<div class="empty">Nada en este filtro.</div>';
   el.innerHTML = html;
-  $('artRarity').value = rf; $('artRarity').onchange = renderArtView;
+  bindArtView();
+  renderCatNote('catNote2');
+}
+function bindArtView() {
+  $('artBack').onclick = () => { artSel = null; renderArtists(); };
+  $('artCopiesD').onclick = e => { const b = e.target.closest('[data-c]'); if (b) setArt({ copies: b.dataset.c }); };
+}
+// a sale lot with every copy for sale of this illustrator (with the language / series / level filters)
+async function artistLot(name) {
+  const st = artistStats(artFilters(), name)[name];
+  if (!st || !st.kitKeys.length) return;
+  const items = st.kitKeys.map(k => { const x = splitKey(k); return { sid: x.sid, num: x.num, variant: x.v, lang: x.lang, cond: x.cond, qty: forSale(k) }; });
+  const per = new Map();   // the same card + variant + language + condition in two locations is one lot line
+  for (const i of items) { const b = [i.sid, i.num, i.variant, i.lang, i.cond].join('|'); if (per.has(b)) per.get(b).qty += i.qty; else per.set(b, { ...i }); }
+  if (!confirm(`¿Crear el lote de venta "Kit ${name}" con ${fmt(st.kitCopies)} copias (~${clp(st.kitValue)})?\nEl inventario no cambia hasta que cierres el lote.`)) return;
+  try {
+    const r = await api('POST', '/lots', { name: `Kit ${name}`, kind: 'sell' });
+    await api('POST', `/lots/${r.id}/items/batch`, { items: [...per.values()] });
+    lotSel = r.id; data.lot = r.id; save(); await loadLots(); showTab('lotes');
+    toast(`📦 Lote "Kit ${name}" creado con ${fmt(st.kitCopies)} copias`);
+  } catch (e) { toast('No se pudo crear el lote: ' + e.message); }
 }
 let catPoll = null;
-async function renderCatNote() {
+async function renderCatNote(target = 'catNote') {
   let c; try { c = await api('GET', '/catalog'); } catch (e) { return; }
-  const el = $('catNote'), job = c.job;
+  const el = $(target), job = c.job; if (!el) return;
   if (job && job.running) {
     el.innerHTML = `<div class="catnote">⏳ Descargando catálogo: ${job.done}/${job.total} expansiones<br><span class="muted">${esc(job.set || '')}</span>${bar(job.done, job.total)}</div>`;
     clearTimeout(catPoll); catPoll = setTimeout(async () => { await loadArtists(); renderCatNote(); }, 4000);
@@ -2674,10 +2800,32 @@ $('kitTiers').addEventListener('click', e => {
 });
 $('dexGrid').addEventListener('click', e => { const c = e.target.closest('.slot'); if (!c) return; dexSel = +c.dataset.d === dexSel ? null : +c.dataset.d; renderKits(); if (dexSel !== null) $('dexDetail').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); });
 
-let at; $('artFilter').addEventListener('input', () => { clearTimeout(at); at = setTimeout(renderArtists, 150); });
-$('artSort').onchange = $('artLang').onchange = renderArtists;
-$('artList').addEventListener('click', e => { const r = e.target.closest('.arow'); if (r) openArtist(r.dataset.a); });
-$('artView').addEventListener('click', e => { const b = e.target.closest('#artShow button'); if (b) { artShow = b.dataset.s; renderArtView(); } });
+let at; $('artFilter').addEventListener('input', () => { clearTimeout(at); at = setTimeout(() => { artLimit = 60; renderArtists(); }, 150); });
+$('artCopies').addEventListener('click', e => { const b = e.target.closest('[data-c]'); if (b) setArt({ copies: b.dataset.c }); });
+$('artSort').onchange = () => setArt({ sort: $('artSort').value });
+$('artLang').onchange = () => setArt({ lang: $('artLang').value });
+$('artSeries').onchange = () => setArt({ series: $('artSeries').value });
+$('artFav').onchange = () => setArt({ fav: $('artFav').checked });
+$('artClear').onclick = () => setArt({ lang: '', series: '', tiers: null, fav: false });
+$('artFiltersBtn').onclick = () => { const open = $('artFilters').hidden; $('artFilters').hidden = !open; $('artFiltersBtn').setAttribute('aria-expanded', open); };
+$('artTiers').addEventListener('click', e => {
+  const q = e.target.closest('[data-q]'), t = e.target.closest('[data-t]');
+  if (q) return setArt({ tiers: TIER_QUICK[+q.dataset.q][1] });
+  if (!t) return;
+  const all = Core.TIERS.map(x => x.id), cur = artFilters().tiers || all, id = t.dataset.t;
+  let next = cur.includes(id) ? cur.filter(x => x !== id) : [...cur, id];
+  if (!next.length) next = [id];
+  setArt({ tiers: next.length === all.length ? null : all.filter(x => next.includes(x)) });
+});
+$('tab-artistas').addEventListener('click', e => {
+  const fv = e.target.closest('[data-fav]'); if (fv) { e.stopPropagation(); return toggleFav(fv.dataset.fav); }
+  if (e.target.closest('#artMoreBtn')) { artLimit += 120; return renderArtists(); }
+  const c = e.target.closest('.artcard'); if (c) return openArtist(c.dataset.a);
+  const s = e.target.closest('#artShow [data-s]'); if (s) { artShow = s.dataset.s; return renderArtView(); }
+  const l = e.target.closest('#artView [data-lvl]'); if (l) { artLevel = l.dataset.lvl && artLevel !== l.dataset.lvl ? l.dataset.lvl : null; return renderArtView(); }
+  if (e.target.closest('#artLot')) return artistLot(artSel);
+});
+$('tab-artistas').addEventListener('keydown', e => { const c = e.target.closest('.artcard'); if (c && (e.key === 'Enter' || e.key === ' ') && e.target === c) { e.preventDefault(); openArtist(c.dataset.a); } });
 
 $('gLangF').onchange = renderGroups;
 $('gNew').onclick = () => { resetGroupForm(); $('gForm').hidden = false; $('gName').focus(); };

@@ -106,6 +106,13 @@ Un lote junta las cartas de un trato y les pone precio a un % del valor de merca
 - **Cerrar** descuenta las copias para vender del inventario (venta) o las agrega (compra), y guarda los precios cerrados. **Reabrir** lo deshace.
 - Tablas: `lots`, `lot_items`.
 
+## Ilustradores
+
+Pestaña **🎨 Artistas**: cada ilustrador del catálogo internacional como una tarjeta con una carta suya de portada (tu copia de mayor nivel, o una del catálogo), cuántas de sus cartas tienes y la insignia de tu mejor nivel. Búsqueda, orden (más avance, más cartas mías, kit más valioso, más cartas en el catálogo, A→Z) y copias (todas / para vender / mi colección) a la vista; idioma, serie, niveles y "solo favoritos" en Filtros.
+- **Detalle**: sus cartas por año, las que tienes en color con su nivel y las que faltan en blanco y negro; resumen por nivel (toca uno para ver solo esas) y todas / tengo / me faltan.
+- **Kit**: cuántas copias para vender tienes de ese ilustrador, de cuántas cartas y su valor; **📦 Crear lote de venta** arma el lote "Kit <ilustrador>" con ellas (el inventario cambia recién al cerrar el lote).
+- **Favoritos** (★, tabla `favorite_artists`): aparecen primero y, al cargar una carta suya, la app avisa "⭐ Carta de …, tu ilustrador favorito".
+
 ## Expansiones (cuánto te falta para completarlas)
 
 Pestaña **📚 Expansiones**: cada expansión donde tienes cartas, con su avance, ordenadas por lo cerca que estás de completarlas (también por faltantes o por fecha). Tres modos:
