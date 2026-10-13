@@ -439,24 +439,50 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
 .yeargrp{margin:20px 0 10px;font-weight:800;color:var(--muted);font-size:13px;text-transform:uppercase;letter-spacing:.06em}
 
 /* ---------- Artes conectados ---------- */
-.group{margin-top:16px}
-.ghead{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
-.ghead .gname{font-size:18px;font-weight:800}
-.ghead .bar{width:160px}
-.gbody{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
-.pano{display:grid;gap:0;flex:1 1 300px;border-radius:8px;overflow:hidden}
-.pcell{position:relative;aspect-ratio:63/88;background:var(--chip);overflow:hidden}
+/* connected art: pieces joined with no gaps, as the full picture */
+.pano{display:grid;gap:0;border-radius:10px;overflow:hidden;background:var(--chip)}
+.pcell{position:relative;aspect-ratio:245/342;background:var(--chip);overflow:hidden}
 .pcell img{width:100%;height:100%;object-fit:cover;display:block}
-.pcell.miss img{filter:grayscale(1);opacity:.32}
+.pcell.miss img{filter:grayscale(1);opacity:.38}
 .pcell .q{position:absolute;right:5px;top:5px;background:var(--ok);color:#fff;font-size:11px;font-weight:800;border-radius:999px;padding:1px 8px}
-.pcell.miss .q{background:rgba(0,0,0,.55)}
-.pcell .lbl{position:absolute;left:0;right:0;bottom:0;font-size:10.5px;background:linear-gradient(transparent,rgba(0,0,0,.75));color:#fff;padding:12px 6px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.gart{margin:0;flex:1 1 320px;max-width:560px}
+.pcell .no{position:absolute;left:0;right:0;bottom:0;padding:5px;text-align:center;font-size:11px;font-weight:900;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.7))}
+.grpsum{font-size:13.5px;color:var(--muted);margin:0 0 14px}
+.grpsum b{color:var(--ink)}
+.grpgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.grpcard{display:flex;flex-direction:column;gap:10px;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;box-shadow:var(--shadow);cursor:pointer;color:inherit;font:inherit}
+.grpcard:hover{border-color:var(--muted)}
+.grpcard.done{border-color:var(--ok)}
+.grpcard .cover{display:flex;align-items:center;justify-content:center;min-height:150px;background:var(--bg);border-radius:10px;padding:8px}
+.grpcard .cover .pano{width:100%}
+.grpcard .nm{font-weight:800;font-size:14.5px}
+.grpcard .sub{font-size:12px;color:var(--muted)}
+.grpcard .nums{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;color:var(--muted)}
+.grpcard .nums b{color:var(--ink);font-size:16px}
+.grpcard .ok{color:var(--ok);font-weight:900}
+.grpdet{display:flex;flex-wrap:wrap;gap:22px;align-items:flex-start}
+.grpdet .big{flex:1 1 420px;max-width:760px}
+.grpdet .side{flex:1 1 300px;display:flex;flex-direction:column;gap:14px}
+.gart{margin:0}
 .gart img{width:100%;border-radius:10px;display:block;background:var(--chip);box-shadow:var(--shadow)}
 .gart figcaption{font-size:12px;color:var(--muted);margin-top:6px}
-.gform textarea{width:100%;font:14px/1.5 ui-monospace,Menlo,monospace;resize:vertical}
-.gform .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
-.gform .row input[type=text]{flex:1;min-width:220px}
+.pieces{display:flex;flex-direction:column;gap:8px}
+.piece{display:flex;gap:10px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px}
+.piece img{width:44px;border-radius:5px;display:block}
+.piece.miss img{filter:grayscale(1);opacity:.5}
+.piece .t{flex:1;min-width:0;font-size:13px}
+.piece .t b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.piece .t span{color:var(--muted);font-size:12px}
+.piece .r{text-align:right;font-size:12.5px;white-space:nowrap}
+.gdlg{display:flex;flex-wrap:wrap;gap:20px}
+.gdlg-form{flex:1 1 340px;display:flex;flex-direction:column;gap:10px}
+.gdlg-form h2{margin:0}
+.gdlg-form label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);font-weight:700}
+.gdlg-form label.inline{flex-direction:row;align-items:center;gap:8px}
+.gdlg-form textarea{width:100%;font:14px/1.5 ui-monospace,Menlo,monospace;resize:vertical;box-sizing:border-box}
+.gdlg-form .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.gdlg-actions{margin-top:6px}
+.gdlg-prev{flex:1 1 320px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.gdlg-prev .pano{max-width:100%}
 .filebtn{border:1px dashed var(--muted);border-radius:10px;padding:7px 14px;cursor:pointer;font-size:14px;font-weight:700}
 
 /* ---------- toast ---------- */
@@ -679,32 +705,51 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
 
   <!-- ARTES CONECTADOS -->
   <section class="tab" id="tab-grupos">
-    <div class="section-h"><div><h1>Artes conectados</h1><p>Cartas cuyas ilustraciones se unen en una imagen más grande.</p></div><div class="spacer"></div>
-      <select id="gLangF"></select>
-      <button class="primary" id="gNew">＋ Nuevo grupo</button>
+    <div id="grpListView">
+      <div class="dexhead">
+        <div><h1>Artes conectados</h1><p>Cartas cuyas ilustraciones se unen en una imagen más grande.</p></div>
+        <button class="primary" id="gNew">＋ Nuevo grupo</button>
+      </div>
+      <div class="exptools">
+        <div class="seg dexseg" id="grpShow" role="group" aria-label="Qué grupos ver"><button data-v="all">Todos</button><button data-v="done">Completos</button><button data-v="miss">Me faltan</button></div>
+        <select id="grpSort" aria-label="Orden"><option value="pct">Más cerca de completarse</option><option value="value">Más valiosos</option><option value="cost">Menos cuesta completarlos</option><option value="name">A → Z</option></select>
+        <button class="dexfbtn" id="grpFiltersBtn" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Filtros<span class="n" id="grpFiltersN"></span></button>
+      </div>
+      <div class="dexfilters expfilters" id="grpFilters" hidden>
+        <div class="row"><select id="gLangF" aria-label="Idioma"></select><select id="grpSeries" aria-label="Serie"></select></div>
+        <button class="dexclear" id="grpClear">Quitar filtros</button>
+      </div>
+      <div class="grpsum" id="grpSum"></div>
+      <div class="grpgrid" id="groupList"></div>
     </div>
-    <div class="panel gform" id="gForm" hidden>
-      <div class="panel-h" id="gTitle">Nuevo grupo</div>
-      <div class="row">
-        <input type="text" id="gName" placeholder="Nombre, ej: Panorama bosque Kanto">
-        <label class="muted">Columnas <input id="gCols" type="number" min="1" max="20" value="3" style="width:76px"></label>
-      </div>
-      <textarea id="gCards" rows="4" spellcheck="false" placeholder="Una línea por expansión: código o id de la expansión y los números, en el orden de la imagen (izquierda → derecha, arriba → abajo).
-PFL 12 13 14
-me2 20-22"></textarea>
-      <div class="row" style="margin-top:10px">
-        <input type="text" id="gImgUrl" placeholder="Imagen del arte unido (opcional): pega una URL…" spellcheck="false">
-        <label class="filebtn">…o sube un archivo<input type="file" id="gImgFile" accept="image/jpeg,image/png,image/webp,image/gif" hidden></label>
-        <span class="muted" id="gImgName" style="font-size:13px"></span>
-      </div>
-      <div class="row">
-        <button class="primary" id="gSave">Guardar grupo</button>
-        <button id="gCancel">Cancelar</button>
-        <span class="msg" id="gMsg" style="margin:0"></span>
-      </div>
-    </div>
-    <div id="groupList"></div>
+    <div id="grpView" hidden></div>
   </section>
+
+  <dialog class="dlg" id="gDlg" style="width:min(96vw,980px)">
+    <div class="gdlg">
+      <div class="gdlg-form">
+        <h2 id="gTitle">Nuevo grupo</h2>
+        <label>Nombre<input type="text" id="gName" placeholder="Ej: Ruinas de Eevee"></label>
+        <label>Cartas, en el orden de la imagen (izquierda → derecha, arriba → abajo)
+          <textarea id="gCards" rows="5" spellcheck="false" placeholder="Una línea por expansión: código y números&#10;N2 20 38 32&#10;30C 130-133"></textarea></label>
+        <label class="inline">Columnas <input id="gCols" type="number" min="1" max="20" value="3" style="width:76px"></label>
+        <label>Imagen del arte unido (opcional)<input type="text" id="gImgUrl" placeholder="Pega una URL…" spellcheck="false"></label>
+        <div class="row"><label class="filebtn">…o sube un archivo<input type="file" id="gImgFile" accept="image/jpeg,image/png,image/webp,image/gif" hidden></label><span class="muted" id="gImgName" style="font-size:13px"></span></div>
+        <div class="msg" id="gMsg"></div>
+        <div class="row gdlg-actions">
+          <button class="primary" id="gSave">Guardar grupo</button>
+          <button id="gCancel">Cancelar</button>
+          <span class="spacer"></span>
+          <button class="ghost danger" id="gDelete" hidden>Borrar grupo</button>
+        </div>
+      </div>
+      <div class="gdlg-prev">
+        <div class="muted" id="gPrevInfo">Vista previa: escribe las cartas y aquí verás el panorama armado.</div>
+        <div id="gPreview"></div>
+      </div>
+    </div>
+  </dialog>
+
   <!-- LOTES -->
   <section class="tab" id="tab-lotes">
     <div class="artists">
@@ -846,7 +891,7 @@ function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return 
 // inv[key] = copies, pers[key] = how many of them are for my personal collection (not for sale)
 let data = Object.assign({ inv: {}, pers: {}, added: {}, log: [], groups: [], recent: [], sound: false, lang: 'ES', invView: 'grid', tab: 'cargar', personal: false, colOrder: 'date', locPick: 'auto' }, lsGet(PREFS, {}));
 data.cond = 'NM'; // every session starts loading NM
-function save() { lsSet(PREFS, { recent: data.recent, sound: data.sound, lang: data.lang, invView: data.invView, tab: data.tab, personal: data.personal, colOrder: data.colOrder, lot: data.lot, locPick: data.locPick, invSort: data.invSort, colSort: data.colSort, kit: data.kit, exp: data.exp, art: data.art }); }
+function save() { lsSet(PREFS, { recent: data.recent, sound: data.sound, lang: data.lang, invView: data.invView, tab: data.tab, personal: data.personal, colOrder: data.colOrder, lot: data.lot, locPick: data.locPick, invSort: data.invSort, colSort: data.colSort, kit: data.kit, exp: data.exp, art: data.art, grp: data.grp }); }
 
 // ---------- toasts ----------
 function toast(text, cls = '') {
@@ -2488,29 +2533,129 @@ async function saveGroup() {
 }
 function resetGroupForm() {
   gEditing = null; $('gName').value = ''; $('gCards').value = ''; $('gCols').value = 3;
-  $('gImgUrl').value = ''; $('gImgFile').value = ''; $('gImgName').textContent = ''; $('gMsg').textContent = '';
-  $('gTitle').textContent = 'Nuevo grupo'; $('gForm').hidden = true;
+  $('gImgUrl').value = ''; $('gImgFile').value = ''; $('gImgName').textContent = ''; $('gMsg').textContent = ''; $('gMsg').className = 'msg';
+  $('gTitle').textContent = 'Nuevo grupo'; $('gDelete').hidden = true; $('gPreview').innerHTML = '';
+  $('gPrevInfo').textContent = 'Vista previa: escribe las cartas y aquí verás el panorama armado.';
+  if ($('gDlg').open) $('gDlg').close();
 }
+function openGroupForm(g) {
+  resetGroupForm();
+  if (g) {
+    gEditing = g.id; $('gName').value = g.name; $('gCols').value = g.cols; $('gCards').value = groupText(g); $('gImgUrl').value = g.image;
+    $('gTitle').textContent = 'Editar grupo'; $('gDelete').hidden = false;
+  }
+  $('gDlg').showModal(); $('gName').focus(); groupPreview();
+}
+// live preview while typing: the same parser that saves
+let gPrevT = null, gPrevN = 0;
+function groupPreview() {
+  clearTimeout(gPrevT);
+  gPrevT = setTimeout(async () => {
+    const my = ++gPrevN, text = $('gCards').value, cols = Math.max(1, Math.min(20, parseInt($('gCols').value, 10) || 3));
+    if (!text.trim()) { $('gPreview').innerHTML = ''; $('gPrevInfo').textContent = 'Vista previa: escribe las cartas y aquí verás el panorama armado.'; return; }
+    const { out, errs } = await parseGroupCards(text);
+    if (my !== gPrevN) return;
+    $('gPrevInfo').innerHTML = `${out.length} ${out.length === 1 ? 'carta' : 'cartas'} en ${cols} ${cols === 1 ? 'columna' : 'columnas'}` + (errs.length ? ` · <span style="color:var(--err)">${esc(errs.join(' · '))}</span>` : '');
+    $('gPreview').innerHTML = out.length ? panoHtml({ cards: out, cols }, grpLang(), false) : '';
+  }, 300);
+}
+
+// ---------- connected art: list, detail, kit ----------
+let grpSel = null;
+function grpFilters() { const g = data.grp || {}; return { show: g.show || 'all', sort: g.sort || 'pct', lang: g.lang || '', series: g.series || '' }; }
+const grpLang = () => grpFilters().lang;
+function setGrp(patch) { data.grp = { ...grpFilters(), ...patch }; save(); renderGroups(); }
+// a piece's NM price (its automatic variant), like the cost of completing an expansion
+const piecePrice = c => priceOf(keyOf(c.sid, c.num, autoVariant(meta(c.sid, c.num)), '', 'NM'));
+// everything about one group with the language filter: copies of each piece, value, cost of what is missing, the kit
+function groupInfo(g, langF) {
+  const pieces = g.cards.map(c => {
+    const m = meta(c.sid, c.num) || [], s = setById[c.sid], pr = piecePrice(c);
+    const rows = Object.keys(data.inv).filter(k => { const x = splitKey(k); return x.sid === c.sid && x.num === c.num && (!langF || x.lang === langF); });
+    const qty = rows.reduce((a, k) => a + data.inv[k], 0), sale = rows.filter(k => forSale(k) > 0);
+    // for the kit: one copy for sale, NM first, then the row with most copies
+    sale.sort((a, b) => (splitKey(a).cond === 'NM' ? 0 : 1) - (splitKey(b).cond === 'NM' ? 0 : 1) || forSale(b) - forSale(a));
+    const locs = {}; for (const k of rows) { const l = splitKey(k).loc; locs[l] = (locs[l] || 0) + data.inv[k]; }
+    return { c, m, s, pr, qty, saleKey: sale[0] || null, locs };
+  });
+  const have = pieces.filter(p => p.qty).length;
+  const value = pieces.reduce((a, p) => a + (p.pr ? p.pr.clp : 0), 0), noPrice = pieces.filter(p => !p.pr).length;
+  const missing = pieces.filter(p => !p.qty), cost = missing.reduce((a, p) => a + (p.pr ? p.pr.clp : 0), 0);
+  const kitMissing = pieces.filter(p => !p.saleKey).length;
+  return { g, pieces, have, total: pieces.length, done: have === pieces.length, value, noPrice, missing, cost, kitMissing };
+}
+// the pieces joined with no gaps, in their columns; missing ones in black and white
+function panoHtml(g, langF, labels = true) {
+  return `<div class="pano" style="grid-template-columns:repeat(${g.cols},minmax(0,1fr))">${g.cards.map(c => {
+    const m = meta(c.sid, c.num), s = setById[c.sid], q = cardQty(c.sid, c.num, langF);
+    return `<div class="pcell ${q ? '' : 'miss'}" title="${esc(m ? m[0] : '?')} · ${esc(s ? s.name : c.sid)} #${esc(c.num)}${q ? '' : ' · te falta'}">${m && m[4] ? `<img src="${esc(m[4])}" loading="lazy" alt="" onerror="this.remove()">` : ''}${labels && q > 1 ? `<span class="q">×${q}</span>` : ''}${labels && !q ? `<span class="no">#${esc(c.num)}</span>` : ''}</div>`;
+  }).join('')}</div>`;
+}
+const priceOrDash = (v, n) => v ? '~' + clp(v) + (n ? ` · ${n} sin precio` : '') : 'sin precio';
 function renderGroups() {
-  const langF = $('gLangF').value, el = $('groupList');
-  if (!data.groups.length) { el.innerHTML = '<div class="empty"><span class="big">🧩</span>Aún no tienes grupos. Crea uno con <b>＋ Nuevo grupo</b>.</div>'; return; }
-  // groups closest to completion first
-  const list = data.groups.map(g => { const qs = g.cards.map(c => cardQty(c.sid, c.num, langF)); return { g, qs, have: qs.filter(q => q > 0).length }; })
-    .sort((a, b) => b.have / b.g.cards.length - a.have / a.g.cards.length || b.have - a.have);
-  paint(el, list.map(({ g, qs, have }) => {
-    const full = Math.min(...qs);
-    return `<div class="panel group"><div class="ghead"><span class="gname">${esc(g.name)}</span>
-      <span class="muted"><b style="color:var(--ink)">${have}/${g.cards.length}</b> piezas${full ? ` · <b style="color:var(--ok)">${full} ${full === 1 ? 'completo' : 'completos'}</b>` : ''}</span>${bar(have, g.cards.length)}
-      <span class="spacer"></span><button class="ghost" data-ge="${esc(g.id)}">✏️ Editar</button><button class="ghost danger" data-gd="${esc(g.id)}">Borrar</button></div>
-      <div class="gbody">
-      <div class="pano" style="grid-template-columns:repeat(${g.cols},minmax(0,1fr));max-width:${g.cols * 170}px">${g.cards.map((c, i) => {
-        const m = meta(c.sid, c.num), s = setById[c.sid], q = qs[i];
-        return `<div class="pcell ${q ? '' : 'miss'}" title="${esc(m ? m[0] : '?')} · ${esc(s ? s.name : c.sid)} #${esc(c.num)}">${m && m[4] ? `<img src="${esc(m[4])}" loading="lazy" alt="">` : ''}
-          <span class="q">${q ? '×' + q : 'falta'}</span><span class="lbl">${esc((s && s.code) || c.sid)} ${esc(c.num)} · ${esc(m ? m[0] : '?')}</span></div>`;
-      }).join('')}</div>
-      ${g.image ? `<figure class="gart"><a href="${esc(g.image)}" target="_blank" rel="noopener"><img src="${esc(g.image)}" loading="lazy" alt="Arte unido de ${esc(g.name)}"></a><figcaption>Así se ve el arte unido</figcaption></figure>` : ''}
-      </div></div>`;
-  }).join(''));
+  if (grpSel) return renderGroupView();
+  $('grpListView').hidden = false; $('grpView').hidden = true;
+  const f = grpFilters(), el = $('groupList');
+  for (const b of $('grpShow').children) b.classList.toggle('on', b.dataset.v === f.show);
+  $('grpSort').value = f.sort; $('gLangF').value = f.lang;
+  const eras = [...new Set(data.groups.flatMap(g => g.cards.map(c => eraOf(setById[c.sid]))).filter(Boolean))];
+  $('grpSeries').innerHTML = '<option value="">Todas las series</option>' + eras.map(e => `<option value="${esc(e)}">${esc(e)}</option>`).join('');
+  $('grpSeries').value = f.series;
+  $('grpFiltersN').textContent = [f.lang, f.series].filter(Boolean).length || '';
+  if (!data.groups.length) { $('grpSum').innerHTML = ''; el.innerHTML = '<div class="empty"><span class="big">🧩</span>Aún no tienes grupos. Crea uno con <b>＋ Nuevo grupo</b>.</div>'; return; }
+  const all = data.groups.filter(g => !f.series || g.cards.some(c => eraOf(setById[c.sid]) === f.series)).map(g => groupInfo(g, f.lang));
+  const done = all.filter(x => x.done).length, missPieces = all.reduce((a, x) => a + x.missing.length, 0), missCost = all.reduce((a, x) => a + x.cost, 0);
+  $('grpSum').innerHTML = `<b>${all.length}</b> grupos · <b>${done}</b> ${done === 1 ? 'completo' : 'completos'} · faltan <b>${fmt(missPieces)}</b> piezas${missCost ? ` · completarlos cuesta <b>~${clp(missCost)}</b>` : ''}`;
+  const list = all.filter(x => f.show === 'all' || (f.show === 'done' ? x.done : !x.done));
+  const pc = x => x.have / x.total;
+  list.sort({ pct: (a, b) => pc(b) - pc(a) || b.have - a.have, value: (a, b) => b.value - a.value, cost: (a, b) => a.cost - b.cost || pc(b) - pc(a), name: (a, b) => a.g.name.localeCompare(b.g.name) }[f.sort]);
+  paint(el, list.map(x => {
+    const sets = [...new Set(x.g.cards.map(c => (setById[c.sid] || {}).name || c.sid))].join(' · ');
+    return `<button class="grpcard ${x.done ? 'done' : ''}" data-g="${esc(x.g.id)}">
+      <div class="cover"><div style="width:${Math.min(100, x.g.cols * 34)}%">${panoHtml(x.g, f.lang, false)}</div></div>
+      <div><div class="nm">${esc(x.g.name)}</div><div class="sub">${esc(sets)}</div></div>
+      <div class="expbar"><i style="width:${pct(x.have, x.total)}%"></i></div>
+      <div class="nums"><span><b>${x.have}</b> / ${x.total} piezas</span>${x.done ? '<span class="ok">✓ Completo</span>' : `<span>falta ${priceOrDash(x.cost)}</span>`}</div>
+      <div class="sub">Valor del grupo: ${priceOrDash(x.value, x.noPrice)}</div>
+    </button>`; }).join('') || '<div class="empty">No hay grupos con estos filtros.</div>');
+}
+function renderGroupView() {
+  const g = data.groups.find(x => x.id === grpSel);
+  if (!g) { grpSel = null; return renderGroups(); }
+  $('grpListView').hidden = true; $('grpView').hidden = false;
+  const f = grpFilters(), x = groupInfo(g, f.lang);
+  const kit = x.kitMissing === 0
+    ? `<span>Tienes una copia para vender de cada pieza · valor ~<b>${clp(x.pieces.reduce((a, p) => a + (p.saleKey ? (priceOf(p.saleKey) || {}).clp || 0 : 0), 0))}</b></span><button class="primary" id="grpLot">📦 Crear lote de venta</button>`
+    : `<span class="muted">Para vender el kit te faltan copias para vender de ${x.kitMissing} ${x.kitMissing === 1 ? 'pieza' : 'piezas'}.</span>`;
+  const pieces = x.pieces.map(p => `<div class="piece ${p.qty ? '' : 'miss'}">${p.m[4] ? `<img src="${esc(p.m[4])}" alt="" loading="lazy">` : ''}
+      <div class="t"><b>${esc(p.m[0] || '?')}</b><span>${esc(p.s ? p.s.name : p.c.sid)} #${esc(p.c.num)}</span>
+        <div>${p.qty ? Object.entries(p.locs).map(([l, n]) => locchip(+l, true) + (n > 1 ? ` ×${n}` : '')).join(' ') : '<span class="muted">Te falta</span>'}</div></div>
+      <div class="r">${p.qty ? `<b>×${p.qty}</b><br>` : ''}${p.pr ? clp(p.pr.clp) : '<span class="muted">sin precio</span>'}</div></div>`).join('');
+  paint($('grpView'), `<div class="expdhead"><div class="t"><button id="grpBack">← Artes conectados</button><div><h1>${esc(g.name)}</h1>
+      <div class="muted">${x.have}/${x.total} piezas · valor ${priceOrDash(x.value, x.noPrice)}</div></div></div>
+      <div class="row"><button id="grpEdit">✏️ Editar</button>${x.missing.length ? '<button id="grpCopy">📋 Copiar lista de faltantes</button>' : ''}</div></div>
+    <div class="dexsum"><div class="expbar"><i style="width:${pct(x.have, x.total)}%"></i></div>
+      <div class="dexkits">${x.done ? '<b>✓ Completo</b>' : `Te faltan <b>${x.missing.length}</b> ${x.missing.length === 1 ? 'pieza' : 'piezas'} · completarlo cuesta <b>${priceOrDash(x.cost)}</b>`}</div>
+      <div class="artkit">${kit}</div></div>
+    <div class="grpdet"><div class="big">${panoHtml(g, f.lang)}
+      ${g.image ? `<figure class="gart" style="margin-top:16px"><a href="${esc(g.image)}" target="_blank" rel="noopener"><img src="${esc(g.image)}" loading="lazy" alt="Arte unido de ${esc(g.name)}"></a><figcaption>Así se ve el arte unido</figcaption></figure>` : ''}</div>
+      <div class="side"><div class="pieces">${pieces}</div></div></div>`);
+}
+async function groupLot(g) {
+  const x = groupInfo(g, grpLang());
+  if (x.kitMissing) return;
+  const items = x.pieces.map(p => { const k = splitKey(p.saleKey); return { sid: k.sid, num: k.num, variant: k.v, lang: k.lang, cond: k.cond, qty: 1 }; });
+  if (!confirm(`¿Crear el lote de venta "Kit ${g.name}" con una copia de cada pieza (${items.length})?\nEl inventario no cambia hasta que cierres el lote.`)) return;
+  try {
+    const r = await api('POST', '/lots', { name: `Kit ${g.name}`, kind: 'sell' });
+    await api('POST', `/lots/${r.id}/items/batch`, { items });
+    lotSel = r.id; data.lot = r.id; save(); await loadLots(); showTab('lotes');
+    toast(`📦 Lote "Kit ${g.name}" creado con ${items.length} piezas`);
+  } catch (e) { toast('No se pudo crear el lote: ' + e.message); }
+}
+function missingText(g) {
+  const x = groupInfo(g, grpLang());
+  return `${g.name} — me faltan: ` + x.missing.map(p => `${p.s ? p.s.name : p.c.sid} #${p.c.num} ${p.m[0] || ''}`.trim()).join(', ');
 }
 
 // ---------- export / import ----------
@@ -2601,7 +2746,7 @@ $('invRarity').innerHTML = rarityOpts('Todas las rarezas');
 $('invLang').innerHTML = '<option value="">Todos los idiomas</option>' + LANGS.map(l => `<option value="${l}">${l} · ${LNAME[l]}</option>`).join('') + '<option value="-">Sin idioma</option>';
 $('kitLang').innerHTML = '<option value="">Todos los idiomas</option>' + LANGS.map(l => `<option value="${l}">Solo ${LNAME[l]}</option>`).join('');
 $('artLang').innerHTML = '<option value="">Todos los idiomas</option>' + LANGS.map(l => `<option value="${l}">Solo ${LNAME[l]}</option>`).join('');
-$('gLangF').innerHTML = '<option value="">Contar todos los idiomas</option>' + LANGS.map(l => `<option value="${l}">Contar solo ${LNAME[l]}</option>`).join('');
+$('gLangF').innerHTML = '<option value="">Cualquier idioma</option>' + LANGS.map(l => `<option value="${l}">Solo ${LNAME[l]}</option>`).join('');
 // the sticky bars below the header need its height (it wraps on narrow screens)
 const setAppH = () => document.documentElement.style.setProperty('--apph', document.querySelector('.appbar').offsetHeight + 'px');
 setAppH(); window.addEventListener('resize', setAppH);
@@ -2842,21 +2987,30 @@ $('tab-artistas').addEventListener('click', e => {
 });
 $('tab-artistas').addEventListener('keydown', e => { const c = e.target.closest('.artcard'); if (c && (e.key === 'Enter' || e.key === ' ') && e.target === c) { e.preventDefault(); openArtist(c.dataset.a); } });
 
-$('gLangF').onchange = renderGroups;
-$('gNew').onclick = () => { resetGroupForm(); $('gForm').hidden = false; $('gName').focus(); };
+$('gNew').onclick = () => openGroupForm(null);
 $('gSave').onclick = saveGroup;
 $('gCancel').onclick = resetGroupForm;
+$('gCards').addEventListener('input', groupPreview); $('gCols').addEventListener('input', groupPreview);
 $('gImgFile').onchange = e => { const f = e.target.files[0]; $('gImgName').textContent = f ? f.name : ''; };
-$('groupList').addEventListener('click', e => {
-  const ed = e.target.closest('button[data-ge]'), del = e.target.closest('button[data-gd]');
-  if (ed) {
-    const g = data.groups.find(x => x.id === ed.dataset.ge); if (!g) return;
-    gEditing = g.id; $('gName').value = g.name; $('gCols').value = g.cols; $('gCards').value = groupText(g); $('gImgUrl').value = g.image; $('gImgFile').value = ''; $('gImgName').textContent = '';
-    $('gTitle').textContent = 'Editando: ' + g.name; $('gForm').hidden = false; $('gForm').scrollIntoView({ behavior: 'smooth', block: 'center' });
-  } else if (del) {
-    const g = data.groups.find(x => x.id === del.dataset.gd);
-    if (g && confirm(`¿Borrar el grupo "${g.name}"? (Las cartas del inventario no se tocan.)`)) api('DELETE', '/groups/' + g.id).then(l => { setGroups(l); renderGroups(); }, err => alert(err.message));
-  }
+$('gDelete').onclick = () => {
+  const g = data.groups.find(x => x.id === gEditing);
+  if (g && confirm(`¿Borrar el grupo "${g.name}"? (Las cartas del inventario no se tocan.)`))
+    api('DELETE', '/groups/' + g.id).then(l => { setGroups(l); resetGroupForm(); grpSel = null; renderGroups(); toast('Grupo borrado'); }, err => alert(err.message));
+};
+$('gLangF').onchange = () => setGrp({ lang: $('gLangF').value });
+$('grpSeries').onchange = () => setGrp({ series: $('grpSeries').value });
+$('grpSort').onchange = () => setGrp({ sort: $('grpSort').value });
+$('grpShow').addEventListener('click', e => { const b = e.target.closest('[data-v]'); if (b) setGrp({ show: b.dataset.v }); });
+$('grpClear').onclick = () => setGrp({ lang: '', series: '' });
+$('grpFiltersBtn').onclick = () => { const open = $('grpFilters').hidden; $('grpFilters').hidden = !open; $('grpFiltersBtn').setAttribute('aria-expanded', open); };
+$('tab-grupos').addEventListener('click', async e => {
+  const card = e.target.closest('.grpcard'); if (card) { grpSel = card.dataset.g; renderGroups(); window.scrollTo(0, 0); return; }
+  const g = data.groups.find(x => x.id === grpSel);
+  if (e.target.closest('#grpBack')) { grpSel = null; return renderGroups(); }
+  if (!g) return;
+  if (e.target.closest('#grpEdit')) return openGroupForm(g);
+  if (e.target.closest('#grpLot')) return groupLot(g);
+  if (e.target.closest('#grpCopy')) { const t = missingText(g); try { await navigator.clipboard.writeText(t); toast('📋 Lista de faltantes copiada'); } catch (err) { prompt('Copia la lista:', t); } }
 });
 
 $('btnCsv').onclick = () => { $('dataMenu').open = false; location.href = '/api/export.csv'; };

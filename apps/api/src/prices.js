@@ -166,11 +166,11 @@ export async function ensureCardPrice(cardId) {
   } catch (e) { console.warn('precio de', cardId, e.message); }
 }
 
-// Cards worth pricing: everything in the inventory, in my collections' checklists and in my lots
+// Cards worth pricing: everything in the inventory, in my collections' checklists, in my lots and in my connected-art groups
 const WANTED = `
   SELECT DISTINCT c.id, c.set_id, s.source FROM cards c JOIN sets s ON s.id = c.set_id
   WHERE (EXISTS (SELECT 1 FROM inventory i WHERE i.card_id = c.id) OR EXISTS (SELECT 1 FROM collection_cards cc WHERE cc.card_id = c.id)
-         OR EXISTS (SELECT 1 FROM lot_items l WHERE l.card_id = c.id))
+         OR EXISTS (SELECT 1 FROM lot_items l WHERE l.card_id = c.id) OR EXISTS (SELECT 1 FROM art_group_cards g WHERE g.card_id = c.id))
     AND s.source IN ('ptcg', 'tcgdex-ja')`;
 
 export async function staleCount() {

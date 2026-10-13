@@ -113,6 +113,15 @@ Pestaña **🎨 Artistas**: cada ilustrador del catálogo internacional como una
 - **Kit**: cuántas copias para vender tienes de ese ilustrador, de cuántas cartas y su valor; **📦 Crear lote de venta** arma el lote "Kit <ilustrador>" con ellas (el inventario cambia recién al cerrar el lote).
 - **Favoritos** (★, tabla `favorite_artists`): aparecen primero y, al cargar una carta suya, la app avisa "⭐ Carta de …, tu ilustrador favorito".
 
+## Artes conectados
+
+Grupos de cartas cuyas ilustraciones se unen en una imagen más grande (tablas `art_groups`, `art_group_cards`).
+- **Álbum**: cada grupo es una tarjeta con el panorama armado (las piezas juntas, sin espacios, en sus columnas; las que faltan en blanco y negro), piezas tenidas, cuánto falta y el valor del grupo. Todos / Completos / Me faltan, orden (más cerca de completarse, más valiosos, menos cuesta completarlos, A→Z), filtros de idioma y serie, y un resumen de todos los grupos.
+- **Detalle**: el panorama en grande, la imagen del arte unido si la tiene, y cada pieza con sus copias, dónde están guardadas y su precio. **📋 Copiar lista de faltantes** para buscarlas o pedirlas.
+- **Kit**: si tienes una copia para vender de cada pieza, **📦 Crear lote de venta** arma "Kit <grupo>" con una copia de cada una (NM primero).
+- **Crear / editar** en una ventana con vista previa del panorama mientras escribes las cartas (`N2 20 38 32`, una línea por expansión, rangos `30C 130-133`); Borrar está dentro de la edición.
+- Los precios de las piezas se descargan junto con los del inventario.
+
 ## Expansiones (cuánto te falta para completarlas)
 
 Pestaña **📚 Expansiones**: cada expansión donde tienes cartas, con su avance, ordenadas por lo cerca que estás de completarlas (también por faltantes o por fecha). Tres modos:

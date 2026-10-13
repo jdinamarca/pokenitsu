@@ -164,7 +164,7 @@ app.get('/api/prices', async () => {
   const [prices, own] = await Promise.all([
     pool.query(`SELECT ${PRICE_COLS} FROM card_prices p JOIN cards c ON c.id = p.card_id
                 WHERE EXISTS (SELECT 1 FROM inventory i WHERE i.card_id = c.id) OR EXISTS (SELECT 1 FROM collection_cards cc WHERE cc.card_id = c.id)
-                   OR EXISTS (SELECT 1 FROM lot_items l WHERE l.card_id = c.id)`),
+                   OR EXISTS (SELECT 1 FROM lot_items l WHERE l.card_id = c.id) OR EXISTS (SELECT 1 FROM art_group_cards g WHERE g.card_id = c.id)`),
     pool.query(`SELECT c.set_id || '|' || c.number || '|' || o.variant AS k, o.clp, o.usd::float AS usd, (extract(epoch FROM o.updated_at) * 1000)::bigint AS at
                 FROM price_overrides o JOIN cards c ON c.id = o.card_id`),
   ]);
