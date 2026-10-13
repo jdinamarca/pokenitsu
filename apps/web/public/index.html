@@ -312,6 +312,62 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
 .cell .c{position:absolute;top:2px;right:2px;z-index:2;box-shadow:0 1px 3px rgba(0,0,0,.3);font-size:11px;font-weight:800;background:var(--ok);color:#fff;border-radius:999px;padding:0 7px}
 .cell.low{border-color:color-mix(in srgb,var(--gold) 70%,transparent)}
 .cell.low .c{background:var(--warn)}
+/* level of the best copy (Pokédex) */
+.tier{display:inline-block;font-size:10px;font-weight:800;border-radius:6px;padding:0 6px;color:#fff;background:#7a8094;white-space:nowrap}
+.cell .tier{position:absolute;top:2px;left:2px;z-index:2;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.t-challa{background:#8a90a3}.t-holo{background:#4a90d9}.t-exvgx{background:#7b5cd6}.t-especial{background:#1f9e8f}.t-variocolor{background:#d15b9a}
+.t-fullart{background:#e0782c}.t-ir{background:#2f9e55}.t-sir{background:#c8392f}.t-dorada{background:linear-gradient(135deg,#c99a2e,#f1cf6a);color:#3b2a00}
+.tierbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 10px}
+.tierbar .lbl{font-size:12.5px;color:var(--muted);margin-right:4px}
+.tierbar button.tier{border:0;cursor:pointer;font-size:12px;padding:3px 10px;border-radius:999px;opacity:.35}
+.tierbar button.tier.on{opacity:1}
+.tierbar .quick{font-size:12px;padding:3px 10px;border-radius:999px}
+.kitopt{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+/* Pokédex as an album (design A) */
+.dexhead{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px;margin:4px 0 16px}
+.dexhead h1{margin:0;font-size:30px;font-weight:900;letter-spacing:-.02em}
+.dexhead p{margin:2px 0 0;color:var(--muted)}
+.dexseg button{font-weight:800;min-height:38px}
+.dexregions{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px}
+.dexregions button{flex:none;display:flex;flex-direction:column;align-items:flex-start;gap:1px;min-width:92px;border-radius:12px;padding:8px 14px;font-weight:800;font-size:14.5px;background:var(--panel);border:1px solid var(--line);color:var(--ink)}
+.dexregions button small{font-size:11.5px;font-weight:700;color:var(--muted)}
+.dexregions button.on{background:var(--red);border-color:var(--red);color:#fff}
+.dexregions button.on small{color:#fff;opacity:.85}
+.dexsum{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:14px;margin-bottom:18px;box-shadow:var(--shadow)}
+.dexsum-top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+.dexcount{display:flex;align-items:baseline;gap:8px}
+.dexcount b{font-size:40px;font-weight:900;letter-spacing:-.02em;line-height:1}
+.dexcount span{font-size:18px;font-weight:700;color:var(--muted)}
+.dexfbtn{display:inline-flex;align-items:center;gap:8px;font-weight:800;min-height:42px}
+.dexfbtn .n:not(:empty){background:var(--red);color:#fff;border-radius:999px;font-size:12px;padding:0 8px}
+.dexstack{display:flex;height:12px;border-radius:999px;overflow:hidden;background:var(--track)}
+.dexstack i{display:block;height:100%}
+.dexlevels{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.dexlevels .hint{font-size:12.5px;color:var(--muted);margin-right:2px}
+.dexlevels button{display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:5px 12px 5px 8px;font-size:13px;font-weight:700;background:var(--bg);border:1px solid var(--line)}
+.dexlevels button b{color:var(--muted);font-weight:800}
+.dexlevels button.on{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.dexlevels i{width:11px;height:11px;border-radius:999px;display:inline-block}
+.dexkits{font-size:13px;color:var(--muted)}
+.dexkits b{color:var(--ink)}
+.dexfilters{border-top:1px solid var(--line);padding-top:14px;display:flex;flex-direction:column;gap:12px}
+.dexfilters .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.dexclear{align-self:flex-start;font-size:13px}
+.album{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:16px}
+.slot{display:flex;flex-direction:column;gap:6px;cursor:pointer;background:none;border:0;padding:0;text-align:left;color:inherit;font:inherit}
+.slot .pic{position:relative;aspect-ratio:245/342;border-radius:9px;overflow:hidden;background:var(--chip);box-shadow:0 5px 16px rgba(0,0,0,.28);transition:transform .12s}
+.slot:hover .pic{transform:translateY(-3px)}
+.slot .pic img{width:100%;height:100%;object-fit:cover;display:block}
+.slot .pic .tier{position:absolute;left:7px;bottom:7px;font-size:11px;padding:2px 9px;border-radius:999px;box-shadow:0 2px 6px rgba(0,0,0,.35)}
+.slot .pic .q{position:absolute;top:7px;right:7px;background:rgba(17,19,27,.85);color:#fff;font-size:11.5px;font-weight:800;border-radius:999px;padding:1px 8px}
+.slot.miss .pic{box-shadow:none;outline:1px dashed var(--line);outline-offset:-1px}
+.slot.miss .pic img{filter:grayscale(1);opacity:.4}
+.slot.miss .pic .no{position:absolute;inset:auto 0 0;padding:6px;text-align:center;font-weight:900;font-size:13px;color:var(--muted);background:linear-gradient(transparent,rgba(17,19,27,.75))}
+.slot .cap{display:flex;justify-content:space-between;gap:6px;font-size:12.5px}
+.slot .cap b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slot .cap span{color:var(--muted)}
+.slot.miss .cap{color:var(--muted)}
+.slot.sel .pic{outline:3px solid var(--red);outline-offset:2px}
 .cell.has{border-color:color-mix(in srgb,var(--ok) 55%,transparent)}
 .cell.sel{outline:3px solid var(--blue)}
 .detail{margin-top:16px}
@@ -486,23 +542,34 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
 
   <!-- POKÉDEX -->
   <section class="tab" id="tab-kits">
-    <div class="section-h"><div><h1>Pokédex</h1><p>Cuántos kits por región puedes armar y qué especies te faltan.</p></div></div>
-    <div class="toolbar">
-      <select id="kitRegion"></select>
-      <select id="kitLang"></select>
-      <select id="kitVariant"><option value="">Todas las variantes</option><option value="shiny">Solo holo + reverse (kit premium)</option><option value="normal">Solo normal</option></select>
+    <div class="dexhead">
+      <div><h1>Pokédex</h1><p>Tu álbum por región: qué especies tienes y con qué cartas.</p></div>
+      <div class="seg dexseg" id="kitCopies" role="group" aria-label="Qué copias cuentan">
+        <button data-c="todas">Todas mis cartas</button><button data-c="venta">Para vender</button><button data-c="personales">Mi colección</button>
+      </div>
     </div>
-    <div class="kpis">
-      <div class="kpi"><div class="v" id="kCov">0/0</div><div class="l">especies que tienes</div><div class="bar lg" id="kBar"><i></i></div></div>
-      <div class="kpi"><div class="v" id="kKits">0</div><div class="l">kits completos posibles</div></div>
-      <div class="kpi"><div class="v" id="kNext">0</div><div class="l" id="kNextL">faltan para el siguiente kit</div></div>
+    <nav class="dexregions" id="kitRegions" aria-label="Regiones"></nav>
+    <div class="dexsum">
+      <div class="dexsum-top">
+        <div class="dexcount"><b id="kCov">0</b><span id="kCovL">/ 151 especies</span></div>
+        <button class="dexfbtn" id="kitFiltersBtn" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Filtros<span class="n" id="kitFiltersN"></span></button>
+      </div>
+      <div class="dexstack" id="kitStack" role="img"></div>
+      <div class="dexlevels" id="kitSum"></div>
+      <div class="dexkits" id="kitKits"></div>
+      <div class="dexfilters" id="kitFilters" hidden>
+        <div class="row">
+          <select id="kitLang" aria-label="Idioma"></select>
+          <select id="kitSeries" aria-label="Serie"></select>
+          <select id="kitOrigin" aria-label="Origen"><option value="">Internacionales y japonesas</option><option value="INT">Solo internacionales</option><option value="JA">Solo japonesas</option><option value="ZH">Solo chinas</option><option value="KO">Solo coreanas</option></select>
+          <select id="kitCond" aria-label="Estado mínimo"><option value="">Cualquier estado</option><option value="NM">Solo NM</option><option value="LP">NM y LP</option><option value="MP">Hasta MP</option><option value="HP">Hasta HP</option></select>
+          <label class="kitopt" title="Por ejemplo Pikachu &amp; Zekrom-GX cuenta para #025 y #644"><input type="checkbox" id="kitMulti"> Cartas con varios Pokémon</label>
+        </div>
+        <div class="tierbar" id="kitTiers"></div>
+        <button class="dexclear" id="kitClear">Quitar filtros</button>
+      </div>
     </div>
-    <div class="legend">
-      <span><i style="background:var(--chip)"></i>en gris: no la tienes</span>
-      <span><i style="background:var(--gold)"></i>te falta para el siguiente kit</span>
-      <span><i style="background:var(--ok)"></i>alcanza para el siguiente kit</span>
-    </div>
-    <div class="dex" id="dexGrid"></div>
+    <div class="album" id="dexGrid"></div>
     <div class="detail" id="dexDetail"></div>
   </section>
 
@@ -692,7 +759,7 @@ function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return 
 // inv[key] = copies, pers[key] = how many of them are for my personal collection (not for sale)
 let data = Object.assign({ inv: {}, pers: {}, added: {}, log: [], groups: [], recent: [], sound: false, lang: 'ES', invView: 'grid', tab: 'cargar', personal: false, colOrder: 'date', locPick: 'auto' }, lsGet(PREFS, {}));
 data.cond = 'NM'; // every session starts loading NM
-function save() { lsSet(PREFS, { recent: data.recent, sound: data.sound, lang: data.lang, invView: data.invView, tab: data.tab, personal: data.personal, colOrder: data.colOrder, lot: data.lot, locPick: data.locPick, invSort: data.invSort, colSort: data.colSort }); }
+function save() { lsSet(PREFS, { recent: data.recent, sound: data.sound, lang: data.lang, invView: data.invView, tab: data.tab, personal: data.personal, colOrder: data.colOrder, lot: data.lot, locPick: data.locPick, invSort: data.invSort, colSort: data.colSort, kit: data.kit }); }
 
 // ---------- toasts ----------
 function toast(text, cls = '') {
@@ -1686,23 +1753,55 @@ function renderLog() {
   }).join('');
   const u = $('undoBtn'); if (u) u.onclick = () => { undoLast(); $('entry').focus(); };
 }
-function dexCounts(mode, langF) {
-  // mode: '' all, 'shiny' holo+reverse, 'normal'; langF: '' all languages
-  const map = new Map();
+// ---------- Pokédex by region: which copies count, and the level of each one (challa → dorada) ----------
+const TIER_QUICK = [['Todo', null], ['Solo challa', ['challa']], ['Challa + holo', ['challa', 'holo']], ['Solo IR y SIR', ['ir', 'sir']]];
+const tierChip = t => `<span class="tier t-${t.id}" title="${esc(t.label)}">${esc(t.short)}</span>`;
+// filters: copies (venta | todas | personales), tiers (null = all, or a list of ids), lang, series, origin, cond (worst condition accepted), multi
+function kitFilters() {
+  const k = data.kit || {};
+  return { copies: k.copies || 'venta', tiers: k.tiers || null, lang: k.lang || '', series: k.series || '', origin: k.origin || '', cond: k.cond || '', multi: !!k.multi, region: +k.region || 0 };
+}
+function copiesOf(k, copies) { return copies === 'todas' ? data.inv[k] || 0 : copies === 'personales' ? data.pers[k] || 0 : forSale(k); }
+// species → { qty, keys, name, img, best: { key, tier, clp } }: name/img of the plainest card (Pikachu over Pikachu ex) for the label
+function dexCounts(f = kitFilters()) {
+  const map = new Map(), worst = f.cond ? CONDS.indexOf(f.cond) : CONDS.length;
   for (const k in data.inv) {
-    const { sid, num, v, lang } = splitKey(k);
-    if (langF && lang !== langF) continue;
-    if (mode === 'shiny' && v === 'normal') continue;
-    if (mode === 'normal' && v !== 'normal') continue;
+    const { sid, num, v, lang, cond } = splitKey(k);
+    if (f.lang && lang !== f.lang) continue;
+    if (CONDS.indexOf(cond) > worst) continue;
+    if (f.series && eraOf(setById[sid]) !== f.series) continue;
+    if (f.origin && originOf(sid) !== f.origin) continue;
     const m = meta(sid, num);
-    if (!m || m[5] !== 'Pokémon' || m[1].length !== 1 || !forSale(k)) continue;
-    const d = m[1][0];
-    const e = map.get(d) || { qty: 0, keys: [], name: m[0], img: m[4] };
-    e.qty += forSale(k); e.keys.push(k);
-    if (m[0].length < e.name.length) { e.name = m[0]; e.img = m[4]; } // prefer the plain card (Pikachu over Pikachu ex)
-    map.set(d, e);
+    if (!m || m[5] !== 'Pokémon' || !m[1].length || (m[1].length > 1 && !f.multi)) continue;
+    const q = copiesOf(k, f.copies); if (!q) continue;
+    const tier = Core.cardTier({ name: m[0], rarity: m[3] }, v);
+    if (f.tiers && !f.tiers.includes(tier.id)) continue;
+    const clp = (priceOf(k) || {}).clp || 0;
+    for (const d of m[1]) {
+      const e = map.get(d) || { qty: 0, keys: [], name: m[0], img: m[4], best: null };
+      e.qty += q; e.keys.push(k);
+      if (m[0].length < e.name.length) { e.name = m[0]; e.img = m[4]; }
+      const b = e.best;
+      // the highest level; on a tie the most valuable, then the newest
+      if (!b || tier.rank > b.tier.rank || (tier.rank === b.tier.rank && (clp > b.clp || (clp === b.clp && (data.added[k] || 0) > (data.added[b.key] || 0))))) e.best = { key: k, tier, clp };
+      map.set(d, e);
+    }
   }
   return map;
+}
+function setKit(patch) { data.kit = { ...kitFilters(), ...patch }; save(); dexSel = null; renderKits(); }
+// filters hidden behind the Filtros button (not copies, region or the level picked in the summary)
+const kitActiveFilters = f => [f.lang, f.series, f.origin, f.cond, f.multi, f.tiers && f.tiers.length > 1].filter(Boolean).length;
+function renderKitFilters() {
+  const f = kitFilters();
+  const eras = [...new Set(Object.values(setById).map(eraOf).filter(Boolean))];
+  $('kitSeries').innerHTML = '<option value="">Todas las series</option>' + eras.map(e => `<option value="${esc(e)}">${esc(e)}</option>`).join('');
+  $('kitLang').value = f.lang; $('kitSeries').value = f.series; $('kitOrigin').value = f.origin; $('kitCond').value = f.cond; $('kitMulti').checked = f.multi;
+  for (const b of $('kitCopies').children) b.classList.toggle('on', b.dataset.c === f.copies);
+  const on = id => !f.tiers || f.tiers.includes(id);
+  $('kitTiers').innerHTML = '<span class="lbl">Niveles que cuentan:</span>' + TIER_QUICK.map(([l, t], i) => `<button class="quick ${JSON.stringify(t) === JSON.stringify(f.tiers) ? 'primary' : ''}" data-q="${i}">${l}</button>`).join('')
+    + ' ' + Core.TIERS.map(t => `<button class="tier t-${t.id} ${on(t.id) ? 'on' : ''}" data-t="${t.id}" title="${esc(t.label)}">${esc(t.label)}</button>`).join('');
+  $('kitFiltersN').textContent = kitActiveFilters(f) || '';
 }
 function renderStats() {
   let t = 0, by = { normal: 0, holo: 0, reverse: 0 };
@@ -1808,40 +1907,69 @@ async function ensureDexRef() {
 }
 function renderKits() {
   ensureDexRef();
-  const [rname, lo, hi] = REGIONS[$('kitRegion').value];
-  const dc = dexCounts($('kitVariant').value, $('kitLang').value);
+  renderKitFilters();
+  const f = kitFilters(), dc = dexCounts(f);
+  // region tabs with how much of each one is covered
+  $('kitRegions').innerHTML = REGIONS.map(([name, lo, hi], i) => {
+    let h = 0; for (let d = lo; d <= hi; d++) if (dc.has(d)) h++;
+    const p = h / (hi - lo + 1) * 100;
+    return `<button class="${i === f.region ? 'on' : ''}" data-r="${i}">${name}<small>${h && p < 1 ? '<1' : Math.round(p)}%</small></button>`;
+  }).join('');
+  const [rname, lo, hi] = REGIONS[f.region] || REGIONS[0], n = hi - lo + 1;
   let have = 0, kits = Infinity;
-  for (let d = lo; d <= hi; d++) { const q = dc.has(d) ? dc.get(d).qty : 0; if (q) have++; kits = Math.min(kits, q); }
-  const n = hi - lo + 1, missingNext = [];
-  for (let d = lo; d <= hi; d++) if ((dc.has(d) ? dc.get(d).qty : 0) <= kits) missingNext.push(d);
-  $('kKits').textContent = kits;
-  $('kCov').textContent = `${have}/${n}`;
-  $('kBar').className = 'bar lg' + (have >= n ? ' done' : ''); $('kBar').firstElementChild.style.width = pct(have, n) + '%';
-  $('kNext').textContent = missingNext.length;
-  $('kNextL').textContent = `especies faltan para el kit #${kits + 1} de ${rname}`;
+  const byTier = {};
+  for (let d = lo; d <= hi; d++) {
+    const e = dc.get(d), q = e ? e.qty : 0;
+    if (q) { have++; byTier[e.best.tier.id] = (byTier[e.best.tier.id] || 0) + 1; }
+    kits = Math.min(kits, q);
+  }
+  const missingNext = []; for (let d = lo; d <= hi; d++) if ((dc.has(d) ? dc.get(d).qty : 0) <= kits) missingNext.push(d);
+  $('kCov').textContent = have; $('kCovL').textContent = `/ ${n} especies de ${rname}`;
+  // one bar: how many species have their best card at each level
+  const tiers = Core.TIERS.filter(t => byTier[t.id]);
+  $('kitStack').innerHTML = tiers.map(t => `<i class="t-${t.id}" style="width:${byTier[t.id] / n * 100}%" title="${esc(t.label)}: ${byTier[t.id]}"></i>`).join('');
+  $('kitStack').setAttribute('aria-label', `${have} de ${n} especies` + (tiers.length ? ': ' + tiers.map(t => `${byTier[t.id]} ${t.label}`).join(', ') : ''));
+  const single = f.tiers && f.tiers.length === 1 ? f.tiers[0] : null;
+  $('kitSum').innerHTML = tiers.length || single
+    ? `<span class="hint">${single ? 'Mostrando solo:' : 'Toca un nivel para ver solo esas:'}</span>` + (single && !byTier[single] ? [Core.TIER_BY_ID[single]] : tiers).map(t =>
+        `<button class="${single === t.id ? 'on' : ''}" data-lvl="${t.id}"><i class="t-${t.id}"></i>${esc(t.label)} <b>${byTier[t.id] || 0}</b></button>`).join('')
+      + (single ? '<button data-lvl="">Ver todos los niveles</button>' : '')
+    : '<span class="hint">Todavía no tienes cartas de esta región con estos filtros.</span>';
+  $('kitKits').innerHTML = f.copies === 'venta'
+    ? `Kits completos para vender: <b>${kits}</b> · para el kit #${kits + 1} faltan <b>${missingNext.length}</b> especies`
+    : '';
   let html = '';
   for (let d = lo; d <= hi; d++) {
-    const e = dc.get(d), q = e ? e.qty : 0, ref = dexRef && dexRef[d];
-    const img = e ? e.img : ref && ref.img, name = e ? e.name : ref ? ref.name : '';
-    const cls = q === 0 ? 'none' : q > kits ? 'has' : 'low';
-    html += `<div class="cell ${cls} ${dexSel === d ? 'sel' : ''}" data-d="${d}" title="#${d} ${esc(name)}">
-      ${q ? `<span class="c">${q}</span>` : ''}<div class="ci">${img ? `<img src="${esc(img)}" loading="lazy" alt="">` : ''}</div>
-      <div class="no">#${String(d).padStart(3, '0')}</div><div class="nm">${esc(name) || '—'}</div></div>`;
+    const e = dc.get(d), ref = dexRef && dexRef[d], no = '#' + String(d).padStart(3, '0');
+    if (e && e.qty) {
+      const b = splitKey(e.best.key), img = imgFor(b.sid, b.num, b.v) || e.img;
+      html += `<button class="slot ${dexSel === d ? 'sel' : ''}" data-d="${d}" title="${no} ${esc(e.name)} · mejor carta: ${esc(e.best.tier.label)}">
+        <div class="pic">${img ? `<img src="${esc(img)}" loading="lazy" alt="">` : ''}${tierChip(e.best.tier)}${e.qty > 1 ? `<span class="q">×${e.qty}</span>` : ''}</div>
+        <div class="cap"><b>${esc(e.name)}</b><span>${no}</span></div></button>`;
+    } else {
+      // missing: the reference card in black and white
+      const name = ref ? ref.name : '';
+      html += `<button class="slot miss ${dexSel === d ? 'sel' : ''}" data-d="${d}" title="${no} ${esc(name)} · te falta">
+        <div class="pic">${ref && ref.img ? `<img src="${esc(ref.img)}" loading="lazy" alt="" onerror="this.remove()">` : ''}<span class="no">${no}</span></div>
+        <div class="cap"><b>${esc(name) || '—'}</b></div></button>`;
+    }
   }
   $('dexGrid').innerHTML = html;
   renderDexDetail(dc);
 }
-function tiles(keys) {
+function tiles(keys, extra = () => '') {
   return `<div class="cardgrid">${keys.map(k => { const { sid, num, v, lang, loc } = splitKey(k); const m = meta(sid, num) || []; const s = setById[sid];
     return `<div class="tile"><div class="img">${imgFor(sid, num, v) ? `<img src="${esc(imgFor(sid, num, v))}" loading="lazy" alt="">` : ''}${rcorner(m[3])}<span class="q">×${data.inv[k]}</span></div>
-      <div class="t1">${esc(m[0] || '?')}</div><div class="t2">${esc(s ? s.name : sid)} #${esc(num)}</div><div class="badges">${vchip(v)} ${lchip(lang)} ${rchip(m[3], m[0])} ${locchip(loc)}</div></div>`; }).join('')}</div>`;
+      <div class="t1">${esc(m[0] || '?')}</div><div class="t2">${esc(s ? s.name : sid)} #${esc(num)}</div><div class="badges">${extra(k)} ${vchip(v)} ${lchip(lang)} ${rchip(m[3], m[0])} ${locchip(loc)}</div></div>`; }).join('')}</div>`;
 }
 function renderDexDetail(dc) {
   const el = $('dexDetail');
   if (dexSel === null) { el.innerHTML = ''; return; }
-  const e = (dc || dexCounts($('kitVariant').value, $('kitLang').value)).get(dexSel), ref = dexRef && dexRef[dexSel];
+  const e = (dc || dexCounts()).get(dexSel), ref = dexRef && dexRef[dexSel];
+  const tierOf = k => { const { sid, num, v } = splitKey(k), m = meta(sid, num) || []; return Core.cardTier({ name: m[0], rarity: m[3] }, v); };
+  const keys = e ? [...e.keys].sort((a, b) => tierOf(b).rank - tierOf(a).rank || ((priceOf(b) || {}).clp || 0) - ((priceOf(a) || {}).clp || 0)) : [];
   el.innerHTML = `<div class="panel"><div class="panel-h">#${String(dexSel).padStart(3, '0')} ${esc(e ? e.name : ref ? ref.name : '')}</div>` +
-    (e ? tiles(e.keys) : '<div class="muted">No tienes cartas de este Pokémon (con el filtro actual).</div>') + '</div>';
+    (e ? tiles(keys, k => tierChip(tierOf(k))) : '<div class="muted">No tienes cartas de este Pokémon (con el filtro actual).</div>') + '</div>';
 }
 
 // ---------- artistas ----------
@@ -2100,7 +2228,6 @@ $('invLang').innerHTML = '<option value="">Todos los idiomas</option>' + LANGS.m
 $('kitLang').innerHTML = '<option value="">Todos los idiomas</option>' + LANGS.map(l => `<option value="${l}">Solo ${LNAME[l]}</option>`).join('');
 $('artLang').innerHTML = '<option value="">Todos los idiomas</option>' + LANGS.map(l => `<option value="${l}">Solo ${LNAME[l]}</option>`).join('');
 $('gLangF').innerHTML = '<option value="">Contar todos los idiomas</option>' + LANGS.map(l => `<option value="${l}">Contar solo ${LNAME[l]}</option>`).join('');
-$('kitRegion').innerHTML = REGIONS.map((r, i) => `<option value="${i}">${r[0]} (#${r[1]}–#${r[2]})</option>`).join('');
 // the sticky bars below the header need its height (it wraps on narrow screens)
 const setAppH = () => document.documentElement.style.setProperty('--apph', document.querySelector('.appbar').offsetHeight + 'px');
 setAppH(); window.addEventListener('resize', setAppH);
@@ -2281,8 +2408,26 @@ $('invBody').addEventListener('change', e => {
   enqueue(() => api('POST', '/inventory/move', { ...rowBody(x), to: { lang: s.value } }));
 });
 
-$('kitRegion').onchange = $('kitVariant').onchange = $('kitLang').onchange = () => { dexSel = null; renderKits(); };
-$('dexGrid').addEventListener('click', e => { const c = e.target.closest('.cell'); if (!c) return; dexSel = +c.dataset.d === dexSel ? null : +c.dataset.d; renderKits(); if (dexSel !== null) $('dexDetail').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); });
+$('kitRegions').addEventListener('click', e => { const b = e.target.closest('[data-r]'); if (b) setKit({ region: +b.dataset.r }); });
+$('kitCopies').addEventListener('click', e => { const b = e.target.closest('[data-c]'); if (b) setKit({ copies: b.dataset.c }); });
+$('kitSum').addEventListener('click', e => { const b = e.target.closest('[data-lvl]'); if (!b) return; const id = b.dataset.lvl, f = kitFilters(); setKit({ tiers: !id || (f.tiers && f.tiers.length === 1 && f.tiers[0] === id) ? null : [id] }); });
+$('kitFiltersBtn').onclick = () => { const open = $('kitFilters').hidden; $('kitFilters').hidden = !open; $('kitFiltersBtn').setAttribute('aria-expanded', open); };
+$('kitClear').onclick = () => setKit({ lang: '', series: '', origin: '', cond: '', multi: false, tiers: null });
+$('kitLang').onchange = () => setKit({ lang: $('kitLang').value });
+$('kitSeries').onchange = () => setKit({ series: $('kitSeries').value });
+$('kitOrigin').onchange = () => setKit({ origin: $('kitOrigin').value });
+$('kitCond').onchange = () => setKit({ cond: $('kitCond').value });
+$('kitMulti').onchange = () => setKit({ multi: $('kitMulti').checked });
+$('kitTiers').addEventListener('click', e => {
+  const q = e.target.closest('[data-q]'), t = e.target.closest('[data-t]');
+  if (q) return setKit({ tiers: TIER_QUICK[+q.dataset.q][1] });
+  if (!t) return;
+  const all = Core.TIERS.map(x => x.id), cur = kitFilters().tiers || all, id = t.dataset.t;
+  let next = cur.includes(id) ? cur.filter(x => x !== id) : [...cur, id];
+  if (!next.length) next = [id];   // at least one level
+  setKit({ tiers: next.length === all.length ? null : all.filter(x => next.includes(x)) });
+});
+$('dexGrid').addEventListener('click', e => { const c = e.target.closest('.slot'); if (!c) return; dexSel = +c.dataset.d === dexSel ? null : +c.dataset.d; renderKits(); if (dexSel !== null) $('dexDetail').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); });
 
 let at; $('artFilter').addEventListener('input', () => { clearTimeout(at); at = setTimeout(renderArtists, 150); });
 $('artSort').onchange = $('artLang').onchange = renderArtists;
