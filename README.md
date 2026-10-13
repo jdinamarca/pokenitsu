@@ -65,7 +65,16 @@ Las pruebas siguen los escenarios de `openspec/specs/` y además comparan `core`
 ## Venta vs. colección personal
 
 Cada fila del inventario tiene `qty` (copias) y `personal` (cuántas de esas copias son para ti, no para vender).
-Los kits de la pestaña Pokédex solo cuentan las copias para vender.
+En la pestaña Pokédex eliges qué copias cuentan: para vender (por defecto, para armar kits), todas o solo las personales.
+
+## Pokédex por región
+
+Para cada región (Kanto, Johto…) muestra qué especies tienes, cuántos kits completos puedes armar y qué falta para el siguiente.
+- **Nivel de cada copia** (de menor a mayor): Challa · Challa holo · ex/V/GX · Edición especial · Variocolor · Full art · Ilustración (IR) · Ilustración especial (SIR) · Dorada/Secreta. Se calcula con la rareza, el nombre (ex, V, GX…) y la variante (`cardTier` en `packages/core`; la tabla está en `docs/producto/mapa-de-funcionalidades.md`).
+- **Cuentan**: eliges qué niveles valen (atajos: Todo, Solo challa, Challa + holo, Solo IR y SIR). Así ves si completaste Kanto solo con challa, o cuántas especies tienes en IR/SIR.
+- **Mejor carta por especie**: cada casilla muestra la copia de mayor nivel (empate: la más cara) con su insignia, y arriba un resumen: "120 Challa · 20 Holo · 8 ex/V/GX · 3 IR".
+- **Filtros**: copias (para vender / todas / personales), idioma, serie, origen (internacionales, japonesas…), estado mínimo y cartas con varios Pokémon (los TAG TEAM cuentan para cada especie). Se recuerdan en el dispositivo.
+- Al tocar una especie ves todas sus copias, de mayor a menor nivel, con su ubicación.
 
 ## Estado de las cartas
 

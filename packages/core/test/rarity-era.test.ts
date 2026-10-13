@@ -51,7 +51,10 @@ describe('serie (escenarios)', () => {
 describe('equivalencia con el código anterior (todo el catálogo)', () => {
   it(`rarityOf, grupo y filtros para las ${cards.length} combinaciones nombre + rareza`, () => {
     const diffs: unknown[] = [];
+    // added later on purpose (pokedex-por-generacion): Japanese rarities the old table did not know
+    const ADDED = ['Holo Rare', 'Secret Rare', 'Triple Rare', 'Character Super Rare'];
     for (const [name, rarity] of cards) {
+      if (ADDED.includes(rarity || '')) continue;
       if (JSON.stringify(rarityOf(rarity)) !== JSON.stringify(legacy.rarityOf(rarity))) diffs.push(['rarityOf', rarity]);
       if (mechOf(name) !== legacy.mechOf(name)) diffs.push(['mechOf', name]);
       if (rarityGroup(rarity) !== legacy.rgroupOf(rarity)) diffs.push(['group', rarity]);

@@ -52,6 +52,11 @@ export const RARITY: Record<string, RarityInfo> = {
   'No Rarity': ['', 'Sin rareza', 'r-c', 'base'],
   'Futuristic Rare': ['FR', 'Futurista', 'r-ur', 'ultra'],
   'Black White Rare': ['BWR', 'Blanco y negro', 'r-hr', 'secret'],
+  // Japanese rarities as TCGdex names them
+  'Holo Rare': ['H', 'Rara holo', 'r-h', 'rare'],
+  'Secret Rare': ['SR', 'Secreta', 'r-hr', 'secret'],
+  'Triple Rare': ['RRR', 'Triple rara', 'r-dr', 'ultra'],
+  'Character Super Rare': ['CSR', 'Character Super Rare (personaje)', 'r-sir', 'sir'],
 };
 
 /** filter groups for the UI; 'mech' = cards with ex, GX, V… in the name */
@@ -64,7 +69,7 @@ export const RGROUPS: ReadonlyArray<readonly [RarityGroup | 'mech', string]> = [
   ['secret', 'Hiper, secretas, arcoíris'],
   ['shiny', 'Variocolor y radiantes'],
   ['promo', 'Promos'],
-  ['mech', 'Con mecánica (ex, GX, V…)'],
+  ['mech', 'ex, V, GX… (cualquier rareza)'],
 ];
 
 const RARITY_LC: Record<string, RarityInfo> = Object.fromEntries(Object.entries(RARITY).map(([k, v]) => [k.toLowerCase(), v]));
