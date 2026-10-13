@@ -39,7 +39,9 @@ AUTH_ALLOWED_EMAILS=tu@email.com  # solo estos emails pueden crear cuenta (separ
 
 La primera vez, abre la app, toca **Crear cuenta** con un email de esa lista y una contraseña de al menos 10 caracteres. **Cerrar sesión** está en **Datos ▾**.
 
-**Fase 1:** los datos todavía son uno solo para todas las cuentas, así que la lista debe tener **solo tu email**. Los datos por usuario (`user_id` + Row Level Security, [ADR 0010](docs/adr/0010-multiusuario-con-user-id-y-rls.md)) llegan en la fase 2; la verificación de correo, recuperar contraseña y Google, en la fase 3.
+**Datos por usuario** ([ADR 0010](docs/adr/0010-multiusuario-con-user-id-y-rls.md), [0018](docs/adr/0018-rls-forzado-con-usuario-por-conexion.md)): inventario, registro, ubicaciones, lotes, colecciones, artes conectados, favoritos, precios y fotos propias y la configuración de precios y lotes son de cada cuenta (`user_id` + Row Level Security forzado). El catálogo, los precios de mercado, el tipo de cambio, las checklists y los cameos son compartidos. Al actualizar, los datos que había pasan a la **primera cuenta creada** (la tuya); si no hay ninguna, la migración pide crear la cuenta primero. Para invitar a alguien, agrega su email a `AUTH_ALLOWED_EMAILS`: empieza con todo vacío y no ve nada tuyo. Borrar una cuenta (`DELETE FROM "user" WHERE email = …`) borra sus datos.
+
+Para SQL nuevo: las consultas de una petición ya ven solo los datos de su usuario (la API fija `app.user_id` en la conexión). Sin usuario (tareas en segundo plano) las tablas por usuario se ven vacías; una tarea de sistema que deba ver a todos usa `asSystem()` de `db.js`. La verificación de correo, recuperar contraseña y Google llegan en la fase 3.
 
 ## Cargar cartas
 

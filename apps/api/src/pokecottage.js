@@ -186,12 +186,14 @@ export async function importChecklist(collectionId, url) {
       for (const v of x.vlist) await c.query('INSERT INTO variant_labels VALUES ($1, $2) ON CONFLICT DO NOTHING', [v.slug, v.label]);
     }
     await c.query('UPDATE collections SET checklist_url = $2, checklist_at = now() WHERE id = $1', [collectionId, url]);
-    // checklist cards that are no longer used by anything (e.g. now matched to the catalog)
+    // checklist cards that are no longer used by anything (e.g. now matched to the catalog): by any user, so look at everyone's rows
+    await c.query("SELECT set_config('app.all_users', 'on', true)");
     await c.query(`DELETE FROM cards c USING sets s WHERE s.id = c.set_id AND s.source = 'pokecottage'
       AND NOT EXISTS (SELECT 1 FROM collection_cards x WHERE x.card_id = c.id) AND NOT EXISTS (SELECT 1 FROM inventory x WHERE x.card_id = c.id)
       AND NOT EXISTS (SELECT 1 FROM inventory_log x WHERE x.card_id = c.id) AND NOT EXISTS (SELECT 1 FROM art_group_cards x WHERE x.card_id = c.id)
       AND NOT EXISTS (SELECT 1 FROM collection_hidden x WHERE x.card_id = c.id)`);
     await c.query("DELETE FROM sets s WHERE s.source = 'pokecottage' AND NOT EXISTS (SELECT 1 FROM cards c WHERE c.set_id = s.id)");
+    await c.query("SELECT set_config('app.all_users', '', true)");
   });
   return stats;
 }

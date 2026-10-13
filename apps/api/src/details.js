@@ -2,7 +2,7 @@
 //   Japanese cards: the expansion list only brings name, number and picture; the rest is in each card's TCGdex page.
 //   International cards: pokemontcg.io is incomplete for brand-new expansions; TCGdex's English catalog has them.
 // Each card is looked up once (cards.details_at). My cards (inventory, collections, lots) go first.
-import { pool } from './db.js';
+import { pool, asSystem } from './db.js';
 import { fetchJSON } from './catalog.js';
 import { tcgdexSetOf, tcgdexCardIds } from './prices.js';
 import { guessVariants, standardVariants } from '@pokenitsu/core';
@@ -58,9 +58,10 @@ export function startDetailsJob() {
   job = { running: true, done: 0, total: 0 };
   (async () => {
     for (const scope of [MINE, 'true']) {
-      const { rows } = await pool.query(
+      // everyone's cards first (system: it runs with no user)
+      const { rows } = await asSystem(c => c.query(
         `SELECT c.id, c.set_id, c.number_norm, s.source FROM cards c JOIN sets s ON s.id = c.set_id WHERE ${MISSING} AND ${scope}
-         ORDER BY s.release_date DESC NULLS LAST, c.set_id`);
+         ORDER BY s.release_date DESC NULLS LAST, c.set_id`));
       job.total += rows.length;
       const ja = rows.filter(c => c.source === 'tcgdex-ja');
       const intl = new Map();
@@ -107,9 +108,9 @@ export function startVariantsJob(setId) {
 }
 // at start: the expansions where I have cards, one after another
 export async function startVariantsForMySets() {
-  const { rows } = await pool.query(
+  const { rows } = await asSystem(c => c.query(
     `SELECT DISTINCT c.set_id FROM inventory i JOIN cards c ON c.id = i.card_id JOIN sets s ON s.id = c.set_id
-     WHERE s.source IN ('ptcg', 'tcgdex-ja') AND EXISTS (SELECT 1 FROM cards x WHERE x.set_id = c.set_id AND x.variants IS NULL)`);
+     WHERE s.source IN ('ptcg', 'tcgdex-ja') AND EXISTS (SELECT 1 FROM cards x WHERE x.set_id = c.set_id AND x.variants IS NULL)`));
   for (const r of rows) {
     const job = startVariantsJob(r.set_id);
     while (job.running) await new Promise(res => setTimeout(res, 1000));

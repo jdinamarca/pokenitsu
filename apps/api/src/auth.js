@@ -1,7 +1,7 @@
 // Accounts and sessions with Better Auth (ADR 0011): users and sessions live in our Postgres
 import { betterAuth } from 'better-auth';
 import { APIError } from 'better-auth/api';
-import { pool } from './db.js';
+import { rawPool } from './db.js';
 
 const port = Number(process.env.PORT || 3000);
 // the app is opened as localhost or 127.0.0.1; both are the same origin for logging in
@@ -13,7 +13,7 @@ export const allowedEmails = () => new Set(String(process.env.AUTH_ALLOWED_EMAIL
 
 // created after the migrations run: Better Auth checks its tables when it starts
 export const createAuth = () => betterAuth({
-  database: pool,
+  database: rawPool, // its own tables, without Row Level Security
   secret: process.env.BETTER_AUTH_SECRET,
   baseURL: process.env.BETTER_AUTH_URL || `http://127.0.0.1:${port}`,
   trustedOrigins: [...new Set(origins)],
