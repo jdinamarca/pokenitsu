@@ -23,8 +23,23 @@ Si `corepack enable` falla por permisos, usa `npx pnpm@12 install` / `npx pnpm@1
   También hay un botón **Descargar catálogo completo** en la pestaña Artistas.
 - Base de datos: `pokemon` en el contenedor Docker `postgres-mac` (conexión en `.env`, fuera de git).
 - Las migraciones de `apps/api/db/migrations/` se aplican solas al arrancar.
-- Para cargar desde el celular en tu wifi: `HOST=0.0.0.0 pnpm start` y abre `http://<ip-de-tu-mac>:3000`
-  (ojo: no tiene login, cualquiera en tu red podría usarlo).
+- Para cargar desde el celular en tu wifi: `HOST=0.0.0.0 pnpm start` y abre `http://<ip-de-tu-mac>:3000`;
+  agrega ese origen a `.env` (`BETTER_AUTH_TRUSTED_ORIGINS=http://<ip-de-tu-mac>:3000`) para poder iniciar sesión desde ahí.
+
+### Cuentas e inicio de sesión
+
+La app pide iniciar sesión (Better Auth, [ADR 0011](docs/adr/0011-autenticacion-con-better-auth.md)); usuarios y sesiones viven en la misma base (tablas `user`, `session`, `account`, `verification`). Toda la API exige sesión salvo `/api/auth/*` y el formulario de la landing (`/api/alpha`). Sesiones de 30 días en cookie `HttpOnly`, `SameSite=Lax` (y `Secure` con https).
+
+En `.env`:
+
+```bash
+BETTER_AUTH_SECRET=...            # secreto aleatorio para firmar sesiones (openssl rand -base64 33)
+AUTH_ALLOWED_EMAILS=tu@email.com  # solo estos emails pueden crear cuenta (separados por coma)
+```
+
+La primera vez, abre la app, toca **Crear cuenta** con un email de esa lista y una contraseña de al menos 10 caracteres. **Cerrar sesión** está en **Datos ▾**.
+
+**Fase 1:** los datos todavía son uno solo para todas las cuentas, así que la lista debe tener **solo tu email**. Los datos por usuario (`user_id` + Row Level Security, [ADR 0010](docs/adr/0010-multiusuario-con-user-id-y-rls.md)) llegan en la fase 2; la verificación de correo, recuperar contraseña y Google, en la fase 3.
 
 ## Cargar cartas
 

@@ -10,6 +10,7 @@
   "dependencies": {
     "@fastify/static": "^10.1.6",
     "@pokenitsu/core": "workspace:*",
+    "better-auth": "1.7.7",
     "fastify": "^5.12.5",
     "pg": "^8.23.1"
   }
