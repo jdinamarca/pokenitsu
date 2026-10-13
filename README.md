@@ -62,6 +62,13 @@ pnpm --filter @pokenitsu/core format   # formatea packages/core
 
 Las pruebas siguen los escenarios de `openspec/specs/` y además comparan `core` con una copia congelada del código anterior (`packages/core/test/legacy/`) sobre todo el catálogo (`test/fixtures/catalog.json`, solo datos públicos). GitHub Actions corre build, tipos, lint y pruebas en cada push y pull request.
 
+### Animaciones
+
+La interfaz anima poco y con propósito (criterio de las skills de animación de Emil Kowalski): los diálogos entran con un fade y una escala sutil (250 ms, salen en 150 ms), y los avisos suben desde abajo y bajan por el mismo borde. Lo que se usa muchas veces al día (búsqueda, ingreso de cartas, grillas) no se anima. Todo es CSS (`@starting-style`); los navegadores sin soporte muestran todo al instante.
+
+- Con **reducir movimiento** activado en el sistema, el brillo holo se detiene y solo quedan fades cortos.
+- El efecto de levantar las cartas al pasar el mouse solo funciona con mouse; en el celular no se queda pegado.
+
 ## Venta vs. colección personal
 
 Cada fila del inventario tiene `qty` (copias) y `personal` (cuántas de esas copias son para ti, no para vender).

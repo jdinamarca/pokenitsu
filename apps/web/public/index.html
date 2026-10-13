@@ -15,6 +15,7 @@
   --shadow:0 1px 2px rgba(20,24,40,.06),0 4px 14px rgba(20,24,40,.06);
   --shadow-lg:0 10px 30px rgba(20,24,40,.14);
   --r:14px;
+  --ease-out:cubic-bezier(.23,1,.32,1);
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
@@ -154,6 +155,13 @@ button.inlot{border-color:var(--gold)}
 @media (max-width:560px){.cedit{grid-template-columns:1fr}.cedit .cimg{max-width:180px;margin:0 auto}}
 dialog.dlg{border:1px solid var(--line);border-radius:16px;background:var(--panel);color:var(--ink);box-shadow:var(--shadow-lg);padding:20px;width:min(94vw,520px)}
 dialog.dlg::backdrop{background:rgba(10,12,20,.45)}
+/* dialogs: enter 250ms, exit faster; allow-discrete keeps them in the top layer while fading out */
+dialog.dlg{opacity:0;transform:scale(.96);transition:opacity .15s var(--ease-out),transform .15s var(--ease-out),display .15s allow-discrete,overlay .15s allow-discrete}
+dialog.dlg[open]{opacity:1;transform:none;transition-duration:.25s}
+@starting-style{dialog.dlg[open]{opacity:0;transform:scale(.96)}}
+dialog.dlg::backdrop{opacity:0;transition:opacity .15s var(--ease-out),display .15s allow-discrete,overlay .15s allow-discrete}
+dialog.dlg[open]::backdrop{opacity:1;transition-duration:.25s}
+@starting-style{dialog.dlg[open]::backdrop{opacity:0}}
 dialog.dlg h2{margin:0 0 6px;font-size:19px}
 dialog.dlg .grid2{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:8px 0}
 dialog.dlg .grid2 label{display:flex;flex-direction:column;gap:3px;font-size:12.5px;color:var(--muted);font-weight:700}
@@ -259,11 +267,9 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
 .tile{position:relative;display:flex;flex-direction:column;gap:6px}
 .tile .img{position:relative;aspect-ratio:63/88;border-radius:9px;overflow:hidden;background:var(--chip);box-shadow:var(--shadow);transition:transform .15s,box-shadow .15s}
 .tile .img img{width:100%;height:100%;object-fit:cover;display:block}
-.tile:hover .img{transform:translateY(-3px);box-shadow:var(--shadow-lg)}
+@media (hover:hover) and (pointer:fine){.tile:hover .img{transform:translateY(-3px);box-shadow:var(--shadow-lg)}}
 .tile.miss .img img{filter:grayscale(1) contrast(.95);opacity:.42;transition:opacity .2s,filter .2s}
 .tile.miss:hover .img img{opacity:.75}
-.tile.new .img{animation:pop .6s ease}
-@keyframes pop{30%{transform:scale(1.06)}}
 .tile .q{position:absolute;top:6px;right:6px;background:var(--ok);color:#fff;font-size:12px;font-weight:800;border-radius:999px;padding:1px 8px;box-shadow:0 1px 3px rgba(0,0,0,.25)}
 .tile .t1{font-weight:700;font-size:13px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tile .t2{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -357,7 +363,7 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
 .legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px}
 .dex{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}
 .cell{position:relative;border-radius:12px;padding:6px;background:var(--panel);border:2px solid transparent;box-shadow:var(--shadow);cursor:pointer;text-align:center;transition:transform .12s}
-.cell:hover{transform:translateY(-2px)}
+@media (hover:hover) and (pointer:fine){.cell:hover{transform:translateY(-2px)}}
 .cell .ci{aspect-ratio:1;border-radius:8px;overflow:hidden;background:var(--chip)}
 .cell .ci img{width:100%;height:100%;object-fit:cover;object-position:50% 22%;display:block;transform:scale(1.9);transform-origin:50% 25%}
 .cell.none .ci img{filter:grayscale(1);opacity:.35}
@@ -410,7 +416,7 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
 .album{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:16px}
 .slot{display:flex;flex-direction:column;gap:6px;cursor:pointer;background:none;border:0;padding:0;text-align:left;color:inherit;font:inherit}
 .slot .pic{position:relative;aspect-ratio:245/342;border-radius:9px;overflow:hidden;background:var(--chip);box-shadow:0 5px 16px rgba(0,0,0,.28);transition:transform .12s}
-.slot:hover .pic{transform:translateY(-3px)}
+@media (hover:hover) and (pointer:fine){.slot:hover .pic{transform:translateY(-3px)}}
 .slot .pic img{width:100%;height:100%;object-fit:cover;display:block}
 .slot .pic .tier{position:absolute;left:7px;bottom:7px;font-size:11px;padding:2px 9px;border-radius:999px;box-shadow:0 2px 6px rgba(0,0,0,.35)}
 .slot .pic .q{position:absolute;top:7px;right:7px;background:rgba(17,19,27,.85);color:#fff;font-size:11.5px;font-weight:800;border-radius:999px;padding:1px 8px}
@@ -548,9 +554,19 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
 
 /* ---------- toast ---------- */
 .toasts{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;z-index:50;pointer-events:none;width:min(92vw,440px)}
-.toast{background:var(--ink);color:var(--panel);border-radius:12px;padding:11px 16px;font-weight:700;font-size:14px;box-shadow:var(--shadow-lg);animation:tin .25s ease}
+.toast{background:var(--ink);color:var(--panel);border-radius:12px;padding:11px 16px;font-weight:700;font-size:14px;box-shadow:var(--shadow-lg);transition:opacity .4s ease,transform .4s ease}
+@starting-style{.toast{opacity:0;transform:translateY(100%)}}
+.toast.out{opacity:0;transform:translateY(100%)}
 .toast.gold{background:linear-gradient(90deg,#ffcb05,#ff8a00);color:#2b1d00}
-@keyframes tin{from{opacity:0;transform:translateY(10px)}}
+@keyframes fadeonly{from{opacity:0}}
+/* reduced motion: keep short fades, drop movement and the looping holo shine */
+@media (prefers-reduced-motion:reduce){
+  .shine::after{animation:none}
+  .tab{animation-name:fadeonly}
+  dialog.dlg,dialog.dlg[open],.toast,.toast.out,.tile:hover .img,.cell:hover,.slot:hover .pic{transform:none}
+  @starting-style{dialog.dlg[open],.toast{transform:none}}
+  .entry.errf{animation:none}
+}
 </style>
 </head>
 <body>
@@ -970,7 +986,9 @@ function save() { lsSet(PREFS, { recent: data.recent, sound: data.sound, lang: d
 // ---------- toasts ----------
 function toast(text, cls = '') {
   const t = document.createElement('div'); t.className = 'toast ' + cls; t.textContent = text;
-  $('toasts').appendChild(t); setTimeout(() => t.remove(), 3200);
+  $('toasts').appendChild(t);
+  // leave through the same edge, then drop it (fallback if no transition runs)
+  setTimeout(() => { t.classList.add('out'); t.addEventListener('transitionend', () => t.remove(), { once: true }); setTimeout(() => t.remove(), 500); }, 3200);
 }
 
 // Puts html in el only when it changed: re-rendering an identical gallery would rebuild every image and make it blink.
