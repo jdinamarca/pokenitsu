@@ -13,16 +13,16 @@
 
 ## 3. Vista de expansiones
 
-- [ ] 3.1 Agregar la pestaña Expansiones con lista, barra de avance, selector de modo, filtros (copias, idioma, serie, origen, sin promos, todas) y orden; verificar en Chrome sin interfaz con el inventario actual que Chaos Rising y Perfect Order muestran su avance
-- [ ] 3.2 Agregar el detalle de una expansión (grilla, tengo / me faltan, costo para completar); verificar el escenario "Costo para completar" con datos de prueba
+- [x] 3.1 Agregar la pestaña Expansiones con lista, barra de avance, selector de modo, filtros (copias, idioma, serie, origen, sin promos, todas) y orden; verificar en Chrome sin interfaz con el inventario actual que Chaos Rising y Perfect Order muestran su avance
+- [x] 3.2 Agregar el detalle de una expansión (grilla, tengo / me faltan, costo para completar); verificar el escenario "Costo para completar" con datos de prueba
 
 ## 4. Avance al cargar
 
-- [ ] 4.1 Mostrar el indicador de avance de la expansión activa en Cargar y el aviso "¡Nueva!" y la celebración al completar; verificar cargando y deshaciendo una carta nueva y una repetida en una expansión de prueba, dejando el inventario como estaba
+- [x] 4.1 Mostrar el indicador de avance de la expansión activa en Cargar y el aviso "¡Nueva!" y la celebración al completar; verificar cargando y deshaciendo una carta nueva y una repetida en una expansión de prueba, dejando el inventario como estaba
 
 ## 5. Documentación
 
-- [ ] 5.1 Actualizar README (Expansiones, modos de completitud, variantes del catálogo) y verificar que describe cómo leer el avance
+- [x] 5.1 Actualizar README (Expansiones, modos de completitud, variantes del catálogo) y verificar que describe cómo leer el avance
 
 ## Workflow follow-up
 

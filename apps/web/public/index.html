@@ -368,6 +368,32 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
 .slot .cap span{color:var(--muted)}
 .slot.miss .cap{color:var(--muted)}
 .slot.sel .pic{outline:3px solid var(--red);outline-offset:2px}
+/* Expansions */
+.exptools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
+.expfilters{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.explist{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
+.expitem{display:flex;flex-direction:column;gap:10px;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:var(--shadow);cursor:pointer;color:inherit;font:inherit}
+.expitem:hover{border-color:var(--muted)}
+.expitem .top{display:flex;gap:10px;align-items:center;min-width:0}
+.expitem .sym{width:30px;height:30px;object-fit:contain;flex:none}
+.expitem .nm{font-weight:800;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.expitem .sub{font-size:12px;color:var(--muted)}
+.expitem .nums{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--muted)}
+.expitem .nums b{font-size:18px;color:var(--ink)}
+.expitem.done{border-color:var(--ok)}
+.expitem .ok{color:var(--ok);font-weight:900}
+.expbar{height:8px;border-radius:999px;background:var(--track);overflow:hidden}
+.expbar i{display:block;height:100%;background:var(--red);border-radius:999px}
+.expitem.done .expbar i{background:var(--ok)}
+.expdhead{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;margin:4px 0 14px}
+.expdhead .t{display:flex;gap:12px;align-items:center}
+.expdhead h1{margin:0;font-size:26px;font-weight:900}
+.expdhead img{width:40px;height:40px;object-fit:contain}
+.vchips{display:flex;gap:4px;flex-wrap:wrap}
+.vchips span{font-size:10.5px;font-weight:800;border-radius:6px;padding:1px 6px;background:var(--chip);color:var(--muted)}
+.vchips span.have{background:var(--ok);color:#fff}
+.curprog{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);margin-top:4px}
+.curprog .expbar{flex:1;max-width:220px;height:6px}
 .cell.has{border-color:color-mix(in srgb,var(--ok) 55%,transparent)}
 .cell.sel{outline:3px solid var(--blue)}
 .detail{margin-top:16px}
@@ -450,6 +476,7 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
     <button data-tab="cargar" class="on"><span class="ico">➕</span>Cargar</button>
     <button data-tab="inventario"><span class="ico">🗂️</span>Mi colección</button>
     <button data-tab="kits"><span class="ico">📖</span>Pokédex</button>
+    <button data-tab="expansiones"><span class="ico">📚</span>Expansiones</button>
     <button data-tab="artistas"><span class="ico">🎨</span>Artistas</button>
     <button data-tab="grupos"><span class="ico">🧩</span>Artes conectados</button>
     <button data-tab="colecciones"><span class="ico">⭐</span>Mis colecciones</button>
@@ -571,6 +598,34 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
     </div>
     <div class="album" id="dexGrid"></div>
     <div class="detail" id="dexDetail"></div>
+  </section>
+
+  <section class="tab" id="tab-expansiones">
+    <div id="expListView">
+      <div class="dexhead">
+        <div><h1>Expansiones</h1><p>Cuánto te falta para completar cada expansión.</p></div>
+        <div class="seg dexseg" id="expMode" role="group" aria-label="Qué significa completa">
+          <button data-m="base" title="Los números impresos, ej. 165/165">Base</button><button data-m="secrets" title="También las cartas sobre el número impreso y las subcolecciones">Con secretas</button><button data-m="master" title="Cada variante de cada carta: normal, reverse, holo…">Master set</button>
+        </div>
+      </div>
+      <div class="exptools">
+        <div class="seg dexseg" id="expCopies" role="group" aria-label="Qué copias cuentan"><button data-c="todas">Todas mis cartas</button><button data-c="venta">Para vender</button><button data-c="personales">Mi colección</button></div>
+        <select id="expSort" aria-label="Orden"><option value="pct">Más cerca de completarse</option><option value="missing">Menos cartas faltantes</option><option value="new">Más nuevas primero</option><option value="old">Más antiguas primero</option></select>
+        <button class="dexfbtn" id="expFiltersBtn" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Filtros<span class="n" id="expFiltersN"></span></button>
+      </div>
+      <div class="dexfilters expfilters" id="expFilters" hidden>
+        <div class="row">
+          <select id="expLang" aria-label="Idioma (expansiones internacionales)"></select>
+          <select id="expSeries" aria-label="Serie"></select>
+          <select id="expOrigin" aria-label="Origen"><option value="">Internacionales y japonesas</option><option value="INT">Solo internacionales</option><option value="JA">Solo japonesas</option><option value="ZH">Solo chinas</option></select>
+          <label class="kitopt"><input type="checkbox" id="expAll"> Mostrar también las que no tengo</label>
+          <label class="kitopt"><input type="checkbox" id="expPromos"> Incluir promos</label>
+        </div>
+        <button class="dexclear" id="expClear">Quitar filtros</button>
+      </div>
+      <div class="explist" id="expGrid"></div>
+    </div>
+    <div id="expDetail" hidden></div>
   </section>
 
   <!-- ARTISTAS -->
@@ -759,7 +814,7 @@ function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return 
 // inv[key] = copies, pers[key] = how many of them are for my personal collection (not for sale)
 let data = Object.assign({ inv: {}, pers: {}, added: {}, log: [], groups: [], recent: [], sound: false, lang: 'ES', invView: 'grid', tab: 'cargar', personal: false, colOrder: 'date', locPick: 'auto' }, lsGet(PREFS, {}));
 data.cond = 'NM'; // every session starts loading NM
-function save() { lsSet(PREFS, { recent: data.recent, sound: data.sound, lang: data.lang, invView: data.invView, tab: data.tab, personal: data.personal, colOrder: data.colOrder, lot: data.lot, locPick: data.locPick, invSort: data.invSort, colSort: data.colSort, kit: data.kit }); }
+function save() { lsSet(PREFS, { recent: data.recent, sound: data.sound, lang: data.lang, invView: data.invView, tab: data.tab, personal: data.personal, colOrder: data.colOrder, lot: data.lot, locPick: data.locPick, invSort: data.invSort, colSort: data.colSort, kit: data.kit, exp: data.exp }); }
 
 // ---------- toasts ----------
 function toast(text, cls = '') {
@@ -815,11 +870,14 @@ function loadCards(setId, force) {
       const list = await api('GET', `/sets/${encodeURIComponent(setId)}/cards${force ? '?refresh=1' : ''}`);
       if (!list.length) throw new Error('la expansión no trae cartas');
       const raw = {}; for (const c of list) raw[c.num] = putMeta(c);
+      cardVariants[setId] = Object.fromEntries(list.map(c => [c.num, c.variants || null]));
       return cards[setId] = indexCards(raw);
     } finally { delete loading[setId]; }
   })();
 }
 const meta = (sid, num) => metaMap[sid + '|' + num];
+// standard variants of each card, per expansion: cardVariants[sid][num] = ['normal', 'reverse'] (null = not known yet)
+const cardVariants = {};
 // larger picture of the catalog images (pokemontcg.io, TCGdex); anything else as is
 const bigImg = u => !u ? '' : u.endsWith('/small') ? u.slice(0, -6) + '/large' : u.endsWith('/low.webp') ? u.slice(0, -8) + 'high.webp'
   : /^https:\/\/images\.pokemontcg\.io\/.*\d\.png$/.test(u) ? u.replace(/\.png$/, '_hires.png') : u;
@@ -1534,6 +1592,13 @@ let curSet = null;
 // entry syntax ("25r lp*2"…) and automatic variant: @pokenitsu/core
 function parseEntry(raw) { return Core.parseEntry(raw); }
 function autoVariant(m) { return Core.autoVariant(m ? m[3] : null); }
+// "¡Nueva! 89/165" when a load adds a card the expansion was missing; a celebration when it gets complete
+function progressNews(before, after) {
+  if (!before || !after || after.have <= before.have) return '';
+  if (after.have >= after.total && before.have < before.total && !after.unknown)
+    toast(`🏆 ¡Completaste ${curSet.name}! (${EXP_MODES[expFilters().mode]}: ${fmt(after.total)}/${fmt(after.total)})`, 'gold');
+  return ` · ¡Nueva! ${fmt(after.have)}/${fmt(after.total)}`;
+}
 // the last entry that loaded something, to repeat it with Enter on an empty box (same expansion only)
 let lastEntry = null;
 // one card of the current expansion: picks the variant, condition and location, and adds or removes the copies
@@ -1568,13 +1633,15 @@ function commitEntry() {
   } else {
     num = norm(p.base); warn = ' (sin datos de la expansión: no pude verificar la carta)';
   }
+  const before = curProgress();
   const { key, m, wasNew, real } = loadOne(num, p);
   if (real === 0) return fail('No había copias de esa carta para quitar.');
+  const after = curProgress(), news = progressNews(before, after);
   lastEntry = { raw, set: curSet.id };
   save();
   inp.value = '';
   flash('okf'); beep(true);
-  showMsg(`${repeated ? `Repetido: ${raw.trim()} · ` : ''}${real > 0 ? '+' + real : real}${real > 0 && data.personal ? ' 🔒' : ''} · ${describeKey(key)}${warn}`, warn ? 'warn' : '');
+  showMsg(`${repeated ? `Repetido: ${raw.trim()} · ` : ''}${real > 0 ? '+' + real : real}${real > 0 && data.personal ? ' 🔒' : ''} · ${describeKey(key)}${news}${warn}`, warn ? 'warn' : '');
   renderPreview(key); renderLog(); renderStats();
   if (real > 0 && wasNew && m && m[2]) celebrateArtist(m[2]);
   if (real > 0 && m && ['ir', 'sir', 'secret'].includes(rgroupOf(m[3]))) { const r = rarityOf(m[3]); toast(`✨ ¡${r[0]}! ${r[1]}: ${m[0]}`, 'gold'); }
@@ -1588,7 +1655,7 @@ async function commitRange(p, raw, repeated) {
   for (let n = p.range.from; n <= p.range.to; n++) { const num = idx.norm[norm(String(n))]; if (num === undefined) skipped.push(n); else nums.push(num); }
   if (!nums.length) return fail(`Ningún número del ${p.range.from} al ${p.range.to} existe en ${curSet.name}.`);
   if (nums.length > 50 && !confirm(`¿${p.sign < 0 ? 'Quitar' : 'Cargar'} ${nums.length} cartas (${p.range.from}–${p.range.to}) de ${curSet.name}?`)) return showMsg('Rango cancelado: no se cargó nada.', 'warn');
-  const batch = crypto.randomUUID(), loaded = [], noCopies = [], specials = [], artists = new Set();
+  const batch = crypto.randomUUID(), loaded = [], noCopies = [], specials = [], artists = new Set(), before = curProgress();
   for (const num of nums) {
     const r = loadOne(num, p, batch);
     if (!r.real) { noCopies.push(num); continue; }
@@ -1599,10 +1666,10 @@ async function commitRange(p, raw, repeated) {
   if (!loaded.length) return fail('No había copias de esas cartas para quitar.');
   lastEntry = { raw, set: curSet.id };
   save(); inp.value = ''; flash('okf'); beep(true);
-  const copies = loaded.reduce((a, r) => a + r.real, 0);
+  const copies = loaded.reduce((a, r) => a + r.real, 0), news = progressNews(before, curProgress());
   const extra = [skipped.length ? `${skipped.length} saltadas: ${skipped.slice(0, 8).join(', ')}${skipped.length > 8 ? '…' : ''} no existen` : '',
     noCopies.length ? `${noCopies.length} sin copias para quitar` : ''].filter(Boolean);
-  showMsg(`${repeated ? `Repetido: ${raw.trim()} · ` : ''}${copies > 0 ? '+' : ''}${copies} ${Math.abs(copies) === 1 ? 'copia' : 'copias'} de ${loaded.length} cartas (${p.range.from}–${p.range.to}) · ${p.v ? vlabel(p.v) : 'variante automática'} ${data.lang || ''}${(p.cond || data.cond) !== 'NM' ? ' ' + (p.cond || data.cond) : ''}${data.personal && copies > 0 ? ' 🔒' : ''}${extra.length ? ' · ' + extra.join(' · ') : ''}`, extra.length ? 'warn' : '');
+  showMsg(`${repeated ? `Repetido: ${raw.trim()} · ` : ''}${copies > 0 ? '+' : ''}${copies} ${Math.abs(copies) === 1 ? 'copia' : 'copias'} de ${loaded.length} cartas (${p.range.from}–${p.range.to}) · ${p.v ? vlabel(p.v) : 'variante automática'} ${data.lang || ''}${(p.cond || data.cond) !== 'NM' ? ' ' + (p.cond || data.cond) : ''}${data.personal && copies > 0 ? ' 🔒' : ''}${news}${extra.length ? ' · ' + extra.join(' · ') : ''}`, extra.length ? 'warn' : '');
   renderPreview(loaded[loaded.length - 1].key); renderLog(); renderStats();
   if (artists.size === 1) celebrateArtist([...artists][0]);
   else if (artists.size) toast(`🎨 ${artists.size} ilustradores con su primera carta: ${[...artists].slice(0, 5).join(', ')}${artists.size > 5 ? '…' : ''}`);
@@ -1684,8 +1751,9 @@ function renderCur(status, bad) {
   if (status === undefined) status = cards[s.id] ? Object.keys(cards[s.id].raw).length + ' cartas listas' : '';
   el.className = 'cur set';
   el.innerHTML = `${s.sym ? `<img src="${esc(s.sym)}" alt="">` : ''}<div style="flex:1"><div class="name">${esc(s.name)} ${s.code ? `<span class="code">${esc(s.code)}</span>` : ''} ${lchip(data.lang)}</div>
-    <div class="st" style="${bad ? 'color:var(--err)' : ''}">${esc(LNAME[data.lang])} · ${eraLabel(s) ? 'Serie ' + esc(eraLabel(s)) + ' · ' : ''}${esc(status)}</div></div>
+    <div class="st" style="${bad ? 'color:var(--err)' : ''}">${esc(LNAME[data.lang])} · ${eraLabel(s) ? 'Serie ' + esc(eraLabel(s)) + ' · ' : ''}${esc(status)}</div><div class="curprog" id="curProg"></div></div>
     <a href="#" id="reloadSet" title="Volver a descargar las cartas de esta expansión">↻</a>`;
+  renderCurProg();
   $('reloadSet').onclick = async ev => { ev.preventDefault(); renderCur('recargando…'); try { await loadCards(s.id, true); renderCur(); } catch (e) { renderCur('⚠️ falló la descarga', true); } };
 }
 function renderPersMode() {
@@ -1804,6 +1872,7 @@ function renderKitFilters() {
   $('kitFiltersN').textContent = kitActiveFilters(f) || '';
 }
 function renderStats() {
+  renderCurProg();
   let t = 0, by = { normal: 0, holo: 0, reverse: 0 };
   let pers = 0;
   for (const k in data.inv) { const q = data.inv[k], v = splitKey(k).v; t += q; if (v in by) by[v] += q; pers += data.pers[k] || 0; }
@@ -1970,6 +2039,169 @@ function renderDexDetail(dc) {
   const keys = e ? [...e.keys].sort((a, b) => tierOf(b).rank - tierOf(a).rank || ((priceOf(b) || {}).clp || 0) - ((priceOf(a) || {}).clp || 0)) : [];
   el.innerHTML = `<div class="panel"><div class="panel-h">#${String(dexSel).padStart(3, '0')} ${esc(e ? e.name : ref ? ref.name : '')}</div>` +
     (e ? tiles(keys, k => tierChip(tierOf(k))) : '<div class="muted">No tienes cartas de este Pokémon (con el filtro actual).</div>') + '</div>';
+}
+
+// ---------- expansions: how complete each one is (Base, with secrets, master set) ----------
+let expMaster = null, expSel = null, expShow = 'all';
+const EXP_MODES = { base: 'Base', secrets: 'Con secretas', master: 'Master set' };
+function expFilters() {
+  const e = data.exp || {};
+  return { mode: e.mode || 'base', copies: e.copies || 'todas', sort: e.sort || 'pct', lang: e.lang || '', series: e.series || '', origin: e.origin || '', all: !!e.all, promos: !!e.promos };
+}
+function setExp(patch) { data.exp = { ...expFilters(), ...patch }; save(); renderExpansions(); renderCurProg(); }
+const isPromoSet = s => /promo/i.test(s.name || '');
+// what I own per expansion, with the copies / language filter: numbers and "number|variant"
+function ownedBySet(f) {
+  const out = {};
+  for (const k in data.inv) {
+    const { sid, num, v, lang } = splitKey(k), s = setById[sid];
+    if (!s || !copiesOf(k, f.copies)) continue;
+    if (f.lang && !s.lang && lang !== f.lang) continue;   // the language only applies to international expansions
+    const o = out[sid] || (out[sid] = { nums: new Set(), vars: new Set() });
+    o.nums.add(num); o.vars.add(num + '|' + v);
+  }
+  return out;
+}
+// progress of one expansion in the given mode → { have, total, unknown } (null when it cannot be computed)
+function expProgress(s, own, mode) {
+  if (!s || !s.total) return null;
+  if (mode === 'master') {
+    const vars = cardVariants[s.id] || (expMaster && expMaster.variants[s.id]);
+    const tot = expMaster && expMaster.totals[s.id];
+    if (vars) {
+      const cards = Object.entries(vars).map(([number, variants]) => ({ number, variants }));
+      const p = Core.masterProgress(cards, own ? own.vars : []);
+      return { ...p, unknown: p.unknown + Math.max(0, (cards.length ? s.total - cards.length : 0)) };
+    }
+    return tot ? { have: 0, total: tot.total, unknown: tot.unknown } : null;
+  }
+  const p = Core.setProgress({ printed: s.printed || null, total: s.total, promo: isPromoSet(s) }, own ? own.nums : []);
+  return mode === 'secrets' ? p.secrets : p.base;
+}
+async function loadExpMaster() {
+  try { expMaster = await api('GET', '/sets/master'); } catch (e) { expMaster = { totals: {}, variants: {} }; }
+  if ($('tab-expansiones').classList.contains('on')) renderExpansions();
+  renderCurProg();
+}
+function renderExpansions() {
+  if (expSel) return renderExpDetail();
+  $('expListView').hidden = false; $('expDetail').hidden = true;
+  const f = expFilters();
+  if (f.mode === 'master' && !expMaster) loadExpMaster();
+  for (const b of $('expMode').children) b.classList.toggle('on', b.dataset.m === f.mode);
+  for (const b of $('expCopies').children) b.classList.toggle('on', b.dataset.c === f.copies);
+  $('expSort').value = f.sort;
+  const eras = [...new Set(Object.values(setById).map(eraOf).filter(Boolean))];
+  $('expSeries').innerHTML = '<option value="">Todas las series</option>' + eras.map(e => `<option value="${esc(e)}">${esc(e)}</option>`).join('');
+  $('expLang').value = f.lang; $('expSeries').value = f.series; $('expOrigin').value = f.origin; $('expAll').checked = f.all; $('expPromos').checked = f.promos;
+  $('expFiltersN').textContent = [f.lang, f.series, f.origin, f.all, f.promos].filter(Boolean).length || '';
+  const own = ownedBySet(f);
+  let list = Object.values(setById).filter(s => s.source !== 'pokecottage' && s.total
+    && (f.all || own[s.id]) && (f.promos || !isPromoSet(s) || own[s.id])
+    && (!f.series || eraOf(s) === f.series) && (!f.origin || originOf(s.id) === f.origin));
+  const rows = list.map(s => ({ s, p: expProgress(s, own[s.id], f.mode) })).filter(x => x.p && x.p.total);
+  const pc = x => x.p.have / x.p.total;
+  rows.sort(f.sort === 'missing' ? (a, b) => (a.p.total - a.p.have) - (b.p.total - b.p.have) || pc(b) - pc(a)
+    : f.sort === 'new' ? (a, b) => (b.s.date || '').localeCompare(a.s.date || '')
+    : f.sort === 'old' ? (a, b) => (a.s.date || '').localeCompare(b.s.date || '')
+    : (a, b) => pc(b) - pc(a) || (b.s.date || '').localeCompare(a.s.date || ''));
+  $('expGrid').innerHTML = rows.length ? rows.slice(0, 500).map(({ s, p }) => {
+    const done = p.have >= p.total && !p.unknown;
+    return `<button class="expitem ${done ? 'done' : ''}" data-sid="${esc(s.id)}">
+      <div class="top">${s.sym ? `<img class="sym" src="${esc(s.sym)}" alt="" loading="lazy">` : ''}<div style="min-width:0"><div class="nm">${esc(s.name)} ${s.code ? `<span class="code">${esc(s.code)}</span>` : ''}</div>
+        <div class="sub">${esc(eraLabel(s) || '')}${s.date ? ' · ' + esc(s.date.slice(0, 4)) : ''}${s.lang ? ' · ' + esc(LNAME[s.lang] || s.lang) : ''}</div></div></div>
+      <div class="expbar"><i style="width:${pct(p.have, p.total)}%"></i></div>
+      <div class="nums"><span><b>${fmt(p.have)}</b> / ${fmt(p.total)}${p.unknown ? ` <span title="Variantes por descargar">· calculando…</span>` : ''}</span>${done ? '<span class="ok">✓ Completa</span>' : `<span>${Math.floor(pct(p.have, p.total))}%</span>`}</div>
+    </button>`; }).join('')
+    : `<div class="empty">${f.all ? 'No hay expansiones con estos filtros.' : 'Todavía no tienes cartas en ninguna expansión con estos filtros.'}</div>`;
+}
+async function openExpansion(sid) {
+  expSel = sid; expShow = 'all'; renderExpansions(); window.scrollTo(0, 0);
+  try { await loadCards(sid); } catch (e) {}
+  if (expSel !== sid) return;
+  renderExpansions();
+  // both in parallel: the standard variants still unknown (master set) and the prices of the whole expansion (cost to complete)
+  await Promise.all([expVariants(sid), expPrices(sid)]);
+}
+async function expVariants(sid) {
+  if (!Object.values(cardVariants[sid] || {}).some(v => v == null)) return;
+  try {
+    await api('POST', `/sets/${encodeURIComponent(sid)}/variants`);
+    for (let i = 0; i < 120; i++) {
+      await new Promise(r => setTimeout(r, 2000));
+      const { job } = await api('GET', `/sets/${encodeURIComponent(sid)}/variants`);
+      if (!job || !job.running) break;
+    }
+    delete cards[sid]; await loadCards(sid); expMaster = null; loadExpMaster();
+  } catch (e) {}
+  if (expSel === sid) renderExpansions();
+}
+// new expansions get their prices from TCGdex in the background: ask again a few times
+async function expPrices(sid) {
+  for (let i = 0; i < 6 && expSel === sid; i++) {
+    let r = null;
+    try { r = await api('GET', `/prices/set/${encodeURIComponent(sid)}`); Object.assign(P.prices, r.prices); } catch (e) {}
+    if (expSel === sid) renderExpansions();
+    if (!r || !r.pending) break;
+    await new Promise(res => setTimeout(res, 15000));
+  }
+}
+// numbers in printed order: 1, 2… 165, 166… then TG01…
+const numSort = (a, b) => { const x = /^\d+$/.test(a), y = /^\d+$/.test(b); return x && y ? +a - +b : x ? -1 : y ? 1 : a.localeCompare(b, 'en', { numeric: true }); };
+function renderExpDetail() {
+  $('expListView').hidden = true; $('expDetail').hidden = false;
+  const s = setById[expSel], f = expFilters(), own = ownedBySet(f)[expSel], idx = cards[expSel];
+  if (!s) { expSel = null; return renderExpansions(); }
+  const p = expProgress(s, own, f.mode);
+  const vars = cardVariants[expSel] || {};
+  let html = `<div class="expdhead"><div class="t"><button id="expBack">← Expansiones</button>${s.sym ? `<img src="${esc(s.sym)}" alt="">` : ''}<div><h1>${esc(s.name)}</h1><div class="muted">${esc(eraLabel(s) || '')}${s.code ? ' · ' + esc(s.code) : ''}${s.date ? ' · ' + esc(s.date.slice(0, 4)) : ''}</div></div></div>
+    <div class="seg dexseg" id="expModeD">${Object.entries(EXP_MODES).map(([m, l]) => `<button data-m="${m}" class="${f.mode === m ? 'on' : ''}">${l}</button>`).join('')}</div></div>`;
+  if (!idx) { $('expDetail').innerHTML = html + '<div class="empty">Cargando las cartas de la expansión…</div>'; return; }
+  const nums = Object.keys(idx.raw).sort(numSort);
+  const inMode = n => f.mode !== 'base' || isPromoSet(s) || !s.printed || s.printed >= s.total || Core.isPrintedNumber(n, s.printed);
+  // slots of this mode: a card (base / secrets) or each standard variant of a card (master)
+  let cost = 0, noPrice = 0, unknown = 0;
+  const items = [];
+  for (const n of nums) {
+    if (!inMode(n)) continue;
+    const m = meta(expSel, n) || [];
+    const have = !!(own && own.nums.has(n));
+    if (f.mode === 'master') {
+      const vs = vars[n] ? Core.standardVariants(vars[n]) : null;
+      if (!vs) { unknown++; items.push({ n, m, have, vs: null }); continue; }
+      const got = vs.map(v => ({ v, ok: !!(own && own.vars.has(n + '|' + v)) }));
+      for (const g of got) if (!g.ok) { const pr = priceOf(keyOf(expSel, n, g.v, '', 'NM')); if (pr) cost += pr.clp; else noPrice++; }
+      items.push({ n, m, have: got.every(g => g.ok), any: got.some(g => g.ok), vs: got });
+    } else {
+      if (!have) { const pr = priceOf(keyOf(expSel, n, autoVariant(m), '', 'NM')); if (pr) cost += pr.clp; else noPrice++; }
+      items.push({ n, m, have });
+    }
+  }
+  const shown = items.filter(x => expShow === 'all' || (expShow === 'have' ? x.have || x.any : !x.have));
+  html += `<div class="dexsum"><div class="dexsum-top"><div class="dexcount"><b>${p ? fmt(p.have) : 0}</b><span>/ ${p ? fmt(p.total) : '?'} · ${EXP_MODES[f.mode]}${unknown ? ` · calculando variantes de ${unknown} cartas…` : ''}</span></div>
+      <div class="seg" id="expShow"><button data-s="all" class="${expShow === 'all' ? 'on' : ''}">Todas</button><button data-s="have" class="${expShow === 'have' ? 'on' : ''}">Tengo</button><button data-s="miss" class="${expShow === 'miss' ? 'on' : ''}">Me faltan</button></div></div>
+    <div class="expbar"><i style="width:${p ? pct(p.have, p.total) : 0}%"></i></div>
+    <div class="dexkits">${p && p.have >= p.total && !unknown ? `<b>✓ Completa en ${EXP_MODES[f.mode]}</b>` : `Para completarla: <b>~${clp(cost)}</b> en NM${noPrice ? ` · ${noPrice} sin precio` : ''}`}</div></div>
+    <div class="album">${shown.map(x => {
+      const img = x.m[4], no = '#' + x.n;
+      const chips = x.vs ? `<div class="vchips">${x.vs.map(g => `<span class="${g.ok ? 'have' : ''}" title="${esc(vlabel(g.v))}${g.ok ? ': la tienes' : ': te falta'}">${esc(vlabel(g.v))}</span>`).join('')}</div>` : '';
+      return `<div class="slot ${x.have || x.any ? '' : 'miss'}" title="${esc(no + ' ' + (x.m[0] || ''))}"><div class="pic">${img ? `<img src="${esc(img)}" loading="lazy" alt="" onerror="this.remove()">` : ''}${x.have || x.any ? '' : `<span class="no">${esc(no)}</span>`}</div>
+        <div class="cap"><b>${esc(x.m[0] || '?')}</b><span>${esc(no)}</span></div>${chips}</div>`; }).join('')}</div>`;
+  $('expDetail').innerHTML = html;
+  $('expBack').onclick = () => { expSel = null; renderExpansions(); };
+  $('expModeD').onclick = e => { const b = e.target.closest('[data-m]'); if (b) setExp({ mode: b.dataset.m }); };
+  $('expShow').onclick = e => { const b = e.target.closest('[data-s]'); if (b) { expShow = b.dataset.s; renderExpDetail(); } };
+}
+// progress of the expansion being loaded in Cargar (all my copies, any language, in the mode chosen in Expansiones)
+function curProgress(sid = curSet && curSet.id) {
+  const s = setById[sid]; if (!s) return null;
+  const f = { ...expFilters(), copies: 'todas', lang: '' };
+  return expProgress(s, ownedBySet(f)[sid], f.mode);
+}
+function renderCurProg() {
+  const el = $('curProg'); if (!el) return;
+  const p = curProgress();
+  el.innerHTML = p && p.total ? `<div class="expbar"><i style="width:${pct(p.have, p.total)}%"></i></div><span>${fmt(p.have)}/${fmt(p.total)} · ${Math.floor(pct(p.have, p.total))}% · ${EXP_MODES[expFilters().mode]}</span>` : '';
 }
 
 // ---------- artistas ----------
@@ -2215,6 +2447,7 @@ function renderAll() {
   const on = id => $('tab-' + id).classList.contains('on');
   if (on('inventario')) renderInv();
   if (on('kits')) renderKits();
+  if (on('expansiones')) renderExpansions();
   if (on('artistas')) renderArtists();
   if (on('grupos')) renderGroups();
   if (on('colecciones')) renderCollections();
@@ -2408,6 +2641,18 @@ $('invBody').addEventListener('change', e => {
   enqueue(() => api('POST', '/inventory/move', { ...rowBody(x), to: { lang: s.value } }));
 });
 
+$('expLang').innerHTML = '<option value="">Cualquier idioma</option>' + LANGS.map(l => `<option value="${l}">Solo ${LNAME[l]}</option>`).join('');
+$('expMode').addEventListener('click', e => { const b = e.target.closest('[data-m]'); if (b) setExp({ mode: b.dataset.m }); });
+$('expCopies').addEventListener('click', e => { const b = e.target.closest('[data-c]'); if (b) setExp({ copies: b.dataset.c }); });
+$('expSort').onchange = () => setExp({ sort: $('expSort').value });
+$('expLang').onchange = () => setExp({ lang: $('expLang').value });
+$('expSeries').onchange = () => setExp({ series: $('expSeries').value });
+$('expOrigin').onchange = () => setExp({ origin: $('expOrigin').value });
+$('expAll').onchange = () => setExp({ all: $('expAll').checked });
+$('expPromos').onchange = () => setExp({ promos: $('expPromos').checked });
+$('expClear').onclick = () => setExp({ lang: '', series: '', origin: '', all: false, promos: false });
+$('expFiltersBtn').onclick = () => { const open = $('expFilters').hidden; $('expFilters').hidden = !open; $('expFiltersBtn').setAttribute('aria-expanded', open); };
+$('expGrid').addEventListener('click', e => { const b = e.target.closest('[data-sid]'); if (b) openExpansion(b.dataset.sid); });
 $('kitRegions').addEventListener('click', e => { const b = e.target.closest('[data-r]'); if (b) setKit({ region: +b.dataset.r }); });
 $('kitCopies').addEventListener('click', e => { const b = e.target.closest('[data-c]'); if (b) setKit({ copies: b.dataset.c }); });
 $('kitSum').addEventListener('click', e => { const b = e.target.closest('[data-lvl]'); if (!b) return; const id = b.dataset.lvl, f = kitFilters(); setKit({ tiers: !id || (f.tiers && f.tiers.length === 1 && f.tiers[0] === id) ? null : [id] }); });

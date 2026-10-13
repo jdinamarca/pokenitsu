@@ -131,6 +131,26 @@ async function unpricedIntl(cardIds = null) {
   return bySet;
 }
 
+// Prices of every card of an international expansion (one or two requests), when some are missing or old:
+// e.g. what completing the expansion would cost. Japanese expansions keep only the prices they already have.
+// Returns whether TCGdex is still completing some of them in the background (brand-new expansions pokemontcg.io has no prices for).
+const setTdJobs = new Set();
+export async function ensureSetPrices(setId) {
+  const { rows: [r] } = await pool.query(
+    `SELECT s.source, count(*) FILTER (WHERE p.card_id IS NULL OR p.fetched_at < now() - $2::interval)::int AS stale
+     FROM sets s JOIN cards c ON c.set_id = s.id LEFT JOIN card_prices p ON p.card_id = c.id WHERE s.id = $1 GROUP BY s.source`, [setId, MAX_AGE]);
+  if (!r || r.source !== 'ptcg') return false;
+  if (r.stale) await fetchPtcgSet(setId).catch(e => console.warn('precios de', setId, e.message));
+  if (!setTdJobs.has(setId)) {
+    const { rows } = await pool.query('SELECT id FROM cards WHERE set_id = $1', [setId]);
+    const todo = (await unpricedIntl(rows.map(x => x.id))).get(setId);
+    if (todo && todo.length) {
+      setTdJobs.add(setId);
+      fetchTcgdexEn(setId, todo).catch(e => console.warn('precios TCGdex de', setId, e.message)).finally(() => setTdJobs.delete(setId));
+    }
+  }
+  return setTdJobs.has(setId);
+}
 // Prices of one card right now (e.g. just loaded); ignores errors, the next refresh retries
 export async function ensureCardPrice(cardId) {
   const { rows: [r] } = await pool.query(
