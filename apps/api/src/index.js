@@ -4,7 +4,9 @@ import { fileURLToPath } from 'node:url';
 import { writeFile, unlink } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { dirname, join } from 'node:path';
+import { fromNodeHeaders } from 'better-auth/node';
 import { pool, tx, migrate } from './db.js';
+import { createAuth } from './auth.js';
 import { norm, ensureSets, syncSets, ensureSetCards, syncAllCards, syncJaDex, applyJaNames } from './catalog.js';
 import { importChecklist, fillJaImages } from './pokecottage.js';
 import { syncCameos, cameosJob, CAMEO_SOURCE } from './cameos.js';
@@ -80,6 +82,32 @@ app.setErrorHandler((err, req, reply) => {
   reply.code(code).send({ error: err.message });
 });
 app.register(fastifyStatic, { root: PUBLIC_DIR });
+
+// ---------- accounts (Better Auth): /api/auth/* and a session for every other API call ----------
+let auth; // set right after the migrations, before listening
+app.route({
+  method: ['GET', 'POST'],
+  url: '/api/auth/*',
+  async handler(req, reply) {
+    const res = await auth.handler(new Request(new URL(req.url, `http://${req.headers.host}`), {
+      method: req.method, headers: fromNodeHeaders(req.headers), ...(req.body ? { body: JSON.stringify(req.body) } : {}),
+    }));
+    reply.status(res.status);
+    // several cookies come as separate Set-Cookie headers: send them all
+    res.headers.forEach((v, k) => { if (k !== 'set-cookie') reply.header(k, v); });
+    const cookies = res.headers.getSetCookie(); if (cookies.length) reply.header('set-cookie', cookies);
+    return reply.send(res.body ? await res.text() : null);
+  },
+});
+// the landing's sign-up form and the login itself are the only API calls without a session
+const PUBLIC_API = [/^\/api\/auth\//, /^\/api\/alpha$/];
+app.addHook('onRequest', async (req, reply) => {
+  const path = req.url.split('?')[0];
+  if (!path.startsWith('/api/') || PUBLIC_API.some(r => r.test(path))) return;
+  const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
+  if (!session) return reply.code(401).send({ error: 'Inicia sesión para continuar', login: true });
+  req.user = session.user;
+});
 app.addContentTypeParser(/^image\//, { parseAs: 'buffer', bodyLimit: 15 * 1024 * 1024 }, (req, body, done) => done(null, body));
 
 // ---------- landing (/alfa) and its alpha sign-ups ----------
@@ -1019,6 +1047,7 @@ app.get('/api/export.csv', async (req, reply) => {
 });
 
 await migrate(join(root, 'db', 'migrations'));
+auth = createAuth();
 await applyJaNames();
 const port = Number(process.env.PORT || 3000), host = process.env.HOST || '127.0.0.1';
 await app.listen({ port, host });

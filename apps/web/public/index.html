@@ -615,6 +615,16 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
 .gdlg-actions{margin-top:6px}
 .gdlg-prev{flex:1 1 320px;display:flex;flex-direction:column;gap:10px;min-width:0}
 .gdlg-prev .pano{max-width:100%}
+.authgate{position:fixed;inset:0;z-index:100;background:var(--bg);display:grid;place-items:center;padding:16px}
+.authcard{width:min(400px,100%);background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-lg);padding:24px;display:flex;flex-direction:column;gap:12px}
+.authcard h1{margin:0;font-size:22px}
+.authcard p{margin:0}
+.authcard label{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:700;color:var(--muted)}
+.authcard input{font-size:16px;padding:10px 12px}
+.authtabs{display:flex;gap:4px;background:var(--chip);border-radius:10px;padding:4px}
+.authtabs button{flex:1;border:0;background:none;border-radius:8px}
+.authtabs button.on{background:var(--panel);box-shadow:var(--shadow)}
+.authhint{font-size:12.5px}
 .filebtn.cam{display:none}
 @media (hover:none) and (pointer:coarse){.filebtn.cam{display:inline-block}}
 .filebtn{border:1px dashed var(--muted);border-radius:10px;padding:7px 14px;cursor:pointer;font-size:14px;font-weight:700}
@@ -638,6 +648,19 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
 </style>
 </head>
 <body>
+<div class="authgate" id="authGate" hidden>
+  <form class="authcard" id="authForm" novalidate>
+    <h1>Colección Pokémon</h1>
+    <p class="muted" id="authSub">Inicia sesión para ver tu colección.</p>
+    <div class="authtabs" role="tablist"><button type="button" role="tab" data-mode="in" class="on" aria-selected="true">Entrar</button><button type="button" role="tab" data-mode="up" aria-selected="false">Crear cuenta</button></div>
+    <label id="authNameWrap" hidden>Tu nombre <input id="authName" autocomplete="name"></label>
+    <label>Email <input id="authEmail" type="email" autocomplete="email" required></label>
+    <label>Contraseña <input id="authPass" type="password" autocomplete="current-password" minlength="10" required></label>
+    <p class="muted authhint" id="authHint" hidden>Durante la alfa solo pueden crear cuenta los emails invitados. Contraseña de al menos 10 caracteres.</p>
+    <button class="primary" id="authGo" type="submit">Entrar</button>
+    <p class="msg" id="authMsg" role="alert"></p>
+  </form>
+</div>
 <header class="appbar">
   <div class="appbar-in">
     <div class="brand">
@@ -660,6 +683,8 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
         <button id="btnPrices">💰 Precios y tipo de cambio…</button>
         <hr>
         <button id="btnReset" class="danger">🗑️ Vaciar inventario…</button>
+        <hr>
+        <button id="btnLogout">🚪 Cerrar sesión <small class="muted" id="whoami"></small></button>
       </div>
     </details>
     <input type="file" id="fileImport" accept=".json,.csv" hidden>
@@ -1107,8 +1132,43 @@ function paint(el, html) {
 async function api(method, path, body) {
   const r = await fetch('/api' + path, { method, headers: body ? { 'content-type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined });
   const j = await r.json().catch(() => ({}));
+  if (r.status === 401 && j.login) showLogin('Tu sesión terminó. Vuelve a entrar.');
   if (!r.ok) throw new Error(j.error || j.message || 'HTTP ' + r.status);
   return j;
+}
+// ---------- account (Better Auth at /api/auth) ----------
+const AUTH_ERR = { INVALID_EMAIL_OR_PASSWORD: 'Email o contraseña incorrectos.', USER_ALREADY_EXISTS: 'Ya existe una cuenta con ese email: entra con tu contraseña.', USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL: 'Ya existe una cuenta con ese email: entra con tu contraseña.',
+  PASSWORD_TOO_SHORT: 'La contraseña debe tener al menos 10 caracteres.', INVALID_EMAIL: 'Ese email no es válido.' };
+let authMode = 'in';
+function showLogin(msg = '') {
+  $('authGate').hidden = false; $('authMsg').textContent = msg; $('authMsg').className = 'msg' + (msg ? ' warn' : '');
+  setAuthMode(authMode); $('authEmail').focus();
+}
+function setAuthMode(m) {
+  authMode = m;
+  for (const b of document.querySelectorAll('.authtabs button')) { b.classList.toggle('on', b.dataset.mode === m); b.setAttribute('aria-selected', String(b.dataset.mode === m)); }
+  $('authNameWrap').hidden = m !== 'up'; $('authHint').hidden = m !== 'up';
+  $('authGo').textContent = m === 'up' ? 'Crear cuenta' : 'Entrar';
+  $('authPass').autocomplete = m === 'up' ? 'new-password' : 'current-password';
+}
+async function submitAuth(e) {
+  e.preventDefault();
+  const email = $('authEmail').value.trim(), password = $('authPass').value, name = $('authName').value.trim() || email.split('@')[0];
+  if (!email || !password) return authFail('Escribe tu email y tu contraseña.');
+  $('authGo').disabled = true; $('authMsg').textContent = '';
+  try {
+    const r = await fetch(`/api/auth/${authMode === 'up' ? 'sign-up' : 'sign-in'}/email`, { method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(authMode === 'up' ? { name, email, password } : { email, password, rememberMe: true }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) return authFail(AUTH_ERR[j.code] || j.message || 'No se pudo: HTTP ' + r.status);
+    location.reload();
+  } catch (err) { authFail('No pude conectar con el servidor: ' + err.message); }
+  finally { $('authGo').disabled = false; }
+}
+function authFail(t) { $('authMsg').textContent = t; $('authMsg').className = 'msg err'; }
+// null without a session; { open: true } when the server has no accounts at all (an older server)
+async function currentSession() {
+  try { const r = await fetch('/api/auth/get-session'); return r.status === 404 ? { open: true } : r.ok ? await r.json() : null; } catch { return null; }
 }
 // writes run one after another, so the database sees them in the order they were typed
 let pending = 0, syncErr = null, chain = Promise.resolve();
@@ -3839,6 +3899,15 @@ $('camInfo').addEventListener('click', async e => {
 $('colDex').addEventListener('focus', fillDexNames);
 
 // ---------- boot ----------
+document.querySelector('.authtabs').addEventListener('click', e => { const b = e.target.closest('button[data-mode]'); if (b) { setAuthMode(b.dataset.mode); $('authMsg').textContent = ''; } });
+$('authForm').addEventListener('submit', submitAuth);
+$('btnLogout').onclick = async () => { $('dataMenu').open = false; await fetch('/api/auth/sign-out', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' }); location.reload(); };
+currentSession().then(s => {
+  if (s && s.open) { $('btnLogout').hidden = true; return boot(); }
+  if (!s || !s.user) return showLogin();
+  $('whoami').textContent = s.user.email; boot();
+});
+function boot() {
 const hashTab = location.hash.slice(1);
 showTab(TABS.includes(hashTab) ? hashTab : TABS.includes(data.tab) ? data.tab : 'cargar');
 window.addEventListener('hashchange', () => { const t = location.hash.slice(1); if (TABS.includes(t)) showTab(t); });
@@ -3847,6 +3916,7 @@ loadState().then(() => { loadLots(); loadPrices(); }).catch(e => showMsg('No pud
 loadArtists();
 // the Pokédex reference cards (missing species): ready before opening the tab, so it paints once
 ensureDexRef();
+}
 </script>
 </body>
 </html>
