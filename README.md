@@ -165,8 +165,28 @@ español, portugués…; la colección elige en qué idioma cuentan. Las japones
 Una colección puede **seguir una checklist de PokeCottage** (ej. https://pokecottage.com/pokemon-master-sets/eevee):
 entonces solo cuentan las cartas de esa lista. Cada carta se busca en el catálogo (internacionales en pokemontcg.io,
 japonesas en TCGdex); las que no están se crean en sets `pc-*` con las imágenes de PokeCottage.
-Las cartas donde el Pokémon no es el protagonista (entrenadores, otros Pokémon) van como **cameos**
-(`collection_cards.role = 'cameo'`), con su propio contador.
+Las cartas donde el Pokémon no es el protagonista que vienen en la checklist o que agregas a mano
+(menú ⋯ → Agregar cameo) se guardan como cameos de la colección (`collection_cards.role = 'cameo'`).
+
+La pestaña muestra cada colección como una tarjeta con portada, avance de **Cartas** y de **Cameos** y su valor.
+Dentro, el encabezado fijo tiene las pestañas **Cartas** / **Cameos** y el menú **⋯** (editar, carta a mano, cameo,
+checklist, buscar japonesas, borrar). En Cartas: Todas / Tengo / Me faltan, Por año / Por región y, en **Filtros**,
+orden, rareza, precio y ocultas.
+
+### Cameos
+
+**Cameos** = cartas donde el Pokémon aparece sin ser el protagonista (el Eevee en el Snorlax de Wizards Promos #49).
+Vienen de la **[Cameo Pokémon Card Database de RotomAmiti](https://docs.google.com/spreadsheets/d/18nIkOgqQrHZTz0TrH_gL1e1nL1RcHiCmPF5finAjToY)**
+(≈3.300 cameos de ≈770 Pokémon, una pestaña por generación), más los cameos propios de cada colección.
+
+- Se importa sola la primera vez que arranca el servidor (tabla `cameo_refs`, `apps/api/src/cameos.js`); después,
+  con **actualizar** bajo el buscador (`POST /api/cameos/sync`). Si alguna pestaña falla o cambia de formato, se mantiene la base anterior.
+- Cada cameo se cruza con el catálogo por expansión y número (alias como "Wizards Promos" → `basep`, promos con prefijo
+  `176` → `XY176`, subcolecciones GG/TG/Shiny Vault). Los que no están (promos japonesas, jumbos, concursos) quedan en
+  **Sin carta en el catálogo** como referencia.
+- En la pestaña **Cameos**: en color los que tienes, en blanco y negro los que no; filtro Todos / Tengo / Me faltan y
+  **Cómo aparece** (personaje, silueta, disfraz, dibujo o imagen, peluche o juguete, estatua, parcial, jumbo, otro), sacado de la nota de la planilla.
+- **¿En qué cartas aparece…?** muestra los cameos de cualquier Pokémon, aunque no tengas su colección, con un botón para crearla.
 
 Con checklist, cada **variante** es un espacio aparte (Jungle Eevee: Unlimited, 1st Edition, 1st Edition d Misprint),
 igual que en PokeCottage. La variante del inventario es `normal`, `holo`, `reverse` o el slug de la checklist

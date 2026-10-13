@@ -7,6 +7,7 @@ import { dirname, join } from 'node:path';
 import { pool, tx, migrate } from './db.js';
 import { norm, ensureSets, syncSets, ensureSetCards, syncAllCards, syncJaDex } from './catalog.js';
 import { importChecklist } from './pokecottage.js';
+import { syncCameos, cameosJob, CAMEO_SOURCE } from './cameos.js';
 import { fillDetails, startDetailsJob, detailsJob, startVariantsJob, variantsJob, startVariantsForMySets } from './details.js';
 import { ensureCardPrice, ensureSetPrices, refreshPrices, staleCount, getSetting, putSetting, getFx } from './prices.js';
 import { pickPrice } from '@pokenitsu/core';
@@ -270,6 +271,29 @@ app.get('/api/artists/cards', async req => {
      WHERE c.artist = $1 AND s.source = 'ptcg'
      ORDER BY s.release_date NULLS LAST, s.id, length(c.number_norm), c.number_norm`, [name, lang]);
   return rows;
+});
+
+// ---------- cameos (RotomAmiti's Cameo Pokémon Card Database) ----------
+// a Pokémon's cameos; the catalog card when there is one (img, set…), else only the sheet's name / set / number
+app.get('/api/cameos', async req => {
+  const dex = parseInt(req.query.dex, 10);
+  if (!(dex >= 1 && dex <= 1100)) throw bad('Número de Pokédex inválido');
+  const { rows } = await pool.query(
+    `SELECT r.id, r.dex, r.species, r.card_name, r.set_name, r.number, r.note, r.card_id,
+            c.set_id AS sid, c.number AS num, c.name, c.rarity, c.image_small AS img, c.artist, s.name AS set_title, coalesce(s.code, '') AS set_code,
+            coalesce(to_char(s.release_date, 'YYYY'), '') AS year
+     FROM cameo_refs r LEFT JOIN cards c ON c.id = r.card_id LEFT JOIN sets s ON s.id = c.set_id
+     WHERE r.dex = $1 ORDER BY s.release_date NULLS LAST, r.id`, [dex]);
+  return rows;
+});
+// how many cameos per Pokémon (for the collection cards and the search)
+app.get('/api/cameos/status', async () => {
+  const { rows: [r] } = await pool.query(`SELECT count(*)::int AS total, count(card_id)::int AS matched, count(DISTINCT dex)::int AS species, max(imported_at) AS at FROM cameo_refs`);
+  return { ...r, source: CAMEO_SOURCE, job: cameosJob() };
+});
+app.post('/api/cameos/sync', async () => {
+  syncCameos();   // in the background: poll /api/cameos/status
+  return { job: cameosJob() };
 });
 
 // ---------- everything the page needs on load ----------
@@ -997,4 +1021,6 @@ const port = Number(process.env.PORT || 3000), host = process.env.HOST || '127.0
 await app.listen({ port, host });
 startDetailsJob();
 startVariantsForMySets().catch(e => app.log.warn(e));
+// the cameo database the first time (afterwards, from the page)
+pool.query('SELECT 1 FROM cameo_refs LIMIT 1').then(r => { if (!r.rows.length) syncCameos(); }).catch(() => {});
 console.log(`Inventario Pokémon listo en http://${host === '0.0.0.0' ? 'localhost' : host}:${port}`);

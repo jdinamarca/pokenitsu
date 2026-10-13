@@ -175,7 +175,7 @@ dialog.dlg p{font-size:13.5px;margin:6px 0}
 button.lock{padding:0 7px;line-height:22px;border-radius:7px;font-size:12px;margin-left:auto}
 button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-color:#8a3ffc;font-weight:800}
 [hidden]{display:none !important}
-.colform{display:flex;flex-direction:column;gap:8px;margin-top:12px;padding:12px;border-radius:12px;background:var(--panel2)}
+.colform{display:flex;flex-direction:column;gap:10px}
 .colform label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
 .colsec{margin:24px 0 4px;font-size:17px;font-weight:800;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .colsec .muted{font-size:13px;font-weight:600}
@@ -193,6 +193,60 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
 .tile .vname.special{color:#e0a526}
 .tile .vars{font-size:11px;color:var(--muted);line-height:1.3}
 .colsec.cameo{border-top:1px dashed var(--line);padding-top:18px}
+/* Mis colecciones (album) */
+.camsearch{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 16px;margin-bottom:18px;box-shadow:var(--shadow)}
+.camsearch label{font-weight:800;font-size:15px}
+.camsearch input{flex:1;min-width:220px}
+.camsearch .muted{width:100%;font-size:12.5px}
+.colgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:16px}
+.colcard{display:flex;flex-direction:column;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:0;overflow:hidden;box-shadow:var(--shadow);cursor:pointer;color:inherit;font:inherit}
+.colcard:hover{border-color:var(--muted)}
+.colcard .cover{display:flex;height:150px;background:var(--bg);overflow:hidden}
+.colcard .cover img{flex:1;min-width:0;height:100%;object-fit:cover;object-position:50% 22%;transform:scale(1.5);transform-origin:50% 25%}
+.colcard .cover img.off{filter:grayscale(1);opacity:.45}
+.colcard .body{padding:14px 16px 16px;display:flex;flex-direction:column;gap:10px}
+.colcard .nm{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.colcard .nm b{font-size:20px;font-weight:900}
+.colcard .nm span{font-size:12.5px;color:var(--muted);font-weight:700}
+.colcard .two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.colcard .two small{display:block;font-size:11.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px}
+.colcard .two b{font-size:18px}
+.colcard .val{font-size:13px;color:var(--muted)}
+.colcard .val b{color:var(--ok)}
+.expbar.gold i{background:var(--gold)}
+.colnew{border:2px dashed var(--line);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:10px;justify-content:center;color:var(--muted)}
+.colnew b{color:var(--ink);font-size:17px}
+.coltabs{display:inline-flex;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:4px;gap:4px}
+.coltabs button{border:0;background:none;font-weight:800;padding:8px 16px;border-radius:10px;min-height:40px}
+.coltabs button span{color:var(--muted);font-weight:700;margin-left:4px}
+.coltabs button.on{background:var(--red);color:#fff}
+.coltabs button.on span{color:#fff;opacity:.85}
+.coltabs button.on.gold{background:var(--gold);color:#2b2000}
+.coltabs button.on.gold span{color:#2b2000}
+.colmenu{position:relative}
+.colmenu summary{list-style:none;cursor:pointer;border:1px solid var(--line);background:var(--panel);border-radius:10px;width:44px;height:40px;display:flex;align-items:center;justify-content:center}
+.colmenu summary::-webkit-details-marker{display:none}
+.colmenu .items{position:absolute;right:0;top:46px;z-index:30;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-lg);padding:6px;display:flex;flex-direction:column;min-width:240px}
+.colmenu .items button{text-align:left;border:0;background:none;padding:10px 12px;border-radius:8px;font-weight:700}
+.colmenu .items button:hover{background:var(--chip)}
+.colmenu .items .danger{color:var(--err)}
+.camkinds{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.camkinds .lbl{font-size:12.5px;color:var(--muted);margin-right:2px}
+.camkinds button{border-radius:999px;padding:5px 12px;font-size:13px;font-weight:700}
+.camkinds button.on{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.camkinds button b{color:var(--muted)}
+.slot .pic .kind{position:absolute;left:7px;bottom:7px;font-size:10.5px;font-weight:900;border-radius:999px;padding:2px 8px;background:var(--gold);color:#2b2000}
+.slot .pic .have{position:absolute;right:7px;top:7px;font-size:10.5px;font-weight:900;border-radius:999px;padding:2px 8px;background:var(--ok);color:#06291a}
+.slot .sub{font-size:11.5px;color:var(--muted)}
+.camrefs{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px}
+.camref{display:flex;gap:10px;align-items:center;border:1px dashed var(--line);border-radius:12px;padding:10px;background:var(--panel)}
+.camref i{flex:none;width:34px;height:48px;border-radius:5px;background:var(--chip);display:flex;align-items:center;justify-content:center;font-style:normal;font-size:10px;font-weight:900;color:var(--muted)}
+.camref div{font-size:12.5px;min-width:0}
+.camref div b{display:block}
+.camref div span{color:var(--muted)}
+.camcredit{font-size:12px;color:var(--muted);margin-top:14px}
+.camsearch a,.camcredit a,.dexkits a{color:var(--blue);font-weight:700}
+@media (max-width:640px){.colgrid{grid-template-columns:1fr}.colcard .cover{height:120px}.expdhead .t{flex:1;min-width:0}.colmenu{order:2}#colBack .lbl{display:none}#colBack{white-space:nowrap}.expdhead .coltabs{order:3;width:100%;display:flex}.coltabs button{flex:1}.camkinds{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}.camkinds button{flex:none}}
 .manual{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;padding:12px;border-radius:12px;background:var(--panel2);margin-bottom:14px}
 .manual label{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--muted)}
 .bar{height:8px;background:var(--track);border-radius:99px;overflow:hidden}
@@ -784,26 +838,35 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
 
   <!-- MIS COLECCIONES -->
   <section class="tab" id="tab-colecciones">
-    <div class="artists">
-      <aside class="panel artlist">
-        <div class="panel-h">⭐ Mis colecciones</div>
-        <p class="muted" style="font-size:13px;margin:0 0 10px">Todas las cartas <b>distintas</b> de un Pokémon. Cada expansión + número es una carta: si solo cambia el idioma, es la misma.</p>
-        <div class="scroll" id="colList"></div>
-        <button id="colNew" style="margin-top:10px">＋ Nueva colección</button>
-        <div id="colForm" class="colform" hidden>
-          <div class="panel-h" id="colTitle" style="margin:0">Nueva colección</div>
-          <label>Pokémon <input id="colDex" list="dexNames" placeholder="Número o nombre: 133, Eevee…" autocomplete="off"></label>
-          <datalist id="dexNames"></datalist>
-          <label>Nombre <input id="colName" placeholder="Todos mis Eevee"></label>
-          <label>Las internacionales las colecciono en <select id="colLang"></select></label>
-          <label>Checklist de PokeCottage (opcional) <input id="colCk" placeholder="https://pokecottage.com/pokemon-master-sets/eevee" spellcheck="false"></label>
-          <div class="row"><button class="primary" id="colSave">Guardar</button><button id="colCancel">Cancelar</button></div>
-          <div class="msg" id="colMsg"></div>
-        </div>
-      </aside>
-      <section class="panel" id="colView"></section>
+    <div id="colListView">
+      <div class="dexhead">
+        <div><h1>Mis colecciones</h1><p>Todas las cartas de un Pokémon, y todas las cartas donde aparece.</p></div>
+        <button class="primary" id="colNew">＋ Nueva colección</button>
+      </div>
+      <form class="camsearch" id="camForm" role="search">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+        <label for="camQ">¿En qué cartas aparece…?</label>
+        <input id="camQ" list="dexNames" placeholder="Escribe un Pokémon: Eevee, Snorlax, 25…" autocomplete="off">
+        <button type="submit">Buscar</button>
+        <span class="muted" id="camInfo"></span>
+      </form>
+      <div class="colgrid" id="colList"></div>
     </div>
+    <div id="colView" hidden></div>
+    <datalist id="dexNames"></datalist>
   </section>
+
+  <dialog class="dlg" id="colDlg" style="width:min(94vw,520px)">
+    <div class="colform" id="colForm">
+      <h2 id="colTitle" style="margin:0">Nueva colección</h2>
+      <label>Pokémon <input id="colDex" list="dexNames" placeholder="Número o nombre: 133, Eevee…" autocomplete="off"></label>
+      <label>Nombre <input id="colName" placeholder="Todos mis Eevee"></label>
+      <label>Las internacionales las colecciono en <select id="colLang"></select></label>
+      <label>Checklist de PokeCottage (opcional) <input id="colCk" placeholder="https://pokecottage.com/pokemon-master-sets/eevee" spellcheck="false"></label>
+      <div class="row"><button class="primary" id="colSave">Guardar</button><button id="colCancel">Cancelar</button></div>
+      <div class="msg" id="colMsg"></div>
+    </div>
+  </dialog>
 </main>
 <div class="toasts" id="toasts"></div>
 <dialog class="dlg" id="cardDlg" style="width:min(94vw,600px)">
@@ -2731,7 +2794,7 @@ async function resetInventory() {
 }
 
 // ---------- navigation ----------
-const TABS = ['cargar', 'inventario', 'kits', 'artistas', 'grupos', 'colecciones', 'lotes', 'ubicaciones'];
+const TABS = ['cargar', 'inventario', 'kits', 'expansiones', 'artistas', 'grupos', 'colecciones', 'lotes', 'ubicaciones'];
 function showTab(name) {
   data.tab = name; save();
   if (location.hash !== '#' + name) history.replaceState(null, '', '#' + name);
@@ -3036,15 +3099,43 @@ window.addEventListener('beforeunload', e => { if (pending) { e.preventDefault()
 
 // ---------- mis colecciones ----------
 let colls = null, colSel = null, colCards = [], colShow = 'all', colHidden = false, colEditing = null, colManual = false, colCameo = false;
+// colTab: 'cartas' | 'cameos'; camDex: a Pokémon's cameos opened from the search, without a collection
+let colTab = 'cartas', camDex = null, camShow = 'all', camKind = '', colFiltersOpen = false;
+const colCardsById = {}, cameoCache = {}, cameoLoading = {};
+let cameoStatus = null;
 async function loadCollections() {
   try { colls = await api('GET', '/collections'); } catch (e) { colls = []; }
   if (colSel && !colls.find(c => c.id === colSel)) colSel = null;
-  if (!colSel && colls.length) openCollection(colls[0].id);
-  renderColList();
+  renderCollections();
+  // each collection's cards and cameos, for the cards' progress and value
+  for (const c of colls) {
+    if (!colCardsById[c.id]) api('GET', `/collections/${c.id}/cards`).then(l => { l.forEach(putMeta); colCardsById[c.id] = l; if (!colSel && !camDex) renderColList(); }).catch(() => {});
+    loadCameos(c.dex);
+  }
+  loadCameoStatus();
+}
+async function loadCameoStatus() {
+  try { cameoStatus = await api('GET', '/cameos/status'); } catch (e) { return; }
+  const st = cameoStatus;
+  $('camInfo').innerHTML = st.job && st.job.running ? `Descargando la base de cameos… (${st.job.tabs}/9 generaciones)`
+    : st.total ? `${fmt(st.total)} cameos de ${fmt(st.species)} Pokémon · <a href="${esc(st.source.url)}" target="_blank" rel="noopener">${esc(st.source.name)}</a> · actualizada el ${new Date(st.at).toLocaleDateString('es-CL')} · <a href="#" id="camSync">actualizar</a>`
+    : 'Todavía no se descarga la base de cameos.';
+  if (st.job && st.job.running) setTimeout(loadCameoStatus, 2500);
+}
+function loadCameos(dex, force) {
+  if (!dex || (cameoCache[dex] && !force)) return Promise.resolve(cameoCache[dex]);
+  if (cameoLoading[dex]) return cameoLoading[dex];
+  return cameoLoading[dex] = api('GET', '/cameos?dex=' + dex).then(l => {
+    for (const c of l) if (c.sid) putMeta({ sid: c.sid, num: c.num, name: c.name, rarity: c.rarity, img: c.img, artist: c.artist, dex: [] });
+    cameoCache[dex] = l; delete cameoLoading[dex];
+    if ($('tab-colecciones').classList.contains('on')) renderCollections();
+    return l;
+  }).catch(() => { delete cameoLoading[dex]; });
 }
 function renderCollections() {
   if (!colls) { $('colList').innerHTML = '<div class="empty">Cargando…</div>'; loadCollections(); return; }
-  renderColList(); renderColView();
+  if (colSel || camDex) { $('colListView').hidden = true; $('colView').hidden = false; return renderColView(); }
+  $('colListView').hidden = false; $('colView').hidden = true; renderColList();
 }
 const colOf = id => colls && colls.find(c => c.id === id);
 // owned / personal counted locally, so they react right away to what you load. role: 'main' or 'cameo'
@@ -3087,26 +3178,76 @@ function colValue(col, list) {
 }
 // international prints (set without its own language) count only in the collection's language; Japanese, Chinese… in any
 const countLang = (col, c) => c.set_lang ? '' : col.lang;
-function renderColList() {
-  if (!colls.length) { $('colList').innerHTML = '<div class="empty" style="padding:16px">Aún no tienes colecciones.<br>Crea una, por ejemplo <b>Eevee</b>.</div>'; return; }
-  paint($('colList'), colls.map(c => {
-    const st = c.id === colSel && colCards.length ? colStats(c, colCards) : c;
-    return `<button class="arow ${c.id === colSel ? 'on' : ''}" data-c="${c.id}">
-      <div class="top"><span>${esc(c.name)} <span class="muted" style="font-weight:600">#${c.dex}${c.lang ? ' · ' + c.lang : ''}${c.checklist_url ? ' · 📋' : ''}</span></span><span>${st.owned}/${st.total}</span></div>${bar(st.owned, st.total)}
-      ${c.id === colSel && colCards.length ? `<div class="muted" style="font-size:12px;margin-top:4px">💰 ${clp(colValue(c, colCards).have)}</div>` : ''}</button>`;
-  }).join(''));
+// how a Pokémon appears on a cameo, from the sheet's note
+const CAM_KINDS = [['personaje', 'Personaje'], ['silueta', 'Silueta'], ['disfraz', 'Disfraz'], ['imagen', 'Dibujo o imagen'], ['juguete', 'Peluche o juguete'],
+  ['estatua', 'Estatua'], ['parcial', 'Parcial'], ['jumbo', 'Jumbo'], ['otro', 'Otro']];
+function camKindOf(note) {
+  const n = String(note || '').toLowerCase();
+  if (!n) return 'personaje';
+  if (/jumbo/.test(n)) return 'jumbo';
+  if (/silhouette/.test(n)) return 'silueta';
+  if (/costume|disguise/.test(n)) return 'disfraz';
+  if (/picture|drawing|mural|photo|poster|sign|painting|screen|tv|card|book|print/.test(n)) return 'imagen';
+  if (/plush|toy|doll|figure|balloon|mascot|model/.test(n)) return 'juguete';
+  if (/statue/.test(n)) return 'estatua';
+  if (/partial/.test(n)) return 'parcial';
+  return 'otro';
 }
-async function openCollection(id) {
-  colSel = id; colCards = []; colShow = 'all'; colManual = false; colCameo = false;
-  renderColList();
-  $('colView').innerHTML = '<div class="empty">Cargando cartas…</div>';
+const CAM_KIND_NAME = Object.fromEntries(CAM_KINDS);
+// a Pokémon's cameos: the cameo database plus the collection's own cameos (checklist or added by hand), once per card
+function cameoItems(dex, col) {
+  const out = [], seen = new Set(), lang = col ? col.lang : '';
+  for (const c of cameoCache[dex] || []) {
+    if (c.card_id) { if (seen.has(c.card_id)) continue; seen.add(c.card_id); }
+    const q = c.sid ? cardQty(c.sid, c.num, lang) : 0;
+    out.push({ card: c.card_name, set: c.set_title || c.set_name, num: c.num || c.number, sid: c.sid, img: c.img, note: c.note, kind: camKindOf(c.note), have: q, year: c.year, ref: !c.sid });
+  }
+  for (const c of col && colCardsById[col.id] || []) {
+    if (c.role !== 'cameo' || c.hidden || seen.has(c.card_id)) continue; seen.add(c.card_id);
+    out.push({ card: c.name, set: c.set_name, num: c.num, sid: c.sid, img: c.img, note: '', kind: 'personaje', have: cardQty(c.sid, c.num, countLang(col, c)), year: c.year, own: true });
+  }
+  return out;
+}
+function renderColList() {
+  const el = $('colList');
+  const covers = col => {
+    // my cards of this Pokémon first (in color), else the Pokédex reference in black and white
+    const imgs = [];
+    for (const k in data.inv) { const { sid, num, v } = splitKey(k), m = meta(sid, num); if (m && m[1].includes(col.dex) && m[5] === 'Pokémon') { const i = imgFor(sid, num, v); if (i && !imgs.includes(i)) imgs.push(i); } if (imgs.length >= 5) break; }
+    if (!imgs.length && dexRef && dexRef[col.dex]) return `<img class="off" src="${esc(dexRef[col.dex].img)}" alt="">`;
+    return imgs.map(i => `<img src="${esc(i)}" alt="" loading="lazy">`).join('');
+  };
+  const cards = (colls || []).map(c => {
+    const list = colCardsById[c.id], st = list ? colStats(c, list) : { owned: c.owned, total: c.total };
+    const cams = cameoItems(c.dex, list ? { ...c, id: c.id } : null), camHave = cams.filter(x => x.have).length;
+    const v = list ? colValue(c, list) : null;
+    return `<button class="colcard" data-c="${c.id}"><div class="cover">${covers(c)}</div><div class="body">
+      <div class="nm"><b>${esc(c.name)}</b><span>#${c.dex}${c.lang ? ' · ' + esc(LNAME[c.lang] || c.lang) : ''}${c.checklist_url ? ' · checklist' : ''}</span></div>
+      <div class="two"><div><small>Cartas</small><b>${fmt(st.owned)}</b> <span class="muted">/ ${fmt(st.total)}</span><div class="expbar"><i style="width:${pct(st.owned, st.total)}%"></i></div></div>
+        <div><small>Cameos</small><b>${fmt(camHave)}</b> <span class="muted">/ ${cameoCache[c.dex] ? fmt(cams.length) : '…'}</span><div class="expbar gold"><i style="width:${pct(camHave, cams.length)}%"></i></div></div></div>
+      ${v ? `<div class="val">Lo que tienes vale <b>${clp(v.have)}</b>${v.miss ? ` · completarla ~${clp(v.miss)}` : ''}</div>` : ''}</div></button>`;
+  });
+  cards.push(`<div class="colnew"><b>Arma la colección de otro Pokémon</b><span>Eliges el Pokémon y la app junta todas sus cartas (o sigue una checklist de PokeCottage) y todos sus cameos.</span><div><button id="colNew2">＋ Nueva colección</button></div></div>`);
+  paint(el, cards.join(''));
+}
+async function openCollection(id, tab = 'cartas') {
+  colSel = id; camDex = null; colTab = tab; colCards = colCardsById[id] || []; colShow = 'all'; colManual = false; colCameo = false; camShow = 'all'; camKind = '';
+  const col = colOf(id); if (col) loadCameos(col.dex);
+  renderCollections(); window.scrollTo(0, 0);
   await reloadColCards();
+}
+// a Pokémon's cameos without a collection (from the search)
+function openCameos(dex) {
+  const col = (colls || []).find(c => c.dex === dex);
+  if (col) return openCollection(col.id, 'cameos');
+  colSel = null; camDex = dex; colTab = 'cameos'; camShow = 'all'; camKind = '';
+  loadCameos(dex); renderCollections(); window.scrollTo(0, 0);
 }
 async function reloadColCards() {
   const id = colSel;
-  try { const list = await api('GET', `/collections/${id}/cards`); if (colSel !== id) return; list.forEach(putMeta); colCards = list; }
+  try { const list = await api('GET', `/collections/${id}/cards`); if (colSel !== id) return; list.forEach(putMeta); colCards = list; colCardsById[id] = list; }
   catch (e) { $('colView').innerHTML = `<div class="empty">No pude cargar las cartas: ${esc(e.message)}</div>`; return; }
-  renderColList(); renderColView();
+  renderCollections();
 }
 const SHORT_VARIANT = { 'Standard': '', 'Holo': 'Holo', 'Reverse Holo': 'Reverse', 'Poké Ball Holo': 'Poké Ball', 'Master Ball Holo': 'Master Ball' };
 function colTile(col, c) {
@@ -3174,11 +3315,54 @@ function colGrid(col, list) {
 }
 const REGION_FLAG = { '': '🌎', JA: '🇯🇵', ZH: '🇨🇳' }, REGION_NAME = { '': 'Internacional (inglés, español…)', JA: 'Japonesa', ZH: 'China' };
 const REGION_SECTIONS = [['', '🌎 Internacionales'], ['JA', '🇯🇵 Japonesas'], ['ZH', '🇨🇳 Chinas']];
+// sticky header of a collection (or of a Pokémon's cameos from the search): back, tabs and the ⋯ menu
+function colHeadHtml(col, dex) {
+  const name = col ? col.name : (dexRef && dexRef[dex] ? dexRef[dex].name : '#' + dex);
+  const list = col ? colCards : [], st = col && list.length ? colStats(col, list) : null;
+  const cams = cameoItems(dex, col), camHave = cams.filter(x => x.have).length;
+  const tabs = col ? `<div class="coltabs" role="tablist" aria-label="Secciones de la colección">
+      <button role="tab" data-ctab="cartas" class="${colTab === 'cartas' ? 'on' : ''}" aria-selected="${colTab === 'cartas'}">Cartas<span>${st ? `${st.owned}/${st.total}` : ''}</span></button>
+      <button role="tab" data-ctab="cameos" class="gold ${colTab === 'cameos' ? 'on' : ''}" aria-selected="${colTab === 'cameos'}">Cameos<span>${cameoCache[dex] ? `${camHave}/${cams.length}` : '…'}</span></button></div>`
+    : `<button class="primary" id="camCreate">＋ Crear colección de ${esc(name)}</button>`;
+  const ck = col && col.checklist_url;
+  const menu = col ? `<details class="colmenu"><summary aria-label="Opciones de la colección"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></summary>
+      <div class="items"><button id="colEdit">✏️ Editar colección</button><button id="colMan">✍️ Agregar carta a mano</button><button id="colCam">🎭 Agregar cameo a mano</button>
+        ${ck ? '<button id="colCkRefresh">📋 Actualizar la checklist</button><button id="colCkDrop">📋 Dejar de seguir la checklist</button>' : '<button id="colCkAdd">📋 Seguir una checklist de PokeCottage</button><button id="colJa">🇯🇵 Buscar japonesas</button>'}
+        <button id="colDel" class="danger">Borrar colección</button></div></details>` : '';
+  return `<div class="expdhead"><div class="t"><button id="colBack" aria-label="Volver a Mis colecciones">←<span class="lbl"> Mis colecciones</span></button><div><h1>${esc(name)}</h1>
+      <div class="muted">#${dex}${col ? ' · ' + (col.lang ? `internacionales en ${esc(LNAME[col.lang])}` : 'cualquier idioma') : ' · sin colección'}</div></div></div>${tabs}${menu}</div>`;
+}
+// the Cameos tab: where the Pokémon appears without being the card's subject
+function renderColCameos(col, dex) {
+  const el = $('colView');
+  if (!cameoCache[dex]) { loadCameos(dex); return paint(el, colHeadHtml(col, dex) + '<div class="empty">Cargando cameos…</div>'); }
+  const all = cameoItems(dex, col), withCard = all.filter(x => !x.ref), refs = all.filter(x => x.ref);
+  const have = withCard.filter(x => x.have).length, name = col ? col.name : (dexRef && dexRef[dex] ? dexRef[dex].name : '#' + dex);
+  const kinds = CAM_KINDS.map(([k, l]) => [k, l, all.filter(x => x.kind === k).length]).filter(x => x[2]);
+  const shown = withCard.filter(x => (!camKind || x.kind === camKind) && (camShow === 'all' || (camShow === 'have' ? x.have : !x.have)));
+  const st = cameoStatus;
+  let html = colHeadHtml(col, dex) + `<div class="dexsum"><div class="dexsum-top"><div class="dexcount"><b>${fmt(have)}</b><span>/ ${fmt(all.length)} cartas donde aparece ${esc(name)}</span></div>
+      <div class="seg" id="camShow"><button data-s="all" class="${camShow === 'all' ? 'on' : ''}">Todos</button><button data-s="have" class="${camShow === 'have' ? 'on' : ''}">Tengo ${have}</button><button data-s="miss" class="${camShow === 'miss' ? 'on' : ''}">Me faltan ${withCard.length - have}</button></div></div>
+    <div class="expbar gold"><i style="width:${pct(have, all.length)}%"></i></div>
+    <div class="dexkits">${fmt(withCard.length)} en el catálogo${refs.length ? ` · ${fmt(refs.length)} de referencia (promos japonesas, jumbo, concursos…)` : ''}</div>
+    ${kinds.length > 1 ? `<div class="camkinds"><span class="lbl">Cómo aparece:</span><button data-ck="" class="${!camKind ? 'on' : ''}">Todos <b>${all.length}</b></button>${kinds.map(([k, l, n]) => `<button data-ck="${k}" class="${camKind === k ? 'on' : ''}">${esc(l)} <b>${n}</b></button>`).join('')}</div>` : ''}</div>`;
+  if (!all.length) html += `<div class="empty">No conozco cameos de ${esc(name)} todavía.</div>`;
+  html += `<div class="album">${shown.map(x => `<div class="slot ${x.have ? '' : 'miss'}" title="${esc(name)} aparece en ${esc(x.card)} · ${esc(x.set)} #${esc(x.num)}${x.note ? ' · ' + esc(x.note) : ''}">
+      <div class="pic">${x.img ? `<img src="${esc(x.img)}" loading="lazy" alt="" onerror="this.remove()">` : ''}${x.kind !== 'personaje' ? `<span class="kind">${esc(CAM_KIND_NAME[x.kind])}</span>` : ''}${x.have ? '<span class="have">La tienes</span>' : ''}</div>
+      <div class="sub">Aparece en</div><div class="cap"><b>${esc(x.card)}</b></div><div class="sub">${esc(x.set)} #${esc(x.num)}${x.own ? ' · agregado por ti' : ''}</div></div>`).join('')}</div>`;
+  const refShown = refs.filter(x => !camKind || x.kind === camKind);
+  if (refShown.length && camShow !== 'have') html += `<div class="colsec">Sin carta en el catálogo <span class="muted">para buscarlas aparte</span></div>
+    <div class="camrefs">${refShown.map(x => `<div class="camref"><i>${x.kind === 'jumbo' ? 'XL' : /-P |promo/i.test(x.set) ? 'PR' : '?'}</i><div><b>${esc(x.card)}</b><span>${esc(x.set)}${x.num && x.num !== '-' ? ' #' + esc(x.num) : ''}${x.note ? ' · ' + esc(x.note) : ''}</span></div></div>`).join('')}</div>`;
+  if (st && st.total) html += `<div class="camcredit">Datos de cameos: <a href="${esc(st.source.url)}" target="_blank" rel="noopener">${esc(st.source.name)}</a> · importada el ${new Date(st.at).toLocaleDateString('es-CL')}</div>`;
+  paint(el, html);
+}
 function renderColView() {
   const el = $('colView'), col = colOf(colSel);
-  if (!col) { el.innerHTML = `<div class="empty"><span class="big">⭐</span>Crea una colección para ver todas las cartas distintas de un Pokémon.<br>Las que tienes salen a color; las que te faltan, en blanco y negro.</div>`; return; }
-  if (!colCards.length) { el.innerHTML = '<div class="empty">Esta colección no tiene cartas.</div>'; return; }
-  const st = colStats(col, colCards), cam = colStats(col, colCards, 'cameo');
+  if (!col && camDex) return renderColCameos(null, camDex);
+  if (!col) { colSel = null; return renderCollections(); }
+  if (colTab === 'cameos') return renderColCameos(col, col.dex);
+  if (!colCards.length) { paint(el, colHeadHtml(col, col.dex) + '<div class="empty">Cargando cartas…</div>'); return; }
+  const st = colStats(col, colCards);
   const pf = $('colPrice') ? $('colPrice').value : '';
   const rf = $('colRarity') ? $('colRarity').value : '', nHidden = colCards.filter(c => c.hidden).length;
   const slots = slotsOf(colCards);
@@ -3190,32 +3374,28 @@ function renderColView() {
     return colShow === 'all' || (colShow === 'have' ? q > 0 : q === 0);
   });
   const host = col.checklist_url ? new URL(col.checklist_url).hostname.replace(/^www\./, '') : '';
-  let html = `<div class="arthead"><div><h2>${esc(col.name)}</h2><div class="muted">Pokédex #${col.dex} · ${col.lang ? `internacionales en ${esc(LNAME[col.lang])}` : 'cualquier idioma'} · 🔒 ${st.personal} en tu colección personal${cam.total ? ` · 🎭 cameos ${cam.owned}/${cam.total}` : ''}</div>
-      <div class="muted" style="font-size:13px;margin-top:4px">${col.checklist_url
-        ? `📋 Sigue la checklist de <a href="${esc(col.checklist_url)}" target="_blank" rel="noopener">${esc(host)}</a> · <a href="#" id="colCkRefresh">actualizar</a> · <a href="#" id="colCkDrop">dejar de seguirla</a>`
-        : `Todas las cartas con el Pokédex #${col.dex} · <a href="#" id="colCkAdd">📋 seguir una checklist de PokeCottage</a>`}</div>
-      ${(() => { const v = colValue(col, colCards); return `<div style="margin-top:8px;font-size:14px">💰 Valor de lo que tienes: <b style="color:var(--ok);font-size:17px">${clp(v.have)}</b> <span class="muted">(${fmt(v.haveN)} cartas)</span>
-        <span class="muted"> · para completarla: ~${clp(v.miss)}${v.noPrice ? ` · ${fmt(v.noPrice)} sin precio` : ''}</span>
-        ${(() => { const specs = slotsOf(colCards).filter(c => !c.hidden).map(c => `${c.sid}|${c.num}|${c.v ? c.v.slug : autoVariant(meta(c.sid, c.num))}`);
-          const mine = specs.filter(sp => ownInfo(sp)), stale = mine.filter(sp => ownInfo(sp).stale);
-          return mine.length ? `<div class="muted" style="font-size:13px;margin-top:2px">✍️ ${fmt(mine.length)} con tu precio${stale.length ? ` · <a href="#" id="colStaleBtn" style="color:var(--warn);font-weight:700">⚠️ ${fmt(stale.length)} por actualizar (más de ${ownDays()} días)</a>` : ' · todos al día ✓'}</div>` : ''; })()}</div>`; })()}</div>
-    <div class="big">${st.owned}<span class="muted" style="font-size:18px">/${st.total}</span>${st.cards !== st.total ? `<div class="muted" style="font-size:12.5px;font-weight:600">variantes · cartas ${st.cardsOwned}/${st.cards}</div>` : ''}</div>${bar(st.owned, st.total, 'lg')}</div>
-    <div class="toolbar"><div class="seg" id="colShow">
+  const v = colValue(col, colCards);
+  const specs = slotsOf(colCards).filter(c => !c.hidden).map(c => `${c.sid}|${c.num}|${c.v ? c.v.slug : autoVariant(meta(c.sid, c.num))}`);
+  const mine = specs.filter(sp => ownInfo(sp)), stale = mine.filter(sp => ownInfo(sp).stale);
+  const nFilters = [rf, pf, colHidden, (data.colSort || 'release') !== 'release'].filter(Boolean).length;
+  let html = colHeadHtml(col, col.dex) + `<div class="dexsum">
+    <div class="dexsum-top"><div class="dexcount"><b>${fmt(st.owned)}</b><span>/ ${fmt(st.total)} ${st.cards !== st.total ? `variantes · ${fmt(st.cardsOwned)} de ${fmt(st.cards)} cartas` : 'cartas'}</span></div>
+      <div class="val" style="font-size:14px">Lo que tienes vale <b style="color:var(--ok);font-size:17px">${clp(v.have)}</b> <span class="muted">· completarla ~${clp(v.miss)}${v.noPrice ? ` · ${fmt(v.noPrice)} sin precio` : ''}</span></div></div>
+    <div class="expbar"><i style="width:${pct(st.owned, st.total)}%"></i></div>
+    <div class="dexkits">${col.checklist_url ? `📋 Sigue la checklist de <a href="${esc(col.checklist_url)}" target="_blank" rel="noopener">${esc(host)}</a>` : `Todas las cartas con el Pokédex #${col.dex}`} · 🔒 ${st.personal} en tu colección personal${mine.length ? ` · ✍️ ${fmt(mine.length)} con tu precio${stale.length ? ` · <a href="#" id="colStaleBtn" style="color:var(--warn);font-weight:700">⚠️ ${fmt(stale.length)} por actualizar</a>` : ''}` : ''}</div>
+    <div class="exptools" style="margin:0"><div class="seg" id="colShow">
       <button data-s="all" class="${colShow === 'all' ? 'on' : ''}">Todas</button>
-      <button data-s="have" class="${colShow === 'have' ? 'on' : ''}">Las tengo (${st.owned + cam.owned})</button>
-      <button data-s="miss" class="${colShow === 'miss' ? 'on' : ''}">Me faltan (${st.total - st.owned + cam.total - cam.owned})</button></div>
-      <div class="seg" id="colOrder" title="Cómo ordenar las cartas">
-        <button data-o="date" class="${data.colOrder !== 'region' ? 'on' : ''}" title="Todas las regiones en una sola lista">🌎 Todas juntas</button>
-        <button data-o="region" class="${data.colOrder === 'region' ? 'on' : ''}" title="Internacionales, japonesas y chinas por separado">🗺️ Por región</button></div>
+      <button data-s="have" class="${colShow === 'have' ? 'on' : ''}">Tengo ${st.owned}</button>
+      <button data-s="miss" class="${colShow === 'miss' ? 'on' : ''}">Me faltan ${st.total - st.owned}</button></div>
+      <div class="seg" id="colOrder" title="Cómo agrupar las cartas">
+        <button data-o="date" class="${data.colOrder !== 'region' ? 'on' : ''}">Por año</button>
+        <button data-o="region" class="${data.colOrder === 'region' ? 'on' : ''}">Por región</button></div>
+      <button class="dexfbtn" id="colFiltersBtn" aria-expanded="${colFiltersOpen}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Filtros<span class="n">${nFilters || ''}</span></button></div>
+    <div class="dexfilters" ${colFiltersOpen ? '' : 'hidden'}><div class="row">
       <select id="colSort" title="Ordenar">${COL_SORTS.map(([v, l]) => `<option value="${v}" ${v === (data.colSort || 'release') ? 'selected' : ''}>${l}</option>`).join('')}</select>
       <select id="colRarity" title="Rareza">${rarityOpts('Todas las rarezas')}</select>
       <select id="colPrice" title="Precio">${PRICE_FILTER_OPTS()}</select>
-      ${nHidden ? `<label class="muted" style="font-size:13px"><input type="checkbox" id="colHid" ${colHidden ? 'checked' : ''}> Ver ocultas (${nHidden})</label>` : ''}
-      <div class="spacer"></div>
-      ${col.checklist_url ? '' : '<button id="colJa" title="Descarga desde TCGdex las cartas japonesas de este Pokémon">🇯🇵 Buscar japonesas</button>'}
-      <button id="colCam" title="Cartas donde el Pokémon aparece en el arte sin ser el protagonista (entrenadores, otros Pokémon)">🎭 ＋ Cameo</button>
-      <button id="colMan" title="Para cartas que no están en ningún catálogo">✍️ ＋ Carta a mano</button>
-      <button id="colEdit">Editar</button><button id="colDel">Borrar</button></div>`;
+      ${nHidden ? `<label class="kitopt"><input type="checkbox" id="colHid" ${colHidden ? 'checked' : ''}> Ver ocultas (${nHidden})</label>` : ''}</div></div></div>`;
   if (colCameo) html += `<div class="manual" style="grid-template-columns:1fr">
       <label>Cameos: una línea por expansión, con el código o id de la expansión y los números (como en Artes conectados)
         <textarea id="camText" rows="3" spellcheck="false" placeholder="PFL 85&#10;sv8 191 192"></textarea></label>
@@ -3246,9 +3426,6 @@ function renderColView() {
     const sub = lang ? 'expansiones y números propios · cuentan en cualquier idioma' : `misma carta en inglés, español, portugués… · cuentan solo en ${col.lang ? LNAME[col.lang] : 'cualquier idioma'}`;
     html += `<div class="colsec">${title} <span class="muted">${ownedHere}/${all.length} · ${esc(sub)}</span></div>${colGrid(col, main.filter(c => c.set_lang === lang))}`;
   }
-  if (cam.total || shown.some(c => c.role === 'cameo')) {
-    html += `<div class="colsec cameo">🎭 Cameos <span class="muted">${cam.owned}/${cam.total} · ${esc(col.name)} aparece en el arte, pero la carta es de otro Pokémon o un entrenador</span></div>${colGrid(col, shown.filter(c => c.role === 'cameo'))}`;
-  }
   paint(el, html);
   $('colRarity').value = rf; $('colRarity').onchange = renderColView;
   $('colPrice').value = pf; $('colPrice').onchange = renderColView;
@@ -3269,9 +3446,17 @@ async function followChecklist(col, url) {
   } catch (err) { alert('No pude importar la checklist: ' + err.message); }
 }
 $('colView').addEventListener('click', async e => {
-  const col = colOf(colSel); if (!col) return;
   const t = e.target.closest('button,input,a'); if (!t) return;
   if (t.tagName === 'A' && t.id) e.preventDefault();
+  // header, tabs and the cameos tab work also for a Pokémon without a collection (search)
+  if (t.id === 'colBack') { colSel = null; camDex = null; return renderCollections(); }
+  if (t.dataset.ctab) { colTab = t.dataset.ctab; return renderColView(); }
+  if (t.closest('#camShow')) { camShow = t.dataset.s; return renderColView(); }
+  if (t.dataset.ck !== undefined && t.closest('.camkinds')) { camKind = t.dataset.ck; return renderColView(); }
+  if (t.id === 'camCreate') return openColForm(null, camDex);
+  if (t.id === 'colFiltersBtn') { colFiltersOpen = !colFiltersOpen; return renderColView(); }
+  if (t.closest('.colmenu .items')) t.closest('details').open = false;
+  const col = colOf(colSel); if (!col) return;
   if (t.closest('#colShow')) { colShow = t.dataset.s; return renderColView(); }
   if (t.closest('#colOrder')) { data.colOrder = t.dataset.o; save(); return renderColView(); }
   if (t.id === 'colHid') { colHidden = t.checked; return renderColView(); }
@@ -3335,31 +3520,59 @@ $('colView').addEventListener('click', async e => {
     } catch (err) { alert(err.message); }
     return;
   }
-  if (t.id === 'colEdit') { colEditing = col.id; $('colTitle').textContent = 'Editar colección'; $('colDex').value = col.dex; $('colName').value = col.name; $('colLang').value = col.lang; $('colForm').hidden = false; $('colNew').hidden = true; $('colDex').focus(); return; }
-  if (t.id === 'colDel' && confirm(`¿Borrar la colección "${col.name}"? Tus cartas no se tocan.`)) { colls = await api('DELETE', '/collections/' + col.id); colSel = null; colCards = []; renderCollections(); if (colls[0]) openCollection(colls[0].id); }
+  if (t.id === 'colEdit') return openColForm(col);
+  if (t.id === 'colDel' && confirm(`¿Borrar la colección "${col.name}"? Tus cartas no se tocan.`)) { colls = await api('DELETE', '/collections/' + col.id); delete colCardsById[col.id]; colSel = null; colCards = []; renderCollections(); }
 });
 async function saveCollection() {
   const dex = parseInt($('colDex').value, 10), name = $('colName').value.trim() || (dexRef && dexRef[dex] ? dexRef[dex].name : '');
   if (!(dex > 0)) return $('colMsg').textContent = 'Elige un Pokémon (número de Pokédex).';
   try {
     const r = await api(colEditing ? 'PUT' : 'POST', '/collections' + (colEditing ? '/' + colEditing : ''), { name, dex, lang: $('colLang').value });
-    colls = r.collections; const isNew = !colEditing, ck = $('colCk').value.trim(); resetColForm();
+    colls = r.collections; const isNew = !colEditing, ck = $('colCk').value.trim(); resetColForm(); loadCameos(dex);
     await openCollection(r.id);
     if (ck) await followChecklist(colOf(r.id), ck);
     else if (isNew) $('colJa') && $('colJa').click(); // new collection: bring the Japanese prints right away
   } catch (e) { $('colMsg').textContent = e.message; }
 }
-function resetColForm() { colEditing = null; $('colForm').hidden = true; $('colNew').hidden = false; $('colTitle').textContent = 'Nueva colección'; $('colDex').value = ''; $('colName').value = ''; $('colCk').value = ''; $('colMsg').textContent = ''; }
-$('colLang').innerHTML = '<option value="">Cualquier idioma</option>' + LANGS.map(l => `<option value="${l}" ${l === 'EN' ? 'selected' : ''}>${LNAME[l]} (${l})</option>`).join('');
-$('colNew').onclick = async () => {
-  resetColForm(); $('colForm').hidden = false; $('colNew').hidden = true; $('colLang').value = 'EN'; $('colDex').focus();
+function resetColForm() { colEditing = null; if ($('colDlg').open) $('colDlg').close(); $('colTitle').textContent = 'Nueva colección'; $('colDex').value = ''; $('colName').value = ''; $('colCk').value = ''; $('colMsg').textContent = ''; }
+// new collection (optionally for a Pokémon, from its cameos) or edit one, in a window
+async function openColForm(col, dex) {
+  resetColForm();
+  await fillDexNames();
+  if (col) { colEditing = col.id; $('colTitle').textContent = 'Editar colección'; $('colDex').value = col.dex; $('colName').value = col.name; $('colLang').value = col.lang; }
+  else { $('colLang').value = 'EN'; if (dex) { $('colDex').value = dex; $('colName').value = dexRef && dexRef[dex] ? dexRef[dex].name : ''; } }
+  $('colDlg').showModal(); (col || dex ? $('colName') : $('colDex')).focus();
+}
+async function fillDexNames() {
   await ensureDexRef();
-  $('dexNames').innerHTML = Object.values(dexRef || {}).map(r => `<option value="${r.dex} · ${esc(r.name)}">`).join('');
-};
+  if (!$('dexNames').options.length) $('dexNames').innerHTML = Object.values(dexRef || {}).map(r => `<option value="${r.dex} · ${esc(r.name)}">`).join('');
+}
+$('colLang').innerHTML = '<option value="">Cualquier idioma</option>' + LANGS.map(l => `<option value="${l}" ${l === 'EN' ? 'selected' : ''}>${LNAME[l]} (${l})</option>`).join('');
+$('colNew').onclick = () => openColForm(null);
 $('colDex').addEventListener('change', () => { const d = parseInt($('colDex').value, 10); if (d && !$('colName').value && dexRef && dexRef[d]) $('colName').value = dexRef[d].name; });
 $('colSave').onclick = saveCollection;
 $('colCancel').onclick = resetColForm;
-$('colList').addEventListener('click', e => { const b = e.target.closest('.arow'); if (b) { openCollection(+b.dataset.c); if (innerWidth < 900) $('colView').scrollIntoView({ behavior: 'smooth' }); } });
+$('colList').addEventListener('click', e => {
+  if (e.target.closest('#colNew2')) return openColForm(null);
+  const b = e.target.closest('.colcard'); if (b) openCollection(+b.dataset.c);
+});
+// "¿En qué cartas aparece…?": a number, a name, or "133 · Eevee" from the list
+$('camForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  await ensureDexRef();
+  const q = $('camQ').value.trim(), n = parseInt(q, 10);
+  const dex = n > 0 ? n : (Object.values(dexRef || {}).find(r => r.name.toLowerCase() === q.toLowerCase()) || Object.values(dexRef || {}).find(r => r.name.toLowerCase().startsWith(q.toLowerCase())) || {}).dex;
+  if (!dex) return toast('No encontré ese Pokémon. Prueba con su nombre en inglés o su número.');
+  $('camQ').value = ''; openCameos(dex);
+});
+$('camQ').addEventListener('focus', fillDexNames);
+$('camInfo').addEventListener('click', async e => {
+  if (e.target.id !== 'camSync') return; e.preventDefault();
+  await api('POST', '/cameos/sync'); for (const k in cameoCache) delete cameoCache[k];
+  toast('🎭 Actualizando la base de cameos…'); loadCameoStatus();
+  setTimeout(function wait() { if (cameoStatus && cameoStatus.job && cameoStatus.job.running) return setTimeout(wait, 2500); for (const c of colls || []) loadCameos(c.dex, true); if (camDex) loadCameos(camDex, true); }, 3000);
+});
+$('colDex').addEventListener('focus', fillDexNames);
 
 // ---------- boot ----------
 const hashTab = location.hash.slice(1);
