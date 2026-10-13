@@ -2,14 +2,14 @@
 
 ## 1. Cálculo de avance en core
 
-- [ ] 1.1 Implementar `isPrintedNumber` y el cálculo de avance por modo (Base, Con secretas, Master set) en `packages/core`, con pruebas de los escenarios de la especificación (151: 88/165, 89/207, carta con normal y reverse); verificar `pnpm test` en verde
-- [ ] 1.2 Agregar una prueba que clasifica todos los números del fixture del catálogo sin errores y revisar a mano los que tienen letras o prefijos; verificar en verde
+- [x] 1.1 Implementar `isPrintedNumber` y el cálculo de avance por modo (Base, Con secretas, Master set) en `packages/core`, con pruebas de los escenarios de la especificación (151: 88/165, 89/207, carta con normal y reverse); verificar `pnpm test` en verde
+- [x] 1.2 Agregar una prueba que clasifica todos los números del fixture del catálogo sin errores y revisar a mano los que tienen letras o prefijos; verificar en verde
 
 ## 2. Variantes en el catálogo
 
-- [ ] 2.1 Migración que agrega `cards.variants` y `cards.variants_guessed`; verificar que se aplica sola al arrancar y que las tablas del usuario no cambian (mismas filas y totales)
-- [ ] 2.2 Guardar `variants` de TCGdex al completar detalles y agregar el trabajo por expansión con límite de concurrencia y deducción por rareza cuando TCGdex no tiene la carta; verificar con 151 que todas sus cartas quedan con variantes y que 25 tiene normal y reverse
-- [ ] 2.3 Ampliar `/api/sets/:id/cards` con las variantes; verificar con curl
+- [x] 2.1 Migración que agrega `cards.variants` y `cards.variants_guessed`; verificar que se aplica sola al arrancar y que las tablas del usuario no cambian (mismas filas y totales)
+- [x] 2.2 Guardar `variants` de TCGdex al completar detalles y agregar el trabajo por expansión con límite de concurrencia y deducción por rareza cuando TCGdex no tiene la carta; verificar con 151 que todas sus cartas quedan con variantes y que 25 tiene normal y reverse
+- [x] 2.3 Ampliar `/api/sets/:id/cards` con las variantes; verificar con curl
 
 ## 3. Vista de expansiones
 

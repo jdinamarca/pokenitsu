@@ -7,7 +7,7 @@ import { dirname, join } from 'node:path';
 import { pool, tx, migrate } from './db.js';
 import { norm, ensureSets, syncSets, ensureSetCards, syncAllCards, syncJaDex } from './catalog.js';
 import { importChecklist } from './pokecottage.js';
-import { fillDetails, startDetailsJob, detailsJob } from './details.js';
+import { fillDetails, startDetailsJob, detailsJob, startVariantsJob, variantsJob, startVariantsForMySets } from './details.js';
 import { ensureCardPrice, refreshPrices, staleCount, getSetting, putSetting, getFx } from './prices.js';
 import { pickPrice } from '@pokenitsu/core';
 
@@ -106,11 +106,15 @@ app.get('/api/sets', async () => {
   return rows;
 });
 app.post('/api/sets/refresh', async () => ({ sets: await syncSets() }));
+// variants: standard variants of each card (null while unknown), vguess: deduced from the rarity
 app.get('/api/sets/:id/cards', async req => {
   await ensureSetCards(req.params.id, req.query.refresh === '1');
-  const { rows } = await pool.query(`SELECT ${CARD_COLS} FROM cards c WHERE c.set_id = $1`, [req.params.id]);
+  const { rows } = await pool.query(`SELECT ${CARD_COLS}, c.variants, c.variants_guessed AS vguess FROM cards c WHERE c.set_id = $1`, [req.params.id]);
   return rows;
 });
+// downloads the variants of an expansion's cards (master set); poll it with GET
+app.post('/api/sets/:id/variants', async req => ({ job: startVariantsJob(req.params.id) }));
+app.get('/api/sets/:id/variants', async req => ({ job: variantsJob(req.params.id) }));
 
 // full-catalog download, started from the page and polled via GET /api/catalog
 let syncJob = null;
@@ -955,4 +959,5 @@ await migrate(join(root, 'db', 'migrations'));
 const port = Number(process.env.PORT || 3000), host = process.env.HOST || '127.0.0.1';
 await app.listen({ port, host });
 startDetailsJob();
+startVariantsForMySets().catch(e => app.log.warn(e));
 console.log(`Inventario Pokémon listo en http://${host === '0.0.0.0' ? 'localhost' : host}:${port}`);
