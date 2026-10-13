@@ -315,6 +315,26 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
 .session kbd,.entrybox kbd{font-family:ui-monospace,Menlo,monospace;background:var(--chip);border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:0 6px;color:var(--ink);font-size:12px}
 .entrylbl{display:block;font-weight:800;margin-bottom:10px}
 .entrylbl .hint{font-weight:600;color:var(--muted);font-size:13px}
+.entrywrap{position:relative}
+.entryhint{margin-top:10px;font-size:14px;font-weight:700;color:var(--blue);min-height:21px}
+.entryhint.warn{color:var(--warn)}.entryhint.muted{color:var(--muted)}
+.sugs{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:25;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-lg);padding:6px;max-height:min(60vh,520px);overflow:auto}
+.sughead{padding:4px 10px 6px;color:var(--muted);font-size:12px;font-weight:700}
+.sug{display:flex;align-items:center;gap:12px;width:100%;padding:6px 10px;border:0;background:none;border-radius:10px;text-align:left;font-weight:600}
+.sug.on,.sug:hover{background:var(--chip)}
+.sug img,.sug .noimg{width:36px;height:50px;border-radius:4px;object-fit:cover;background:var(--chip);flex:none}
+.sug .t{flex:1;min-width:0}
+.sug small{display:block;color:var(--muted);font-size:12.5px;font-weight:600}
+.sugfoot{display:flex;gap:6px 14px;flex-wrap:wrap;padding:8px 10px 4px;border-top:1px solid var(--line);margin-top:4px;color:var(--muted);font-size:12px}
+.sugfoot kbd{font-family:ui-monospace,Menlo,monospace;background:var(--chip);border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:0 5px;color:var(--ink);font-size:11px}
+.entrybox.suggesting .keyline{visibility:hidden}
+.sug img.ref,.logrow img.ref{filter:grayscale(.7);opacity:.5}
+.preview .pimg img.ref{filter:grayscale(.7);opacity:.45}
+.preview .reflbl{position:absolute;left:8px;right:8px;bottom:8px;background:rgba(10,12,20,.75);color:#fff;font-size:12px;font-weight:700;border-radius:8px;padding:5px 8px;text-align:center}
+.preview.pending{border:2px dashed var(--blue)}
+.preview .pendhead{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;font-weight:800;color:var(--blue);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;text-align:left}
+.preview .pendhead span{text-transform:none;letter-spacing:0;color:var(--muted);font-weight:700}
+.preview.pending .pimg{cursor:pointer}
 .keyline{display:flex;gap:6px 14px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
 .keyhelp{margin-top:8px}
 .keyhelp summary{list-style:none;cursor:pointer;color:var(--blue);font-weight:700;font-size:13px;display:inline-block}
@@ -370,6 +390,8 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
   .preview > *{grid-column:2;min-width:0}
   .preview > .pimg{grid-column:1;grid-row:1 / span 12}
   .preview > .empty{grid-column:1 / -1}
+  .preview > .pendhead{grid-column:1 / -1;grid-row:1}
+  .preview.pending > .pimg{grid-row:2 / span 12}
   .preview .pname{margin-top:0;font-size:18px}
   .preview .pinfo,.preview .ptags{justify-content:flex-start}
   .preview .pinfo{display:block}
@@ -679,8 +701,12 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
         </div>
       </div>
       <div class="panel entrybox">
-        <label for="entry" class="entrylbl">Número de la carta <span class="hint">y Enter</span></label>
-        <input id="entry" class="entry" placeholder="25r" autocomplete="off" spellcheck="false" autocapitalize="off">
+        <label for="entry" class="entrylbl">Número de la carta <span class="hint">o nombre del Pokémon, y Enter</span></label>
+        <div class="entrywrap">
+          <input id="entry" class="entry" placeholder="25r o Eevee" autocomplete="off" spellcheck="false" autocapitalize="off" role="combobox" aria-expanded="false" aria-controls="entrySugs" aria-autocomplete="list">
+          <div class="sugs" id="entrySugs" role="listbox" hidden></div>
+        </div>
+        <div class="entryhint" id="entryHint" hidden></div>
         <div class="msg" id="msg"></div>
         <div class="keyline"><span><kbd>25r</kbd> reverse</span><span><kbd>25*4</kbd> copias</span><span><kbd>1-30</kbd> rango</span><span><kbd>-25</kbd> quitar</span><span><kbd>⌘Z</kbd> deshacer</span></div>
         <details class="keyhelp"><summary>Todos los atajos</summary>
@@ -1239,7 +1265,7 @@ function undoLast() {
   });
   renderAll(); showMsg('Deshecho: ' + (group.length > 1 ? `rango de ${group.length} cartas` : describeKey(e.k)), 'warn');
 }
-function describeKey(k) { const { sid, num, v, lang, cond, loc } = splitKey(k); const m = meta(sid, num); return `${m ? m[0] : '?'} #${num} ${vlabel(v)} ${lang || '¿idioma?'}${cond !== 'NM' ? ' ' + cond : ''} (${setById[sid] ? setById[sid].name : sid})${loc ? ' → 📍 ' + locName(loc) : ''}`; }
+function describeKey(k) { const { sid, num, v, lang, cond, loc } = splitKey(k); const m = meta(sid, num); return `${m ? m[0] + alsoNamed(m) : '?'} #${num} ${vlabel(v)} ${lang || '¿idioma?'}${cond !== 'NM' ? ' ' + cond : ''} (${setById[sid] ? setById[sid].name : sid})${loc ? ' → 📍 ' + locName(loc) : ''}`; }
 // copies of one printed card across variants and (optionally one) language
 function cardQty(sid, num, langF, map = data.inv) {
   return idxGet(buildIdx().card[map === data.pers ? 'pers' : 'inv'][sid + '|' + num], langF);
@@ -1870,30 +1896,114 @@ function loadOne(num, p, batch) {
   const wasNew = cardQty(curSet.id, num) === 0;
   return { key, m, wasNew, real: addQty(key, p.sign * p.qty, data.personal, batch) };
 }
-function commitEntry() {
+// accent- and case-insensitive text, for matching card names
+const fold = s => String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+// English species names of a card (from its Pokédex numbers): Japanese cards only carry their Japanese name
+const speciesOf = m => (m && m[1] || []).map(d => dexRef && dexRef[d] && dexRef[d].name).filter(Boolean);
+// " · Charmander" after a Japanese name (nothing when the name already says it)
+const alsoNamed = m => { const sp = speciesOf(m).filter(n => !fold(m[0] || '').includes(fold(n))).join(' / '); return sp ? ' · ' + sp : ''; };
+// a reference picture of the same Pokémon (another expansion) for cards without an image
+const refImg = m => { const d = m && m[1] && m[1].length === 1 ? m[1][0] : null; return d && dexRef && dexRef[d] ? dexRef[d].img : ''; };
+// cards of the active expansion whose name (or English species name) contains q: names starting with it first, then by number
+function nameMatches(q) {
+  const idx = cards[curSet.id], f = fold(q.trim()), out = [];
+  for (const num in idx.raw) {
+    let rank = 9;
+    for (const n of [idx.raw[num][0] || '', ...speciesOf(idx.raw[num])].map(fold)) {
+      const i = n.indexOf(f);
+      if (i >= 0) rank = Math.min(rank, i === 0 ? 0 : /[\s.'-]/.test(n[i - 1]) ? 1 : 2);
+    }
+    if (rank < 9) out.push({ num, m: idx.raw[num], rank });
+  }
+  out.sort((a, b) => a.rank - b.rank || numSort(a.num, b.num));
+  return { list: out.slice(0, 8), total: out.length };
+}
+// what an entry would do, without doing it: the live preview and Enter both use it
+function resolveEntry(raw) {
+  const t = raw.trim();
+  if (!t) return { kind: 'empty' };
+  const L = langCode(raw); if (L) return { kind: 'lang', L };
+  const C = /^(nm|lp|mp|hp|dmg)$/i.test(t) && condCode(raw); if (C) return { kind: 'cond', C };
+  if (!curSet) return { kind: 'noset' };
+  const idx = cards[curSet.id], p = parseEntry(raw);
+  const exists = !!(p && idx && (idx.norm[norm(p.base)] !== undefined || idx.norm[norm(p.full)] !== undefined));
+  // letters only (and not a real number like Unown "A"): a Pokémon's name
+  if (!/\d/.test(t) && !exists) {
+    if (!idx) return { kind: 'loading' };
+    const r = t.length >= 2 ? nameMatches(t) : { list: [], total: 0 };
+    return r.list.length ? { kind: 'name', ...r } : { kind: 'noname' };
+  }
+  if (!p || !p.qty) return { kind: 'bad' };
+  // "1-30": a range, unless a number with a dash really exists in the expansion
+  if (p.range && !exists) return { kind: 'range', p };
+  if (!idx) return { kind: 'card', p, num: norm(p.base), unchecked: true };
+  if (idx.norm[norm(p.base)] !== undefined) return { kind: 'card', p, num: idx.norm[norm(p.base)] };
+  if (idx.norm[norm(p.full)] !== undefined) { p.v = null; return { kind: 'card', p, num: idx.norm[norm(p.full)] }; }
+  // "Porygon2": a name with a digit
+  const r = /[a-z]{3}/i.test(t) ? nameMatches(t) : { list: [] };
+  return r.list.length ? { kind: 'name', ...r } : { kind: 'missing', p };
+}
+function commitEntry() { Promise.resolve(doCommitEntry()).then(() => renderEntryPreview()); }
+let sugSel = 0;
+// the key an entry would load (same variant, condition and location rules as loadOne)
+function keyFor(num, p) {
+  const m = meta(curSet.id, num), v = p.v || autoVariant(m), cond = p.cond || data.cond;
+  const loc = p.sign < 0 ? removeLoc(curSet.id, num, v, data.lang, cond) : data.locPick === 'auto' ? suggestLoc(curSet.id, num, v, cond, data.personal) : +data.locPick;
+  return keyOf(curSet.id, num, v, data.lang, cond, loc);
+}
+// while typing: a line saying what Enter will do, the card in the preview, and the list of names
+function renderEntryPreview() {
+  const inp = $('entry'), hint = $('entryHint'), box = $('entrySugs'), r = resolveEntry(inp.value);
+  let text = '', cls = '', key = null, list = [];
+  if (r.kind === 'lang') { text = `Enter cambia el idioma a ${LNAME[r.L]}`; cls = 'muted'; }
+  else if (r.kind === 'cond') { text = `Enter cambia el estado a ${CNAME[r.C]} (${r.C})`; cls = 'muted'; }
+  else if (r.kind === 'noset') { text = 'Primero elige una expansión (Esc)'; cls = 'warn'; }
+  else if (r.kind === 'loading') { text = 'Cargando las cartas de la expansión…'; cls = 'muted'; }
+  else if (r.kind === 'bad') { text = 'No entiendo esa entrada'; cls = 'warn'; }
+  else if (r.kind === 'noname') { text = `Ninguna carta de ${curSet.name} se llama así`; cls = 'warn'; }
+  else if (r.kind === 'missing') { text = `No existe la ${r.p.full} en ${curSet.name}${curSet.printed ? ` (tiene ${curSet.printed})` : ''}`; cls = 'warn'; }
+  else if (r.kind === 'range') {
+    const idx = cards[curSet.id]; let n = 0, skip = 0;
+    for (let i = r.p.range.from; i <= r.p.range.to; i++) idx && idx.norm[norm(String(i))] !== undefined ? n++ : skip++;
+    text = !idx ? `Rango del ${r.p.range.from} al ${r.p.range.to}` : !n ? `Ningún número del ${r.p.range.from} al ${r.p.range.to} existe en ${curSet.name}`
+      : `${r.p.sign < 0 ? 'Se quitará una copia de' : 'Se cargará' + (r.p.qty > 1 ? `n ${r.p.qty} copias de` : '')} ${n} carta${n > 1 ? 's' : ''} (del ${r.p.range.from} al ${r.p.range.to}${r.p.v ? ' · ' + vlabel(r.p.v) : ''})${skip ? ` · se saltan ${skip}` : ''}`;
+    if (idx && !n) cls = 'warn';
+  }
+  else if (r.kind === 'card') { key = keyFor(r.num, r.p); text = `${r.p.sign < 0 ? 'Se quitará' : 'Se cargará'}${r.p.qty > 1 ? ` ${r.p.qty}×` : ''}: ${describeKey(key)}${r.unchecked ? ' (sin verificar)' : ''}`; }
+  else if (r.kind === 'name') { list = r.list; sugSel = Math.min(sugSel, list.length - 1); key = keyFor(list[sugSel].num, { v: null, cond: null, sign: 1 }); }
+  hint.textContent = text; hint.className = 'entryhint ' + cls; hint.hidden = !text; $('msg').hidden = !!text || !!list.length;
+  box.hidden = !list.length; inp.setAttribute('aria-expanded', String(!!list.length)); inp.closest('.entrybox').classList.toggle('suggesting', !!list.length);
+  if (list.length) {
+    box.innerHTML = `<div class="sughead">${r.total > list.length ? `${list.length} de ${r.total}` : r.total} carta${r.total > 1 ? 's' : ''} en ${esc(curSet.name)}</div>` + list.map((x, i) => {
+      const v = autoVariant(x.m), img = imgFor(curSet.id, x.num, v), ref = !img && refImg(x.m), have = cardQty(curSet.id, x.num, data.lang), rr = x.m[3] && rarityOf(x.m[3]);
+      const sp = alsoNamed(x.m);
+      return `<button type="button" class="sug ${i === sugSel ? 'on' : ''}" role="option" aria-selected="${i === sugSel}" data-num="${esc(x.num)}">${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : ref ? `<img class="ref" src="${esc(ref)}" alt="" loading="lazy" title="Imagen de referencia: esta carta no tiene foto">` : '<span class="noimg"></span>'}
+        <span class="t"><b>${esc(x.m[0])}</b>${sp ? ` <span class="muted">${esc(sp)}</span>` : ''} <span class="muted">#${esc(x.num)}</span><small>${rr ? esc(rr[1]) + ' · ' : ''}se carga ${esc(vlabel(v))} · ${have ? `tienes ${have}` : 'no la tienes'}</small></span></button>`;
+    }).join('') + '<div class="sugfoot"><span><kbd>↑</kbd> <kbd>↓</kbd> elegir</span><span><kbd>Enter</kbd> o clic: cargar</span><span><kbd>Tab</kbd> poner el número (para agregar r, *2…)</span></div>';
+  }
+  if (key) renderPreview(key, true);
+  else if (pendingKey) renderPreview(previewKey);
+}
+function doCommitEntry() {
   const inp = $('entry'); let raw = inp.value, repeated = false;
   if (!raw.trim()) {
     // Enter on an empty box: repeat the last entry
     if (!lastEntry || !curSet || lastEntry.set !== curSet.id) return;
     raw = lastEntry.raw; repeated = true;
   }
-  const L = langCode(raw);
-  if (L) { setLang(L); inp.value = ''; flash('okf'); beep(true); return showMsg(`Idioma: ${LNAME[L]} (${L})`, ''); }
-  const C = /^(nm|lp|mp|hp|dmg)$/i.test(raw.trim()) && condCode(raw);
-  if (C) { setCond(C); inp.value = ''; flash('okf'); beep(true); return showMsg(`Estado: ${CNAME[C]} (${C})${C === 'NM' ? '' : ' · vuelve a NM escribiendo nm'}`, C === 'NM' ? '' : 'warn'); }
-  if (!curSet) return fail('Primero elige una expansión (Esc).');
-  const p = parseEntry(raw); if (!p || !p.qty) return fail('No entendí la entrada.');
-  const idx = cards[curSet.id];
-  // "1-30": a range, unless a number with a dash really exists in the expansion
-  if (p.range && !(idx && (idx.norm[norm(p.base)] !== undefined || idx.norm[norm(p.full)] !== undefined))) return commitRange(p, raw, repeated);
-  let num, warn = '';
-  if (idx) {
-    if (idx.norm[norm(p.base)] !== undefined) num = idx.norm[norm(p.base)];
-    else if (idx.norm[norm(p.full)] !== undefined) { num = idx.norm[norm(p.full)]; p.v = null; }
-    else return fail(`La carta "${p.full}" no existe en ${curSet.name}. ¿Expansión equivocada?`);
-  } else {
-    num = norm(p.base); warn = ' (sin datos de la expansión: no pude verificar la carta)';
-  }
+  const r = resolveEntry(raw);
+  if (r.kind === 'lang') { setLang(r.L); inp.value = ''; flash('okf'); beep(true); return showMsg(`Idioma: ${LNAME[r.L]} (${r.L})`, ''); }
+  if (r.kind === 'cond') { const C = r.C; setCond(C); inp.value = ''; flash('okf'); beep(true); return showMsg(`Estado: ${CNAME[C]} (${C})${C === 'NM' ? '' : ' · vuelve a NM escribiendo nm'}`, C === 'NM' ? '' : 'warn'); }
+  if (r.kind === 'noset') return fail('Primero elige una expansión (Esc).');
+  // a name: load the chosen card of the list, as if its number had been typed
+  if (r.kind === 'name') { inp.value = r.list[Math.min(sugSel, r.list.length - 1)].num; return doCommitEntry(); }
+  if (r.kind === 'loading') return fail('Todavía estoy cargando las cartas de la expansión, intenta en un segundo.');
+  if (r.kind === 'noname') return fail(`Ninguna carta de ${curSet.name} se llama "${raw.trim()}".`);
+  if (r.kind === 'bad') return fail('No entendí la entrada.');
+  const p = r.p;
+  if (r.kind === 'range') return commitRange(p, raw, repeated);
+  if (r.kind === 'missing') return fail(`La carta "${p.full}" no existe en ${curSet.name}. ¿Expansión equivocada?`);
+  const num = r.num, warn = r.unchecked ? ' (sin datos de la expansión: no pude verificar la carta)' : '';
   const before = curProgress();
   const { key, m, wasNew, real } = loadOne(num, p);
   if (real === 0) return fail('No había copias de esa carta para quitar.');
@@ -2004,7 +2114,7 @@ function renderResults() {
 async function selectSet(id) {
   const s = setById[id]; if (!s) return;
   if (!curSet || curSet.id !== id) lastEntry = null;
-  curSet = s; setPicking(false);
+  curSet = s; setPicking(false); ensureDexRef();
   if (resLang) { data.lang = resLang; resLang = null; renderLangs(); }
   else if (s.lang && data.lang !== s.lang) { data.lang = s.lang; renderLangs(); }
   data.recent = [id, ...data.recent.filter(x => x !== id)].slice(0, 8); save();
@@ -2059,10 +2169,12 @@ function renderRecent() {
 
 // ---------- render: preview / log / stats ----------
 function regionOf(d) { const r = REGIONS.find(r => d >= r[1] && d <= r[2]); return r ? r[0] : ''; }
-let previewKey = null;
-function renderPreview(key) {
-  previewKey = key;
-  const el = $('preview');
+let previewKey = null, pendingKey = null;
+// pending: a card not loaded yet (what Enter would load), shown with a dashed border; previewKey stays the last loaded one
+function renderPreview(key, pending = false) {
+  if (!pending) previewKey = key;
+  pendingKey = pending ? key : null;
+  const el = $('preview'); el.classList.toggle('pending', !!pending);
   if (!key) {
     el.innerHTML = `<div class="empty"><span class="big">🃏</span>Aquí aparecerá cada carta que cargues, para que confirmes que es la correcta.</div>`;
     return;
@@ -2078,9 +2190,9 @@ function renderPreview(key) {
     const total = artistTotals[m[2]], owned = ownedByArtist('')[m[2]] || 0;
     art = `<div class="artp"><div class="row"><span>🎨 <a data-artist="${esc(m[2])}">${esc(m[2])}</a></span><span class="muted">${total ? `${owned}/${total}` : ''}</span></div>${total ? bar(owned, total) : ''}</div>`;
   }
-  el.innerHTML = `<div class="pimg ${v === 'holo' ? 'shine' : v === 'reverse' ? 'shine rev' : ''}">${imgFor(sid, num, v) ? `<img src="${esc(bigImg(imgFor(sid, num, v)))}" alt="">` : ''}</div>
+  el.innerHTML = `${pending ? '<div class="pendhead">Vista previa <span>Enter o clic en la carta para cargarla</span></div>' : ''}<div class="pimg ${v === 'holo' ? 'shine' : v === 'reverse' ? 'shine rev' : ''}">${imgFor(sid, num, v) ? `<img src="${esc(bigImg(imgFor(sid, num, v)))}" alt="">` : refImg(m) ? `<img class="ref" src="${esc(bigImg(refImg(m)))}" alt=""><span class="reflbl">Imagen de referencia · esta carta no tiene foto</span>` : ''}</div>
     <div style="text-align:center;margin-top:6px"><button class="ghost" data-img="${esc(`${sid}|${num}|${v}`)}" style="font-size:12.5px;padding:3px 10px">📷 ${hasOwnImg(sid, num, v) ? 'Tu foto · cambiar' : '¿No es la foto correcta? Cámbiala'}</button></div>
-    <div class="pname">${esc(m ? m[0] : 'Carta desconocida')}</div>
+    <div class="pname">${esc(m ? m[0] : 'Carta desconocida')}${m && alsoNamed(m) ? `<span class="muted" style="font-size:15px;font-weight:700">${esc(alsoNamed(m))}</span>` : ''}</div>
     ${s && eraLabel(s) ? `<div class="pinfo">Serie <b>${esc(eraLabel(s))}</b> · expansión <b>${esc(s.name)}</b>${s.code ? ` (${esc(s.code)})` : ''}</div>` : ''}
     <div class="pinfo">${esc(s ? s.name : sid)} · #${esc(num)}${s ? '/' + s.printed : ''} ${vchip(v)} ${lchip(lang)} ${cchip(cond, true)}</div>
     <div class="pinfo">💰 ${priceHtml(key, true)}</div>
@@ -2094,7 +2206,7 @@ function renderLog() {
   if (!rows.length) { $('logList').innerHTML = '<div class="empty" style="padding:16px">Todavía no cargas cartas. ¡Elige una expansión y empieza! 🚀</div>'; return; }
   paint($('logList'), rows.map((e, i) => {
     const { sid, num, v, lang, cond } = splitKey(e.k); const m = meta(sid, num);
-    return `<div class="logrow">${imgFor(sid, num, v) ? `<img src="${esc(imgFor(sid, num, v))}" alt="" loading="lazy">` : '<img alt="">'}
+    return `<div class="logrow">${imgFor(sid, num, v) ? `<img src="${esc(imgFor(sid, num, v))}" alt="" loading="lazy">` : refImg(m) ? `<img class="ref" src="${esc(refImg(m))}" alt="" loading="lazy" title="Imagen de referencia">` : '<img alt="">'}
       <span class="n"><b>${esc(m ? m[0] : '?')}</b> <span class="muted">#${esc(num)} · ${esc(setById[sid] ? setById[sid].name : sid)}</span></span>
       ${lchip(lang)}${cchip(cond)}${vchip(v)}<span class="d ${e.d < 0 ? 'neg' : ''}">${e.d > 0 ? '+' : ''}${e.d}</span>
       ${i === 0 ? '<button id="undoBtn" title="Deshacer (⌘/Ctrl+Z)">↶ Deshacer</button>' : ''}</div>`;
@@ -2253,6 +2365,7 @@ async function ensureDexRef() {
   if (dexRef) return;
   try { dexRef = Object.fromEntries((await api('GET', '/dex')).map(r => [r.dex, r])); } catch (e) { dexRef = {}; }
   if ($('tab-kits').classList.contains('on')) renderKits();
+  if (curSet) { renderLog(); if ($('entry').value) renderEntryPreview(); else if (previewKey) renderPreview(previewKey); }
 }
 function renderKits() {
   ensureDexRef();
@@ -3054,8 +3167,19 @@ $('recentSets').addEventListener('mousedown', e => { if (e.target.closest('butto
 $('recentSets').addEventListener('click', e => { const b = e.target.closest('button[data-id]'); if (b) selectSet(b.dataset.id); });
 $('chgSet').onclick = () => { if ($('sessPanel').classList.contains('picking')) { setPicking(false); $('entry').focus(); } else { setPicking(true); $('setSearch').focus(); } };
 $('logMore').onclick = e => { e.preventDefault(); logAll = !logAll; renderLog(); };
+let entryT;
+$('entry').addEventListener('input', () => { sugSel = 0; clearTimeout(entryT); entryT = setTimeout(renderEntryPreview, 80); });
+$('entrySugs').addEventListener('mousedown', e => e.preventDefault());
+$('entry').addEventListener('blur', () => setTimeout(() => { if (document.activeElement !== $('entry')) { $('entrySugs').hidden = true; $('entry').setAttribute('aria-expanded', 'false'); $('entry').closest('.entrybox').classList.remove('suggesting'); } }, 150));
+$('entry').addEventListener('focus', () => { if ($('entry').value) renderEntryPreview(); });
+$('entrySugs').addEventListener('click', e => { const b = e.target.closest('.sug'); if (b) { $('entry').value = b.dataset.num; commitEntry(); $('entry').focus(); } });
+$('preview').addEventListener('click', e => { if (pendingKey && e.target.closest('.pimg')) { commitEntry(); $('entry').focus(); } });
 $('entry').addEventListener('keydown', e => {
-  if (e.key === 'Enter') { e.preventDefault(); commitEntry(); }
+  const open = !$('entrySugs').hidden, n = $('entrySugs').querySelectorAll('.sug').length;
+  if (open && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) { e.preventDefault(); sugSel = (sugSel + (e.key === 'ArrowDown' ? 1 : n - 1)) % n; renderEntryPreview(); return; }
+  if (open && e.key === 'Tab' && !e.shiftKey) { e.preventDefault(); clearTimeout(entryT); e.target.value = $('entrySugs').querySelectorAll('.sug')[sugSel].dataset.num; renderEntryPreview(); return; }
+  if (e.key === 'Escape' && e.target.value) { e.preventDefault(); e.target.value = ''; renderEntryPreview(); return; }
+  if (e.key === 'Enter') { e.preventDefault(); clearTimeout(entryT); commitEntry(); }
   else if (e.key === 'Escape') { e.preventDefault(); setPicking(true); $('setSearch').focus(); $('setSearch').select(); }
   else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z' && !e.target.value) { e.preventDefault(); undoLast(); }
 });
