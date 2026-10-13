@@ -36,12 +36,16 @@ Las promos no tienen regla propia: caen en el paso que corresponda por nombre y 
 ### 3. Estado mínimo como orden
 NM > LP > MP > HP > DMG; "estado mínimo LP" acepta NM y LP.
 
-### 4. Interfaz
-- Fila de filtros: Región · Copias · Idioma · Serie · Origen · Estado mínimo · ☐ Varios Pokémon.
-- Niveles como chips activables con los atajos arriba.
-- Resumen por nivel bajo los indicadores, con el color de cada nivel.
-- La insignia de nivel va en la esquina de cada casilla (reutiliza los colores de rareza actuales).
-- Los filtros se recuerdan por dispositivo.
+### 4. Interfaz: diseño "Álbum" (propuesta A, elegida por el usuario)
+La primera versión mostraba todos los filtros a la vez y se veía saturada. Se eligió la propuesta A del lienzo de diseño (Pokédex · propuestas de diseño):
+- Encabezado con el selector de copias siempre visible: Todas mis cartas · Para vender · Mi colección.
+- Regiones como pestañas con su % de avance (con los filtros actuales).
+- Un resumen: "N / total especies de <región>", una barra de colores con cuántas especies tienen su mejor carta en cada nivel, y los niveles como botones (tocar uno muestra solo ese; "Ver todos los niveles" vuelve). En "Para vender", una línea con los kits completos y lo que falta para el siguiente.
+- Idioma, serie, origen, estado mínimo, varios Pokémon y la selección múltiple de niveles quedan dentro de un botón **Filtros** (con un contador de filtros activos y "Quitar filtros").
+- Grilla tipo álbum con la carta completa: las que tienes en color, con la insignia de nivel y la cantidad; las que faltan muestran la carta de referencia **en blanco y negro** con su número.
+- Los filtros (incluida la región) se recuerdan por dispositivo.
+
+*Alternativas:* B (escalera de niveles en una columna) y C (modos Colección y Kits separados). C puede sumarse después como pestaña "Kits".
 
 ## Risks / Trade-offs
 

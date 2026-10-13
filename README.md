@@ -69,11 +69,11 @@ En la pestaña Pokédex eliges qué copias cuentan: para vender (por defecto, pa
 
 ## Pokédex por región
 
-Para cada región (Kanto, Johto…) muestra qué especies tienes, cuántos kits completos puedes armar y qué falta para el siguiente.
+Es un álbum por región (Kanto, Johto… como pestañas con su %): las cartas que tienes se ven en color y las que faltan en blanco y negro. Arriba, cuántas especies tienes, una barra con el nivel de tu mejor carta en cada una y, en "Para vender", cuántos kits completos puedes armar.
 - **Nivel de cada copia** (de menor a mayor): Challa · Challa holo · ex/V/GX · Edición especial · Variocolor · Full art · Ilustración (IR) · Ilustración especial (SIR) · Dorada/Secreta. Se calcula con la rareza, el nombre (ex, V, GX…) y la variante (`cardTier` en `packages/core`; la tabla está en `docs/producto/mapa-de-funcionalidades.md`).
 - **Cuentan**: eliges qué niveles valen (atajos: Todo, Solo challa, Challa + holo, Solo IR y SIR). Así ves si completaste Kanto solo con challa, o cuántas especies tienes en IR/SIR.
 - **Mejor carta por especie**: cada casilla muestra la copia de mayor nivel (empate: la más cara) con su insignia, y arriba un resumen: "120 Challa · 20 Holo · 8 ex/V/GX · 3 IR".
-- **Filtros**: copias (para vender / todas / personales), idioma, serie, origen (internacionales, japonesas…), estado mínimo y cartas con varios Pokémon (los TAG TEAM cuentan para cada especie). Se recuerdan en el dispositivo.
+- **Copias** (siempre visible): todas mis cartas, para vender o mi colección. **Filtros** (botón): idioma, serie, origen (internacionales, japonesas…), estado mínimo, cartas con varios Pokémon (los TAG TEAM cuentan para cada especie) y los niveles que cuentan. Todo se recuerda en el dispositivo.
 - Al tocar una especie ves todas sus copias, de mayor a menor nivel, con su ubicación.
 
 ## Estado de las cartas

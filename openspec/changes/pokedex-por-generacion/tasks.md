@@ -20,6 +20,10 @@
 
 - [x] 4.1 Actualizar README (sección Pokédex) y verificar que describe los filtros y los niveles; tomar capturas para la landing si cambian
 
+## 5. Rediseño "Álbum"
+
+- [x] 5.1 Reemplazar la pantalla por el diseño A (regiones como pestañas, selector de copias, resumen con barra de niveles clicables, filtros detrás de un botón, grilla tipo álbum con las faltantes en blanco y negro); verificar en Chrome sin interfaz regiones, copias, nivel único, panel de filtros con contador, quitar filtros y detalle, sin errores de JavaScript
+
 ## Workflow follow-up
 
 - Archivar el cambio con `/opsx:archive` cuando el usuario lo apruebe.
