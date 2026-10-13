@@ -1982,11 +1982,11 @@ function searchSetsLang(q) {
 function searchSets(q) {
   q = q.trim().toLowerCase(); if (!q) return [];
   const score = s => {
-    const code = s.code.toLowerCase(), id = s.id.toLowerCase(), name = s.name.toLowerCase();
+    const code = s.code.toLowerCase(), id = s.id.toLowerCase(), name = s.name.toLowerCase(), ja = (s.name_ja || '').toLowerCase();
     if (code === q || id === q) return 0;
-    if (name === q) return 1;
-    if (name.startsWith(q)) return 2;
-    if (name.includes(q)) return 3;
+    if (name === q || ja === q) return 1;
+    if (name.startsWith(q) || (ja && ja.startsWith(q))) return 2;
+    if (name.includes(q) || (ja && ja.includes(q))) return 3;
     if ((s.series || '').toLowerCase().includes(q) || eraLabel(s).toLowerCase().includes(q) || code.startsWith(q) || id.startsWith(q)) return 4;
     return 99;
   };
@@ -1997,7 +1997,7 @@ function renderResults() {
   if (!resList.length) { box.classList.remove('on'); box.innerHTML = ''; return; }
   box.innerHTML = resList.map((s, i) => `<div class="res ${i === resSel ? 'sel' : ''}" data-id="${esc(s.id)}">
     ${s.sym ? `<img src="${esc(s.sym)}" alt="">` : '<span style="width:24px"></span>'}
-    <div><div><b>${esc(s.name)}</b> ${s.code ? `<span class="code">${esc(s.code)}</span>` : ''} ${s.lang ? lchip(s.lang) : ''}</div>
+    <div><div><b>${esc(s.name)}</b>${s.name_ja ? ` <span class="muted">${esc(s.name_ja)}</span>` : ''} ${s.code ? `<span class="code">${esc(s.code)}</span>` : ''} ${s.lang ? lchip(s.lang) : ''}</div>
     <div class="meta">${[eraLabel(s) && 'Serie ' + eraLabel(s), s.date.slice(0, 4), s.printed ? s.printed + ' cartas' : '', s.source === 'tcgdex-ja' ? 'edición japonesa' : s.source === 'manual' ? 'agregado a mano' : ''].filter(Boolean).map(esc).join(' · ')}</div></div>${resLang ? `<span style="margin-left:auto">${lchip(resLang)}</span>` : ''}</div>`).join('');
   box.classList.add('on');
 }
@@ -2020,7 +2020,7 @@ function renderCur(status, bad) {
   const s = curSet;
   if (status === undefined) status = cards[s.id] ? Object.keys(cards[s.id].raw).length + ' cartas listas' : '';
   el.className = 'cur set';
-  el.innerHTML = `${s.sym ? `<img src="${esc(s.sym)}" alt="">` : ''}<div style="flex:1"><div class="name">${esc(s.name)} ${s.code ? `<span class="code">${esc(s.code)}</span>` : ''} ${lchip(data.lang)}</div>
+  el.innerHTML = `${s.sym ? `<img src="${esc(s.sym)}" alt="">` : ''}<div style="flex:1;min-width:0"><div class="name">${esc(s.name)}${s.name_ja ? ` <span class="muted" style="font-weight:600;font-size:13px">${esc(s.name_ja)}</span>` : ''} ${s.code ? `<span class="code">${esc(s.code)}</span>` : ''} ${lchip(data.lang)}</div>
     <div class="st" style="${bad ? 'color:var(--err)' : ''}">${esc(LNAME[data.lang])} · ${eraLabel(s) ? 'Serie ' + esc(eraLabel(s)) + ' · ' : ''}${esc(status)}</div><div class="curprog" id="curProg"></div></div>
     <a href="#" id="reloadSet" title="Volver a descargar las cartas de esta expansión">↻</a>`;
   renderCurProg(); setPicking($('sessPanel').classList.contains('picking'));

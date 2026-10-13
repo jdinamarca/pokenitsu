@@ -1,4 +1,5 @@
 // Syncs sets and cards from pokemontcg.io into the database
+import { readFileSync } from 'node:fs';
 import { pool, tx } from './db.js';
 
 const API = 'https://api.pokemontcg.io/v2';
@@ -117,16 +118,33 @@ export async function syncAllCards(onProgress = () => {}) {
 const TCGDEX = 'https://api.tcgdex.net/v2/ja';
 const JA_SUPERTYPE = { Pokemon: 'Pokémon', Trainer: 'Trainer', Energy: 'Energy' };
 const jaImg = (base, size) => base ? `${base}/${size}.webp` : null;
+// English collector names of Japanese sets (TCGdex only has the Japanese one) and Japanese names TCGdex has wrong, by set code
+const JA_NAMES = JSON.parse(readFileSync(new URL('./ja-sets.json', import.meta.url), 'utf8'));
+const jaName = (code, name) => JA_NAMES.fixJa[code] || name;
+const jaNameEn = code => JA_NAMES.en[code] || null;
+
+// fills the names for sets already in the database, without waiting for the next sync
+export async function applyJaNames() {
+  const en = Object.entries(JA_NAMES.en), fix = Object.entries(JA_NAMES.fixJa);
+  await pool.query(
+    `UPDATE sets s SET name_en = v.en FROM unnest($1::text[], $2::text[]) AS v(code, en)
+     WHERE s.source = 'tcgdex-ja' AND s.code = v.code AND s.name_en IS DISTINCT FROM v.en`,
+    [en.map(x => x[0]), en.map(x => x[1])]);
+  await pool.query(
+    `UPDATE sets s SET name = v.name FROM unnest($1::text[], $2::text[]) AS v(code, name)
+     WHERE s.source = 'tcgdex-ja' AND s.code = v.code AND s.name <> v.name`,
+    [fix.map(x => x[0]), fix.map(x => x[1])]);
+}
 
 export async function syncJaSets() {
   const list = await fetchJSON(`${TCGDEX}/sets`);
   await tx(async c => {
     for (const s of list) {
       await c.query(
-        `INSERT INTO sets (id, name, code, total, printed_total, source, lang, synced_at)
-         VALUES ($1, $2, $3, $4, $5, 'tcgdex-ja', 'JA', now())
-         ON CONFLICT (id) DO UPDATE SET name = $2, total = $4, printed_total = $5, synced_at = now()`,
-        ['ja-' + s.id, s.name, s.id, s.cardCount?.total || null, s.cardCount?.official || s.cardCount?.total || null]);
+        `INSERT INTO sets (id, name, code, total, printed_total, source, lang, synced_at, name_en)
+         VALUES ($1, $2, $3, $4, $5, 'tcgdex-ja', 'JA', now(), $6)
+         ON CONFLICT (id) DO UPDATE SET name = $2, total = $4, printed_total = $5, synced_at = now(), name_en = $6`,
+        ['ja-' + s.id, jaName(s.id, s.name), s.id, s.cardCount?.total || null, s.cardCount?.official || s.cardCount?.total || null, jaNameEn(s.id)]);
     }
   });
   return list.length;
@@ -137,10 +155,10 @@ async function syncJaSet(setId) {
   const s = await fetchJSON(`${TCGDEX}/sets/${encodeURIComponent(setId.replace(/^ja-/, ''))}`);
   await tx(async c => {
     await c.query(
-      `INSERT INTO sets (id, name, series, code, release_date, total, printed_total, source, lang, cards_synced_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 'tcgdex-ja', 'JA', now())
-       ON CONFLICT (id) DO UPDATE SET name = $2, series = $3, release_date = $5, total = $6, printed_total = $7, cards_synced_at = now()`,
-      ['ja-' + s.id, s.name, s.serie?.name || null, s.id, s.releaseDate || null, s.cardCount?.total || null, s.cardCount?.official || null]);
+      `INSERT INTO sets (id, name, series, code, release_date, total, printed_total, source, lang, cards_synced_at, name_en)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'tcgdex-ja', 'JA', now(), $8)
+       ON CONFLICT (id) DO UPDATE SET name = $2, series = $3, release_date = $5, total = $6, printed_total = $7, cards_synced_at = now(), name_en = $8`,
+      ['ja-' + s.id, jaName(s.id, s.name), s.serie?.name || null, s.id, s.releaseDate || null, s.cardCount?.total || null, s.cardCount?.official || null, jaNameEn(s.id)]);
     for (const x of s.cards || []) {
       await c.query(
         `INSERT INTO cards (id, set_id, number, number_norm, name, image_small, image_large)
@@ -154,7 +172,7 @@ async function upsertJaCard(x) {
   const setId = 'ja-' + x.set.id;
   await ensureSetCards(setId).catch(async () => {
     // set missing from the list: create it from the card, then try its details
-    await pool.query(`INSERT INTO sets (id, name, code, source, lang) VALUES ($1, $2, $3, 'tcgdex-ja', 'JA') ON CONFLICT DO NOTHING`, [setId, x.set.name, x.set.id]);
+    await pool.query(`INSERT INTO sets (id, name, code, source, lang, name_en) VALUES ($1, $2, $3, 'tcgdex-ja', 'JA', $4) ON CONFLICT DO NOTHING`, [setId, jaName(x.set.id, x.set.name), x.set.id, jaNameEn(x.set.id)]);
     await ensureSetCards(setId).catch(() => {});
   });
   await pool.query(

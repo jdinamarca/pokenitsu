@@ -5,7 +5,7 @@ import { writeFile, unlink } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { dirname, join } from 'node:path';
 import { pool, tx, migrate } from './db.js';
-import { norm, ensureSets, syncSets, ensureSetCards, syncAllCards, syncJaDex } from './catalog.js';
+import { norm, ensureSets, syncSets, ensureSetCards, syncAllCards, syncJaDex, applyJaNames } from './catalog.js';
 import { importChecklist } from './pokecottage.js';
 import { syncCameos, cameosJob, CAMEO_SOURCE } from './cameos.js';
 import { fillDetails, startDetailsJob, detailsJob, startVariantsJob, variantsJob, startVariantsForMySets } from './details.js';
@@ -101,7 +101,7 @@ app.post('/api/alpha', async req => {
 app.get('/api/sets', async () => {
   await ensureSets();
   const { rows } = await pool.query(
-    `SELECT id, name, series, coalesce(code, '') AS code, coalesce(to_char(release_date, 'YYYY/MM/DD'), '') AS date,
+    `SELECT id, coalesce(name_en, name) AS name, CASE WHEN name_en IS NOT NULL THEN name ELSE '' END AS name_ja, series, coalesce(code, '') AS code, coalesce(to_char(release_date, 'YYYY/MM/DD'), '') AS date,
             total, printed_total AS printed, coalesce(symbol_url, '') AS sym, source, lang
      FROM sets ORDER BY release_date DESC NULLS LAST, id`);
   return rows;
@@ -265,7 +265,7 @@ app.get('/api/artists/cards', async req => {
   if (!name) throw bad('Falta el nombre del artista');
   const lang = req.query.lang ? checkLang(req.query.lang, false) : null;
   const { rows } = await pool.query(
-    `SELECT ${CARD_COLS}, s.name AS set_name, coalesce(s.code, '') AS set_code, coalesce(to_char(s.release_date, 'YYYY'), '') AS year,
+    `SELECT ${CARD_COLS}, coalesce(s.name_en, s.name) AS set_name, coalesce(s.code, '') AS set_code, coalesce(to_char(s.release_date, 'YYYY'), '') AS year,
             coalesce((SELECT sum(qty) FROM inventory i WHERE i.card_id = c.id AND ($2::text IS NULL OR i.lang = $2)), 0)::int AS qty
      FROM cards c JOIN sets s ON s.id = c.set_id
      WHERE c.artist = $1 AND s.source = 'ptcg'
@@ -280,7 +280,7 @@ app.get('/api/cameos', async req => {
   if (!(dex >= 1 && dex <= 1100)) throw bad('Número de Pokédex inválido');
   const { rows } = await pool.query(
     `SELECT r.id, r.dex, r.species, r.card_name, r.set_name, r.number, r.note, r.card_id,
-            c.set_id AS sid, c.number AS num, c.name, c.rarity, c.image_small AS img, c.artist, s.name AS set_title, coalesce(s.code, '') AS set_code,
+            c.set_id AS sid, c.number AS num, c.name, c.rarity, c.image_small AS img, c.artist, coalesce(s.name_en, s.name) AS set_title, coalesce(s.code, '') AS set_code,
             coalesce(to_char(s.release_date, 'YYYY'), '') AS year
      FROM cameo_refs r LEFT JOIN cards c ON c.id = r.card_id LEFT JOIN sets s ON s.id = c.set_id
      WHERE r.dex = $1 ORDER BY s.release_date NULLS LAST, r.id`, [dex]);
@@ -615,7 +615,7 @@ const COLL_CARDS = `
     SELECT c.id, 'main', '{}'::text[], NULL, NULL, '[]'::jsonb FROM cards c, co
     WHERE co.checklist_url IS NULL AND co.dex = ANY (c.dex)
       AND NOT EXISTS (SELECT 1 FROM collection_cards cc WHERE cc.collection_id = $1 AND cc.card_id = c.id))
-  SELECT ${CARD_COLS}, c.id AS card_id, m.role, m.variants, m.vlist, coalesce(m.name, c.name) AS label, c.name AS printed_name, coalesce(m.set_name, s.name) AS set_name, coalesce(s.code, '') AS set_code, s.source, s.lang AS set_lang,
+  SELECT ${CARD_COLS}, c.id AS card_id, m.role, m.variants, m.vlist, coalesce(m.name, c.name) AS label, c.name AS printed_name, coalesce(m.set_name, s.name_en, s.name) AS set_name, coalesce(s.code, '') AS set_code, s.source, s.lang AS set_lang,
          coalesce(to_char(s.release_date, 'YYYY'), '') AS year, coalesce(to_char(s.release_date, 'YYYY-MM-DD'), '') AS date,
          coalesce(sum(i.qty) FILTER (WHERE s.lang <> '' OR co.lang = '' OR i.lang = co.lang), 0)::int AS qty,
          coalesce(sum(i.personal) FILTER (WHERE s.lang <> '' OR co.lang = '' OR i.lang = co.lang), 0)::int AS personal,
@@ -1017,6 +1017,7 @@ app.get('/api/export.csv', async (req, reply) => {
 });
 
 await migrate(join(root, 'db', 'migrations'));
+await applyJaNames();
 const port = Number(process.env.PORT || 3000), host = process.env.HOST || '127.0.0.1';
 await app.listen({ port, host });
 startDetailsJob();
