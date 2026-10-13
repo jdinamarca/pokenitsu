@@ -170,6 +170,10 @@ Cada fila del inventario tiene una ubicación (`inventory.loc`, 0 = sin ubicaci�
 Si la foto del catálogo no corresponde, puedes cambiarla para esa variante: tocando la imagen en **Mi colección** o con **📷** en la vista previa de Cargar. Sirve un link o una foto de tu carta (se guarda en `apps/web/public/art/`, tabla `variant_images`). Un ejemplo: en todas las fuentes públicas, el Eevee de Jungle Unlimited aparece con la foto de la 1st Edition.
 Las variantes especiales de una checklist (1st Edition, Poké Ball, misprints…) usan automáticamente la foto de la checklist.
 
+Si la carta no tiene foto, la vista previa de Cargar muestra **📷 Tomar o subir la foto de tu carta**; en el celular el diálogo ofrece **📸 Tomar foto** con la cámara. Las fotos de más de 1200 px se achican antes de subirse.
+
+**Fotos de cartas japonesas desde PokeCottage.** TCGdex no tiene imagen para la mayoría de las cartas japonesas antiguas (en Rocket Gang, ninguna). Con `POKECOTTAGE_IMAGES=on` en `.env`, al elegir una expansión japonesa la API busca las fotos de sus cartas de Pokémon en las checklists por especie de PokeCottage (`POST /api/sets/:id/photos`), las cruza por código de expansión y número y guarda el link (sin descargar la imagen); cada especie se consulta una vez cada 30 días (tabla `pokecottage_checks`) y llena todas las expansiones japonesas a la vez. Rocket Gang pasa de 1 a 53 de 65 fotos; entrenadores y energías no están en esas checklists. Los términos de PokeCottage permiten uso personal: **para la alfa con testers, déjalo apagado salvo que PokeCottage lo autorice.** Sin foto, se muestra una imagen de referencia del mismo Pokémon. Para quitar los links: `UPDATE cards SET image_small = NULL, image_large = NULL WHERE set_id LIKE 'ja-%' AND image_small LIKE 'https://pokecottagecdn.com/%'`.
+
 ## Mis colecciones (ej. todos los Eevee)
 
 Una carta = una expansión + número. Las internacionales (pokemontcg.io) son la misma carta en inglés,

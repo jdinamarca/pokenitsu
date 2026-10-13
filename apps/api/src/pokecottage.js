@@ -68,6 +68,57 @@ function jaCode(id) {
   if ((m = code.match(/^ecard(\d)$/))) return 'E' + m[1];
   return { svp: 'SV-P', mp: 'M-P', 'sm1+': 'SM1p', 'sm4+': 'SM4p' }[code] || code;
 }
+// ---------- photos of Japanese cards (TCGdex has none for most old ones) ----------
+// Only when POKECOTTAGE_IMAGES=on: PokeCottage's terms allow personal use; other installations need their permission.
+export const pcImagesOn = () => String(process.env.POKECOTTAGE_IMAGES || '').toLowerCase() === 'on';
+// PokeCottage set → TCGdex code where jaCode() is not enough
+const PC_TO_TCGDEX = { xy1x: 'XY1a', xy1y: 'XY1b', xy5g: 'XY5a', xy8r: 'XY8b', xy11c: 'XY11b', xypc: 'CP4', xypk: 'CP3', xyls: 'CP2', xyml: 'CP5', xyep: 'CP6', l1hg: 'L1a', l1ss: 'L1b', lll: 'LL', versus1: 'VS1', sm0p: 'SM0' };
+const tcgdexCode = id => PC_TO_TCGDEX[id.replace(/^jpn_/, '')] || jaCode(id);
+// checklist file of a species: 23-ekans, 122-mr-mime, 29-nidoran-female, 83-farfetchd
+export const speciesKey = (dex, name) => `${dex}-${String(name).replace(/♀/g, ' female').replace(/♂/g, ' male').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  .toLowerCase().replace(/['’.:]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`;
+
+// Fills the photos of Japanese cards without an image in a set, one PokeCottage checklist per species (each one fills every Japanese set)
+export async function fillJaImages(setId) {
+  if (!pcImagesOn()) return { enabled: false, filled: 0, asked: 0 };
+  const { rows: todo } = await pool.query(
+    `SELECT DISTINCT c.dex[1] AS dex FROM cards c JOIN sets s ON s.id = c.set_id
+     WHERE c.set_id = $1 AND s.source = 'tcgdex-ja' AND c.image_small IS NULL AND cardinality(c.dex) = 1
+       AND NOT EXISTS (SELECT 1 FROM pokecottage_checks k WHERE k.dex = c.dex[1] AND k.checked_at > now() - interval '30 days')`, [setId]);
+  if (!todo.length) return { enabled: true, filled: 0, asked: 0 };
+  // the species' English name, as on international cards (the same pick as /api/dex)
+  const { rows: names } = await pool.query(
+    `SELECT DISTINCT ON (d) d AS dex, c.name FROM cards c JOIN sets s ON s.id = c.set_id, unnest(c.dex) d
+     WHERE s.source = 'ptcg' AND c.supertype = 'Pokémon' AND cardinality(c.dex) = 1 AND d = ANY($1::int[])
+     ORDER BY d, (position(' ' in c.name) = 0 OR c.name LIKE 'Nidoran%' OR c.name LIKE 'Mr. %') DESC, length(c.name)`, [todo.map(r => r.dex)]);
+  let filled = 0, i = 0;
+  const worker = async () => {
+    while (i < names.length) {
+      const { dex, name } = names[i++];
+      let found = 0;
+      try {
+        const j = JSON.parse(await fetchText(`${DATA}${speciesKey(dex, name)}.json`));
+        const ja = (Array.isArray(j) ? j : j.cards || []).filter(x => x.region === 'Japan' && x.set?.id && (x.imageUrl || x.thumbnailUrl));
+        if (ja.length) {
+          const r = await pool.query(
+            `UPDATE cards c SET image_small = v.small, image_large = v.large
+             FROM sets s, unnest($1::text[], $2::text[], $3::text[], $4::text[]) AS v(code, num, small, large)
+             WHERE s.id = c.set_id AND s.source = 'tcgdex-ja' AND lower(s.code) = lower(v.code) AND c.number_norm = v.num
+               AND c.image_small IS NULL AND $5 = ANY(c.dex)`,
+            [ja.map(x => tcgdexCode(x.set.id)), ja.map(x => norm(numOf(x))), ja.map(x => x.thumbnailUrl || x.imageUrl), ja.map(x => x.imageUrl || x.thumbnailUrl), dex]);
+          found = r.rowCount;
+        }
+      } catch (e) {
+        if (!/HTTP 404/.test(e.message)) { console.warn(`fotos de PokeCottage (${dex}):`, e.message); continue; }
+      }
+      filled += found;
+      await pool.query('INSERT INTO pokecottage_checks (dex, found) VALUES ($1, $2) ON CONFLICT (dex) DO UPDATE SET checked_at = now(), found = $2', [dex, found]);
+    }
+  };
+  await Promise.all([worker(), worker(), worker()]);
+  return { enabled: true, filled, asked: names.length };
+}
+
 async function matchJa(c, x) {
   const code = jaCode(x.set.id);
   const { rows: sets } = await c.query("SELECT id FROM sets WHERE source = 'tcgdex-ja' AND lower(code) = lower($1)", [code]);
