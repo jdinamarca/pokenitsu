@@ -108,7 +108,6 @@ main{max-width:1320px;margin:0 auto;padding:18px 16px 60px}
 .price.own{color:var(--blue)}
 .price.stale{color:var(--warn)}
 .price .when{font-size:11px;font-weight:600;opacity:.85}
-.condpick button.on.warn{background:var(--warn);border-color:var(--warn)}
 .lothead{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
 .lothead input.name{font-size:20px;font-weight:800;flex:1;min-width:200px}
 .lotcfg{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;font-size:13.5px}
@@ -179,8 +178,6 @@ dialog.dlg p{font-size:13.5px;margin:6px 0}
 .r-ir{background:linear-gradient(90deg,#0fa3a3,#3fc6e0)}.r-sir{background:linear-gradient(90deg,#c9971c,#ffd35c);color:#3a2a00}
 .r-hr{background:linear-gradient(90deg,#a87b12,#f0c24b,#a87b12);color:#3a2a00}.r-rb{background:linear-gradient(90deg,#ff5f6d,#ffc371,#7bed9f,#70a1ff,#c56cf0)}
 .r-sh{background:linear-gradient(90deg,#1b2a4a,#4b6cb7);box-shadow:inset 0 0 0 1px #9fb7ff}.r-mech{background:#1a1a1a;color:#ffd35c;box-shadow:inset 0 0 0 1px #ffd35c88}
-.persmode{display:block;width:100%;margin-top:12px;text-align:left;font-size:13px;border-radius:10px;padding:8px 12px;background:var(--panel2);border:1px dashed var(--line);color:var(--muted)}
-.persmode.on{background:color-mix(in srgb,#8a3ffc 14%,var(--panel));border:1px solid #8a3ffc;color:var(--ink)}
 .entry.pers{border-color:#8a3ffc;box-shadow:0 0 0 3px color-mix(in srgb,#8a3ffc 25%,transparent)}
 button.lock{padding:0 7px;line-height:22px;border-radius:7px;font-size:12px;margin-left:auto}
 button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-color:#8a3ffc;font-weight:800}
@@ -284,11 +281,45 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
 .tbl button[data-lot]{margin-left:4px;white-space:nowrap}
 
 /* ---------- Cargar ---------- */
-.load{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:18px;align-items:start}
-@media (max-width:900px){.load{grid-template-columns:1fr}}
-.step{display:flex;align-items:center;gap:10px;font-weight:800;margin-bottom:10px}
-.step .n{width:26px;height:26px;border-radius:50%;background:var(--red);color:#fff;display:grid;place-items:center;font-size:13px;flex:none}
-.step .hint{font-weight:600;color:var(--muted);font-size:13px}
+.load{display:grid;grid-template-columns:minmax(0,1fr) 360px;grid-template-areas:"sess prev" "entry prev" "log prev";grid-template-rows:auto auto 1fr;gap:14px 18px;align-items:start}
+.load > .session{grid-area:sess}.load > .entrybox{grid-area:entry}.load > .logbox{grid-area:log}.load > .preview{grid-area:prev}
+.load > .panel + .panel{margin-top:0}
+@media (max-width:900px){.load{grid-template-columns:minmax(0,1fr);grid-template-areas:"sess" "entry" "prev" "log";grid-template-rows:none}}
+/* session: current expansion, search on demand, compact settings */
+.session{display:flex;flex-direction:column;gap:12px}
+.sessrow{display:flex;align-items:center;gap:12px}
+.session .cur{flex:1;min-width:0;margin:0;padding:0;border:0;background:none;min-height:0}
+.chgset{flex:none;white-space:nowrap}
+.chgset kbd{margin-left:6px}
+.session .setarea{display:none}
+.session.picking .setarea{display:block}
+.session.noset .sessrow{display:none}
+.sethint{font-size:13px;color:var(--muted);margin-top:8px}
+.picks{display:flex;gap:8px;flex-wrap:wrap}
+.pick{position:relative}
+.pick summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:6px;height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--panel2);font-weight:700;font-size:13.5px;user-select:none;white-space:nowrap}
+.pick summary::-webkit-details-marker{display:none}
+.pick summary small{color:var(--muted);font-weight:600;font-size:12px}
+.pick summary::after{content:"▾";color:var(--muted);font-size:11px}
+.pick[open] summary{border-color:var(--muted)}
+.pick.warn summary{background:var(--warn);border-color:var(--warn);color:#1c1300}
+.pick.warn summary small,.pick.warn summary::after{color:#1c1300}
+.pick.pers summary{background:color-mix(in srgb,#8a3ffc 14%,var(--panel));border-color:#8a3ffc}
+.pick-pop{position:absolute;left:0;top:calc(100% + 6px);z-index:30;min-width:220px;max-width:calc(100vw - 32px);max-height:340px;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-lg);padding:6px;transform-origin:top left}
+.pick-list{display:flex;flex-direction:column}
+.pick-list button{border:0;background:none;text-align:left;font-weight:600;padding:9px 12px;border-radius:8px;white-space:nowrap}
+.pick-list button:hover{background:var(--chip)}
+.pick-list button.on{background:var(--chip);font-weight:800}
+.pick-list small{color:var(--muted);font-weight:600}
+.pick-list .muted{padding:9px 12px;white-space:normal}
+.session kbd,.entrybox kbd{font-family:ui-monospace,Menlo,monospace;background:var(--chip);border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:0 6px;color:var(--ink);font-size:12px}
+.entrylbl{display:block;font-weight:800;margin-bottom:10px}
+.entrylbl .hint{font-weight:600;color:var(--muted);font-size:13px}
+.keyline{display:flex;gap:6px 14px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.keyhelp{margin-top:8px}
+.keyhelp summary{list-style:none;cursor:pointer;color:var(--blue);font-weight:700;font-size:13px;display:inline-block}
+.keyhelp summary::-webkit-details-marker{display:none}
+.logbox .panel-h a{margin-left:auto;font-size:13px;color:var(--blue);text-decoration:none}
 .setpick{position:relative}
 .setpick input{width:100%;font-size:16px;padding:11px 14px}
 .results{position:absolute;left:0;right:0;top:calc(100% + 6px);background:var(--panel);border:1px solid var(--line);border-radius:12px;max-height:380px;overflow:auto;z-index:10;box-shadow:var(--shadow-lg);display:none;padding:4px}
@@ -308,7 +339,7 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
 .langs button.on{background:var(--ink);border-color:var(--ink);color:var(--panel)}
 .recent{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;align-items:center;font-size:13px}
 .recent button{font-size:12.5px;padding:4px 10px;border-radius:999px;font-weight:600}
-.entry{width:100%;font:800 32px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;padding:14px 16px;letter-spacing:.04em;border-width:2px;transition:border-color .15s,background .15s}
+.entry{width:100%;font:800 36px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;padding:14px 16px;letter-spacing:.04em;border-width:2px;transition:border-color .15s,background .15s}
 .entry.okf{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 9%,var(--panel))}
 .entry.errf{border-color:var(--err);background:color-mix(in srgb,var(--err) 10%,var(--panel));animation:shake .3s}
 @keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
@@ -334,6 +365,16 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
 .preview .artp{margin-top:14px;text-align:left;background:var(--panel2);border-radius:12px;padding:10px 12px}
 .preview .artp .row{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;gap:8px}
 .preview .artp a{color:var(--blue);cursor:pointer;font-weight:700;text-decoration:none}
+@media (max-width:900px){
+  .preview{position:static;display:grid;grid-template-columns:110px minmax(0,1fr);column-gap:14px;text-align:left;align-items:start}
+  .preview > *{grid-column:2;min-width:0}
+  .preview > .pimg{grid-column:1;grid-row:1 / span 12}
+  .preview > .empty{grid-column:1 / -1}
+  .preview .pname{margin-top:0;font-size:18px}
+  .preview .pinfo,.preview .ptags{justify-content:flex-start}
+  .preview .pinfo{display:block}
+  .preview > div:has(> button[data-img]){text-align:left !important}
+}
 /* holo / reverse shimmer */
 .shine::after{content:"";position:absolute;inset:0;pointer-events:none;mix-blend-mode:color-dodge;opacity:.55;
   background:linear-gradient(115deg,transparent 25%,rgba(255,255,255,.55) 38%,rgba(255,110,220,.35) 45%,rgba(110,220,255,.35) 52%,transparent 65%);
@@ -617,24 +658,32 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
   <section class="tab on" id="tab-cargar">
     <div class="banner" id="noLang" hidden></div>
     <div class="load">
-      <div>
-        <div class="panel">
-          <div class="step"><span class="n">1</span>Expansión e idioma <span class="hint">escríbelo como sale en la carta, ej. <code>MEW ES</code></span></div>
+      <div class="panel session picking noset" id="sessPanel">
+        <div class="sessrow">
+          <div class="cur" id="curSet"></div>
+          <button class="chgset" id="chgSet"></button>
+        </div>
+        <div class="setarea">
           <div class="setpick">
-            <input id="setSearch" placeholder="Buscar expansión: MEW ES, PFL EN, 151, Base…" autocomplete="off" spellcheck="false">
+            <input id="setSearch" placeholder="Buscar expansión: MEW ES, PFL EN, 151, Base…" autocomplete="off" spellcheck="false" aria-label="Buscar expansión">
             <div class="results" id="setResults"></div>
           </div>
-          <div class="cur" id="curSet"></div>
-          <div class="langs" id="langPick"></div>
-          <div class="langs condpick" id="condPick"></div>
-          <div class="langs" id="locPick"></div>
-          <button class="persmode" id="persMode" title="Las cartas que cargues quedan marcadas como de tu colección personal (no para venta)"></button>
+          <div class="sethint">Escríbela como sale en la carta: <code>MEW ES</code> elige 151 en español.</div>
           <div class="recent" id="recentSets"></div>
         </div>
-        <div class="panel">
-          <div class="step"><span class="n">2</span>Número de la carta <span class="hint">y Enter</span></div>
-          <input id="entry" class="entry" placeholder="25r" autocomplete="off" spellcheck="false" autocapitalize="off">
-          <div class="msg" id="msg"></div>
+        <div class="picks">
+          <details class="pick" id="pkLang"><summary><small>Idioma</small> <span id="pkLangV"></span></summary><div class="pick-pop"><div class="pick-list" id="langPick"></div></div></details>
+          <details class="pick" id="pkCond"><summary><small>Estado</small> <span id="pkCondV"></span></summary><div class="pick-pop"><div class="pick-list" id="condPick"></div></div></details>
+          <details class="pick" id="pkLoc"><summary><small>Guardar en</small> <span id="pkLocV"></span></summary><div class="pick-pop"><div class="pick-list" id="locPick"></div></div></details>
+          <details class="pick" id="pkPers"><summary><small>Para</small> <span id="pkPersV"></span></summary><div class="pick-pop"><div class="pick-list" id="persPick"></div></div></details>
+        </div>
+      </div>
+      <div class="panel entrybox">
+        <label for="entry" class="entrylbl">Número de la carta <span class="hint">y Enter</span></label>
+        <input id="entry" class="entry" placeholder="25r" autocomplete="off" spellcheck="false" autocapitalize="off">
+        <div class="msg" id="msg"></div>
+        <div class="keyline"><span><kbd>25r</kbd> reverse</span><span><kbd>25*4</kbd> copias</span><span><kbd>1-30</kbd> rango</span><span><kbd>-25</kbd> quitar</span><span><kbd>⌘Z</kbd> deshacer</span></div>
+        <details class="keyhelp"><summary>Todos los atajos</summary>
           <div class="keys">
             <span><kbd>25</kbd> variante automática</span>
             <span><kbd>25r</kbd> reverse · <kbd>25h</kbd> holo</span>
@@ -648,11 +697,11 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
             <span><kbd>Esc</kbd> cambiar expansión · <kbd>⌘Z</kbd> deshacer (un rango completo)</span>
           </div>
           <div class="opts"><label><input type="checkbox" id="soundToggle"> Sonido al cargar</label></div>
-        </div>
-        <div class="panel">
-          <div class="panel-h">Últimas cargas</div>
-          <div id="logList"></div>
-        </div>
+        </details>
+      </div>
+      <div class="panel logbox">
+        <div class="panel-h">Últimas cargas <a href="#" id="logMore"></a></div>
+        <div id="logList"></div>
       </div>
       <aside class="panel preview" id="preview"></aside>
     </div>
@@ -999,8 +1048,14 @@ function showView(el) {
 }
 // menus: CSS can't see the reopen (closed <details> content skips style updates), so animate on toggle
 document.addEventListener('toggle', e => {
-  const d = e.target; if (!d.open || !d.matches?.('.menu, .colmenu')) return;
-  const p = d.querySelector('.menu-pop, .items'); if (p) enter(p, 'scale(.95)');
+  const d = e.target; if (!d.open || !d.matches?.('.menu, .colmenu, .pick')) return;
+  const p = d.querySelector('.menu-pop, .items, .pick-pop'); if (!p) return;
+  if (d.matches('.pick')) {
+    for (const o of document.querySelectorAll('details.pick[open]')) if (o !== d) o.open = false;
+    p.style.left = ''; const over = p.getBoundingClientRect().right - (innerWidth - 12);
+    if (over > 0) p.style.left = -over + 'px';
+  }
+  enter(p, 'scale(.95)');
 }, true);
 
 // ---------- toasts ----------
@@ -1624,8 +1679,10 @@ function fillInvLoc(v = $('invLoc').value) {
 }
 function renderLocPick() {
   const el = $('locPick'); if (!el) return;
+  const cur = data.locPick === 'auto' ? null : locById(+data.locPick);
+  $('pkLocV').textContent = !LOCS.length ? 'Sin ubicaciones' : cur ? cur.name : 'Automático';
   if (!LOCS.length) { el.innerHTML = '<span class="muted">📍 ¿Dónde las guardas? Crea tus cajas y carpetas en <a href="#ubicaciones" data-goloc>Ubicaciones</a>.</span>'; return; }
-  el.innerHTML = '<span class="muted">Guardar en:</span>' + [`<button data-loc="auto" class="${data.locPick === 'auto' ? 'on' : ''}" title="La ubicación más específica para cada carta (su serie, expansión, si es especial…)">🪄 Automático</button>`,
+  el.innerHTML = [`<button data-loc="auto" class="${data.locPick === 'auto' ? 'on' : ''}" title="La ubicación más específica para cada carta (su serie, expansión, si es especial…)">🪄 Automático <small>· según cada carta</small></button>`,
     ...LOCS.map(l => `<button data-loc="${l.id}" class="${+data.locPick === l.id ? 'on' : ''}">${KIND[l.kind][0]} ${esc(l.name)}</button>`)].join('');
 }
 function moveToLoc(k, to) {
@@ -1947,7 +2004,7 @@ function renderResults() {
 async function selectSet(id) {
   const s = setById[id]; if (!s) return;
   if (!curSet || curSet.id !== id) lastEntry = null;
-  curSet = s;
+  curSet = s; setPicking(false);
   if (resLang) { data.lang = resLang; resLang = null; renderLangs(); }
   else if (s.lang && data.lang !== s.lang) { data.lang = s.lang; renderLangs(); }
   data.recent = [id, ...data.recent.filter(x => x !== id)].slice(0, 8); save();
@@ -1959,27 +2016,35 @@ async function selectSet(id) {
 }
 function renderCur(status, bad) {
   const el = $('curSet');
-  if (!curSet) { el.className = 'cur'; el.innerHTML = '<span class="muted">Ninguna expansión elegida todavía. Búscala arriba ☝️</span>'; return; }
+  if (!curSet) { el.className = 'cur'; el.innerHTML = ''; return setPicking(true); }
   const s = curSet;
   if (status === undefined) status = cards[s.id] ? Object.keys(cards[s.id].raw).length + ' cartas listas' : '';
   el.className = 'cur set';
   el.innerHTML = `${s.sym ? `<img src="${esc(s.sym)}" alt="">` : ''}<div style="flex:1"><div class="name">${esc(s.name)} ${s.code ? `<span class="code">${esc(s.code)}</span>` : ''} ${lchip(data.lang)}</div>
     <div class="st" style="${bad ? 'color:var(--err)' : ''}">${esc(LNAME[data.lang])} · ${eraLabel(s) ? 'Serie ' + esc(eraLabel(s)) + ' · ' : ''}${esc(status)}</div><div class="curprog" id="curProg"></div></div>
     <a href="#" id="reloadSet" title="Volver a descargar las cartas de esta expansión">↻</a>`;
-  renderCurProg();
+  renderCurProg(); setPicking($('sessPanel').classList.contains('picking'));
   $('reloadSet').onclick = async ev => { ev.preventDefault(); renderCur('recargando…'); try { await loadCards(s.id, true); renderCur(); } catch (e) { renderCur('⚠️ falló la descarga', true); } };
 }
+// search on demand: hidden while an expansion is active, unless the user asks to change it
+function setPicking(on) {
+  if (!curSet) on = true;
+  const p = $('sessPanel'); p.classList.toggle('picking', on); p.classList.toggle('noset', !curSet);
+  $('chgSet').innerHTML = on ? 'Cancelar' : 'Cambiar<span class="hide-sm"> expansión</span> <kbd class="hide-sm">Esc</kbd>';
+}
 function renderPersMode() {
-  const b = $('persMode'); b.classList.toggle('on', !!data.personal);
-  b.innerHTML = data.personal ? '🔒 Cargando para <b>mi colección personal</b> (no se venden)' : '🏷️ Cargando cartas <b>para vender</b> · toca para cambiar a colección personal';
+  $('persPick').innerHTML = `<button data-pers="0" class="${data.personal ? '' : 'on'}">🏷️ Vender</button><button data-pers="1" class="${data.personal ? 'on' : ''}">🔒 Mi colección personal <small>· no se venden</small></button>`;
+  $('pkPersV').textContent = data.personal ? 'Mi colección personal' : 'Vender';
+  $('pkPers').classList.toggle('pers', !!data.personal);
   $('entry').classList.toggle('pers', !!data.personal);
 }
 function renderLangs() {
-  $('langPick').innerHTML = '<span class="muted">Idioma:</span>' + LANGS.map(l => `<button data-l="${l}" class="${l === data.lang ? 'on' : ''}" title="${LNAME[l]}">${l}</button>`).join('');
+  $('langPick').innerHTML = LANGS.map(l => `<button data-l="${l}" class="${l === data.lang ? 'on' : ''}">${l} <small>· ${LNAME[l]}</small></button>`).join('');
+  $('pkLangV').textContent = LNAME[data.lang] || data.lang;
 }
 function renderConds() {
-  $('condPick').innerHTML = '<span class="muted">Estado:</span>' + CONDS.map(c => `<button data-c="${c}" class="${c === data.cond ? 'on' + (c !== 'NM' ? ' warn' : '') : ''}" title="${CNAME[c]}">${c}</button>`).join('')
-    + (data.cond !== 'NM' ? ` <span class="muted" style="color:var(--warn);font-weight:700">⚠️ cargando como ${data.cond}</span>` : '');
+  $('condPick').innerHTML = CONDS.map(c => `<button data-c="${c}" class="${c === data.cond ? 'on' : ''}">${c} <small>· ${CNAME[c]}</small></button>`).join('');
+  $('pkCondV').textContent = data.cond; $('pkCond').classList.toggle('warn', data.cond !== 'NM');
 }
 function renderNoLang() {
   let n = 0; for (const k in data.inv) if (!splitKey(k).lang) n += data.inv[k];
@@ -2022,8 +2087,10 @@ function renderPreview(key) {
     <div class="pinfo">Tienes <b>${qty}</b> de esta variante${data.pers[key] ? ` (🔒 ${data.pers[key]} personal)` : ''} · <b>${all}</b> en ${esc(LNAME[lang] || 'total')}</div>
     <div class="ptags">${tags.join('')}</div>${putAway(sid, num, loc)}${art}`;
 }
+let logAll = false;
 function renderLog() {
-  const rows = data.log.slice(-12).reverse();
+  const rows = data.log.slice(logAll ? -12 : -5).reverse();
+  $('logMore').textContent = data.log.length > 5 ? (logAll ? 'Ver menos' : `Ver las ${Math.min(12, data.log.length)}`) : '';
   if (!rows.length) { $('logList').innerHTML = '<div class="empty" style="padding:16px">Todavía no cargas cartas. ¡Elige una expansión y empieza! 🚀</div>'; return; }
   paint($('logList'), rows.map((e, i) => {
     const { sid, num, v, lang, cond } = splitKey(e.k); const m = meta(sid, num);
@@ -2869,9 +2936,10 @@ renderLangs(); renderConds(); renderLocPick(); renderPersMode(); renderCur(); re
 document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => showTab(b.dataset.tab));
 document.addEventListener('click', e => {
   const m = $('dataMenu'); if (m.open && !m.contains(e.target)) m.open = false;
+  for (const d of document.querySelectorAll('details.pick[open]')) if (!d.contains(e.target)) d.open = false;
   const a = e.target.closest('[data-artist]'); if (a) { e.preventDefault(); openArtist(a.dataset.artist); }
 });
-$('langPick').addEventListener('click', e => { const b = e.target.closest('button[data-l]'); if (b) { setLang(b.dataset.l); $('entry').focus(); } });
+$('langPick').addEventListener('click', e => { const b = e.target.closest('button[data-l]'); if (b) { setLang(b.dataset.l); $('pkLang').open = false; $('entry').focus(); } });
 document.addEventListener('click', e => { const p = e.target.closest('.price[data-own]'); if (p) { e.preventDefault(); e.stopPropagation(); editOwnPrice(p.dataset.own); } }, true);
 document.addEventListener('click', e => {
   const t = e.target.closest('[data-img]'); if (!t || e.target.closest('button[data-k],button[data-pk],button[data-lot]')) return;
@@ -2939,8 +3007,8 @@ $('lotView').addEventListener('change', async e => {
 });
 $('lotView').addEventListener('keydown', e => { if (e.target.id === 'lotEntry' && e.key === 'Enter') { e.preventDefault(); const lot = lotById(lotSel); if (lot) lotEntry(lot); } });
 $('locPick').addEventListener('click', e => {
-  if (e.target.closest('[data-goloc]')) { e.preventDefault(); showTab('ubicaciones'); return; }
-  const b = e.target.closest('button[data-loc]'); if (b) { data.locPick = b.dataset.loc; save(); renderLocPick(); $('entry').focus(); }
+  if (e.target.closest('[data-goloc]')) { e.preventDefault(); $('pkLoc').open = false; showTab('ubicaciones'); return; }
+  const b = e.target.closest('button[data-loc]'); if (b) { data.locPick = b.dataset.loc; save(); renderLocPick(); $('pkLoc').open = false; $('entry').focus(); }
 });
 $('locNew').onclick = () => openLocForm(null);
 $('locForm').addEventListener('change', e => { if (e.target.id === 'lfType') $('lfSpecialBox').style.display = e.target.value === 'special' ? 'grid' : 'none'; });
@@ -2966,7 +3034,7 @@ Sus ${n} cartas quedan sin ubicación (no se borran).` : ''}`)) return;
     try { await api('DELETE', '/locations/' + l.id); await loadState(); } catch (err) { toast(err.message); }
   }
 });
-$('condPick').addEventListener('click', e => { const b = e.target.closest('button[data-c]'); if (b) { setCond(b.dataset.c); $('entry').focus(); } });
+$('condPick').addEventListener('click', e => { const b = e.target.closest('button[data-c]'); if (b) { setCond(b.dataset.c); $('pkCond').open = false; $('entry').focus(); } });
 $('noLang').addEventListener('click', e => {
   const b = e.target.closest('button[data-l]'); if (!b) return;
   for (const k of Object.keys(data.inv)) { const x = splitKey(k); if (!x.lang) moveKey(k, keyOf(x.sid, x.num, x.v, b.dataset.l, x.cond, x.loc)); }
@@ -2978,17 +3046,20 @@ $('setSearch').addEventListener('keydown', e => {
   if (e.key === 'ArrowDown') { resSel = Math.min(resSel + 1, resList.length - 1); renderResults(); e.preventDefault(); }
   else if (e.key === 'ArrowUp') { resSel = Math.max(resSel - 1, 0); renderResults(); e.preventDefault(); }
   else if (e.key === 'Enter' && resList[resSel]) selectSet(resList[resSel].id);
-  else if (e.key === 'Escape') { resList = []; renderResults(); if (curSet) $('entry').focus(); }
+  else if (e.key === 'Escape') { resList = []; renderResults(); if (curSet) { setPicking(false); $('entry').focus(); } }
 });
 $('setResults').addEventListener('mousedown', e => { const r = e.target.closest('.res'); if (r) { e.preventDefault(); selectSet(r.dataset.id); } });
-$('setSearch').addEventListener('blur', () => setTimeout(() => { resList = []; resLang = null; renderResults(); }, 150));
+$('setSearch').addEventListener('blur', () => setTimeout(() => { resList = []; resLang = null; renderResults(); if (document.activeElement !== $('setSearch')) setPicking(false); }, 150));
+$('recentSets').addEventListener('mousedown', e => { if (e.target.closest('button[data-id]')) e.preventDefault(); });
 $('recentSets').addEventListener('click', e => { const b = e.target.closest('button[data-id]'); if (b) selectSet(b.dataset.id); });
+$('chgSet').onclick = () => { if ($('sessPanel').classList.contains('picking')) { setPicking(false); $('entry').focus(); } else { setPicking(true); $('setSearch').focus(); } };
+$('logMore').onclick = e => { e.preventDefault(); logAll = !logAll; renderLog(); };
 $('entry').addEventListener('keydown', e => {
   if (e.key === 'Enter') { e.preventDefault(); commitEntry(); }
-  else if (e.key === 'Escape') { e.preventDefault(); $('setSearch').focus(); $('setSearch').select(); }
+  else if (e.key === 'Escape') { e.preventDefault(); setPicking(true); $('setSearch').focus(); $('setSearch').select(); }
   else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z' && !e.target.value) { e.preventDefault(); undoLast(); }
 });
-$('persMode').onclick = () => { data.personal = !data.personal; save(); renderPersMode(); $('entry').focus(); };
+$('persPick').addEventListener('click', e => { const b = e.target.closest('button[data-pers]'); if (b) { data.personal = b.dataset.pers === '1'; save(); renderPersMode(); $('pkPers').open = false; $('entry').focus(); } });
 $('soundToggle').checked = !!data.sound;
 $('soundToggle').onchange = e => { data.sound = e.target.checked; save(); beep(true); $('entry').focus(); };
 
