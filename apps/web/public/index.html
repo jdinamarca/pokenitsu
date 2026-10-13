@@ -385,9 +385,11 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
 .expbar{height:8px;border-radius:999px;background:var(--track);overflow:hidden}
 .expbar i{display:block;height:100%;background:var(--red);border-radius:999px}
 .expitem.done .expbar i{background:var(--ok)}
-.expdhead{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;margin:4px 0 14px}
+.expdhead{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between}
+/* detail headers (expansion, illustrator, connected art) stay under the app bar while scrolling, so 'back' is always at hand */
+.expdhead,.arthead2{position:sticky;top:var(--apph,105px);z-index:15;margin:-6px -16px 14px;padding:10px 16px;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
 .expdhead .t{display:flex;gap:12px;align-items:center}
-.expdhead h1{margin:0;font-size:26px;font-weight:900}
+.expdhead h1{margin:0;font-size:22px;font-weight:900}
 .expdhead img{width:40px;height:40px;object-fit:contain}
 .vchips{display:flex;gap:4px;flex-wrap:wrap}
 .vchips span{font-size:10.5px;font-weight:800;border-radius:6px;padding:1px 6px;background:var(--chip);color:var(--muted)}
@@ -409,9 +411,9 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
 .favbtn{position:absolute;top:8px;right:8px;z-index:2;width:36px;height:36px;border-radius:999px;border:0;background:rgba(17,19,27,.7);color:#c9cde0;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer}
 .favbtn.on{color:var(--gold)}
 .favbtn svg{width:19px;height:19px}
-.arthead2{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;margin:4px 0 14px}
+.arthead2{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between}
 .arthead2 .t{display:flex;gap:12px;align-items:center}
-.arthead2 h1{margin:0;font-size:26px;font-weight:900}
+.arthead2 h1{margin:0;font-size:22px;font-weight:900}
 .arthead2 .favbtn{position:static;background:var(--chip)}
 .artkit{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;font-size:13.5px}
 .yeargrp2{font-weight:900;font-size:15px;color:var(--muted);margin:18px 0 10px}
