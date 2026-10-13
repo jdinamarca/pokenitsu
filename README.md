@@ -30,6 +30,8 @@ Si `corepack enable` falla por permisos, usa `npx pnpm@12 install` / `npx pnpm@1
 
 Eliges la expansión (como sale impresa en la carta, ej. `MEW ES`) y escribes números + Enter.
 
+Las expansiones japonesas se buscan por su nombre en inglés de coleccionista (`Rocket Gang`, `VSTAR Universe`, `Leaders' Stadium`…), por el japonés (`ロケット団`) o por el código (`PMCG4`); se muestran en inglés con el japonés al lado. Los nombres en inglés están en `apps/api/src/ja-sets.json` (169 de 184; sacados de las checklists de PokeCottage más unos pocos a mano) junto con dos correcciones de nombres que TCGdex trae mal; se aplican al sincronizar y al arrancar. Las 15 expansiones `CS*` de TCGdex son chinas mal listadas como japonesas y quedan sin nombre en inglés.
+
 La pantalla muestra arriba la expansión activa con su avance y cuatro botones con los ajustes de carga (**Idioma**, **Estado**, **Guardar en** y **Para**: vender o colección personal); cada uno abre sus opciones al tocarlo. Un estado distinto de NM y la colección personal se ven destacados. Con una expansión elegida la búsqueda se esconde: "Cambiar expansión" o `Esc` la abren junto con tus expansiones recientes. Debajo del número hay una línea con los atajos más usados y "Todos los atajos" (con la opción de sonido). "Últimas cargas" muestra 5 y "Ver las 12". En el celular la carta recién cargada aparece justo debajo del número.
 
 
