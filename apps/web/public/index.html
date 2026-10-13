@@ -615,6 +615,8 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
 .gdlg-actions{margin-top:6px}
 .gdlg-prev{flex:1 1 320px;display:flex;flex-direction:column;gap:10px;min-width:0}
 .gdlg-prev .pano{max-width:100%}
+.filebtn.cam{display:none}
+@media (hover:none) and (pointer:coarse){.filebtn.cam{display:inline-block}}
 .filebtn{border:1px dashed var(--muted);border-radius:10px;padding:7px 14px;cursor:pointer;font-size:14px;font-weight:700}
 
 /* ---------- toast ---------- */
@@ -987,7 +989,7 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
   <div id="imgCur" style="width:180px;margin:8px auto;border-radius:10px;overflow:hidden;aspect-ratio:63/88;background:var(--chip)"></div>
   <p class="muted">Si la foto no corresponde (por ejemplo, sale con el símbolo de 1st Edition y la tuya es Unlimited), pega el link de otra imagen o sube una foto de tu carta. Solo cambia para esta variante.</p>
   <div class="row"><input id="imgUrl" placeholder="https://… link de la imagen" style="flex:1;min-width:200px" spellcheck="false"><button class="primary" id="imgSaveUrl">Usar link</button></div>
-  <div class="row"><label class="filebtn">📁 Subir foto de mi carta<input type="file" id="imgFile" accept="image/jpeg,image/png,image/webp,image/gif" hidden></label>
+  <div class="row"><label class="filebtn cam">📸 Tomar foto<input type="file" id="imgCam" accept="image/*" capture="environment" hidden></label><label class="filebtn">📁 Subir foto de mi carta<input type="file" id="imgFile" accept="image/jpeg,image/png,image/webp,image/gif" hidden></label>
     <button id="imgReset" class="danger">Volver a la foto del catálogo</button><button id="imgClose">Cerrar</button></div>
   <p class="msg" id="imgMsg"></p>
 </dialog>
@@ -1319,20 +1321,33 @@ function openImgDlg(sid, num, v) {
   const m = meta(sid, num), s = setById[sid], cur = imgFor(sid, num, v);
   $('imgTitle').textContent = `${m ? m[0] : '?'} · ${s ? s.code || s.name : sid} #${num} · ${vlabel(v)}`;
   $('imgCur').innerHTML = cur ? `<img src="${esc(bigImg(cur))}" alt="">` : '<div class="empty">Sin foto</div>';
-  $('imgUrl').value = ''; $('imgFile').value = ''; $('imgMsg').textContent = '';
+  $('imgUrl').value = ''; $('imgFile').value = ''; $('imgCam').value = ''; $('imgMsg').textContent = '';
   $('imgReset').hidden = !hasOwnImg(sid, num, v);
   $('imgDlg').showModal();
+}
+// phone photos are huge: anything over 1200 px is scaled down to a JPEG before uploading (GIFs keep their animation)
+async function shrinkImage(f, max = 1200) {
+  if (f.type === 'image/gif' || !window.createImageBitmap) return f;
+  try {
+    const bmp = await createImageBitmap(f), k = Math.min(1, max / Math.max(bmp.width, bmp.height));
+    if (k === 1 && /^image\/(jpeg|png|webp)$/.test(f.type)) return f;
+    const c = document.createElement('canvas'); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    return await new Promise(res => c.toBlob(b => res(b || f), 'image/jpeg', 0.88));
+  } catch { return f; }
 }
 async function saveImg(kind) {
   const q = new URLSearchParams(imgSpec).toString();
   try {
     if (kind === 'reset') VIMG = await api('DELETE', '/card-image', imgSpec);
-    else if (kind === 'file') {
-      const f = $('imgFile').files[0]; if (!f) return;
+    else if (kind === 'file' || kind === 'cam') {
+      let f = $(kind === 'cam' ? 'imgCam' : 'imgFile').files[0]; if (!f) return;
+      $('imgMsg').textContent = 'Subiendo…'; $('imgMsg').className = 'msg';
+      f = await shrinkImage(f);
       const r = await fetch('/api/card-image/upload?' + q, { method: 'PUT', headers: { 'content-type': f.type }, body: f });
       const j = await r.json(); if (!r.ok) throw new Error(j.error || 'HTTP ' + r.status); VIMG = j;
     } else VIMG = await api('PUT', '/card-image', { ...imgSpec, url: $('imgUrl').value });
-    $('imgDlg').close(); renderAll(); if (previewKey) renderPreview(previewKey); if (colSel) renderColView();
+    $('imgDlg').close(); renderAll(); if ($('entry').value) renderEntryPreview(); else if (previewKey) renderPreview(previewKey); if (colSel) renderColView();
     toast(kind === 'reset' ? 'Volvió la foto del catálogo' : '📷 Foto guardada para esta variante');
   } catch (e) { $('imgMsg').textContent = e.message; $('imgMsg').className = 'msg err'; }
 }
@@ -2121,8 +2136,23 @@ async function selectSet(id) {
   $('setSearch').value = ''; resList = []; renderResults(); renderRecent();
   renderCur('cargando cartas…');
   $('entry').focus();
-  try { const c = await loadCards(id); if (curSet === s) renderCur(Object.keys(c.raw).length + ' cartas listas'); renderAll(); }
+  try { const c = await loadCards(id); if (curSet === s) renderCur(Object.keys(c.raw).length + ' cartas listas'); renderAll(); fillPhotos(s); }
   catch (e) { if (curSet === s) renderCur('⚠️ no pude bajar las cartas — puedes cargar igual, sin verificación', true); }
+}
+// Japanese cards without a photo: ask the API to look for them in PokeCottage (only if enabled there), then repaint
+const photosAsked = new Set();
+async function fillPhotos(s) {
+  const idx = cards[s.id];
+  if (s.source !== 'tcgdex-ja' || photosAsked.has(s.id) || !idx || !Object.values(idx.raw).some(m => !m[4] && m[1] && m[1].length === 1)) return;
+  photosAsked.add(s.id);
+  try {
+    const r = await api('POST', `/sets/${encodeURIComponent(s.id)}/photos`);
+    if (!r.filled) return;
+    delete cards[s.id]; await loadCards(s.id);
+    renderAll(); renderLog();
+    if (curSet === s) { if ($('entry').value) renderEntryPreview(); else if (previewKey) renderPreview(previewKey); }
+    toast(`📷 ${fmt(r.filled)} foto${r.filled > 1 ? 's' : ''} de PokeCottage para las cartas japonesas`);
+  } catch (e) { console.warn('fotos de PokeCottage:', e.message); }
 }
 function renderCur(status, bad) {
   const el = $('curSet');
@@ -2191,7 +2221,7 @@ function renderPreview(key, pending = false) {
     art = `<div class="artp"><div class="row"><span>🎨 <a data-artist="${esc(m[2])}">${esc(m[2])}</a></span><span class="muted">${total ? `${owned}/${total}` : ''}</span></div>${total ? bar(owned, total) : ''}</div>`;
   }
   el.innerHTML = `${pending ? '<div class="pendhead">Vista previa <span>Enter o clic en la carta para cargarla</span></div>' : ''}<div class="pimg ${v === 'holo' ? 'shine' : v === 'reverse' ? 'shine rev' : ''}">${imgFor(sid, num, v) ? `<img src="${esc(bigImg(imgFor(sid, num, v)))}" alt="">` : refImg(m) ? `<img class="ref" src="${esc(bigImg(refImg(m)))}" alt=""><span class="reflbl">Imagen de referencia · esta carta no tiene foto</span>` : ''}</div>
-    <div style="text-align:center;margin-top:6px"><button class="ghost" data-img="${esc(`${sid}|${num}|${v}`)}" style="font-size:12.5px;padding:3px 10px">📷 ${hasOwnImg(sid, num, v) ? 'Tu foto · cambiar' : '¿No es la foto correcta? Cámbiala'}</button></div>
+    <div style="text-align:center;margin-top:6px">${imgFor(sid, num, v) ? `<button class="ghost" data-img="${esc(`${sid}|${num}|${v}`)}" style="font-size:12.5px;padding:3px 10px">📷 ${hasOwnImg(sid, num, v) ? 'Tu foto · cambiar' : '¿No es la foto correcta? Cámbiala'}</button>` : `<button class="primary" data-img="${esc(`${sid}|${num}|${v}`)}" style="font-size:13px;padding:6px 12px">📷 Tomar o subir la foto de tu carta</button>`}</div>
     <div class="pname">${esc(m ? m[0] : 'Carta desconocida')}${m && alsoNamed(m) ? `<span class="muted" style="font-size:15px;font-weight:700">${esc(alsoNamed(m))}</span>` : ''}</div>
     ${s && eraLabel(s) ? `<div class="pinfo">Serie <b>${esc(eraLabel(s))}</b> · expansión <b>${esc(s.name)}</b>${s.code ? ` (${esc(s.code)})` : ''}</div>` : ''}
     <div class="pinfo">${esc(s ? s.name : sid)} · #${esc(num)}${s ? '/' + s.printed : ''} ${vchip(v)} ${lchip(lang)} ${cchip(cond, true)}</div>
@@ -3067,6 +3097,7 @@ $('ceClose').onclick = () => $('cardDlg').close();
 $('ceImg').onclick = $('cePhoto').onclick = () => { const x = splitKey(editKey); $('cardDlg').close(); openImgDlg(x.sid, x.num, x.v); };
 $('imgSaveUrl').onclick = () => saveImg('url');
 $('imgFile').onchange = () => saveImg('file');
+$('imgCam').onchange = () => saveImg('cam');
 $('imgReset').onclick = () => { if (confirm('¿Quitar tu foto y volver a la del catálogo?')) saveImg('reset'); };
 $('imgClose').onclick = () => $('imgDlg').close();
 $('btnPrices').onclick = () => { $('dataMenu').open = false; openPriceDlg(); };

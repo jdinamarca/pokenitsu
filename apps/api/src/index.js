@@ -6,7 +6,7 @@ import { createHash } from 'node:crypto';
 import { dirname, join } from 'node:path';
 import { pool, tx, migrate } from './db.js';
 import { norm, ensureSets, syncSets, ensureSetCards, syncAllCards, syncJaDex, applyJaNames } from './catalog.js';
-import { importChecklist } from './pokecottage.js';
+import { importChecklist, fillJaImages } from './pokecottage.js';
 import { syncCameos, cameosJob, CAMEO_SOURCE } from './cameos.js';
 import { fillDetails, startDetailsJob, detailsJob, startVariantsJob, variantsJob, startVariantsForMySets } from './details.js';
 import { ensureCardPrice, ensureSetPrices, refreshPrices, staleCount, getSetting, putSetting, getFx } from './prices.js';
@@ -127,6 +127,8 @@ app.get('/api/sets/master', async () => {
 });
 // downloads the variants of an expansion's cards (master set); poll it with GET
 app.post('/api/sets/:id/variants', async req => ({ job: startVariantsJob(req.params.id) }));
+// photos of Japanese cards without an image, from PokeCottage (only with POKECOTTAGE_IMAGES=on)
+app.post('/api/sets/:id/photos', async req => fillJaImages(req.params.id));
 app.get('/api/sets/:id/variants', async req => ({ job: variantsJob(req.params.id) }));
 
 // full-catalog download, started from the page and polled via GET /api/catalog
