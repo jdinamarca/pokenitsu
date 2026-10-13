@@ -56,7 +56,7 @@ async function resolveCard(c, sid, num) {
 }
 
 async function groupsWithCards(c = pool) {
-  const { rows: groups } = await c.query('SELECT id, name, cols, image_url FROM art_groups ORDER BY created_at DESC, id DESC');
+  const { rows: groups } = await c.query('SELECT id, name, cols, image_url, kind, note FROM art_groups ORDER BY created_at DESC, id DESC');
   const { rows: gc } = await c.query(`SELECT g.group_id, g.pos, ${CARD_COLS} FROM art_group_cards g JOIN cards c ON c.id = g.card_id ORDER BY g.group_id, g.pos`);
   return groups.map(g => ({ ...g, cards: gc.filter(x => x.group_id === g.id).map(({ group_id, pos, ...card }) => card) }));
 }
@@ -164,7 +164,7 @@ app.get('/api/prices', async () => {
   const [prices, own] = await Promise.all([
     pool.query(`SELECT ${PRICE_COLS} FROM card_prices p JOIN cards c ON c.id = p.card_id
                 WHERE EXISTS (SELECT 1 FROM inventory i WHERE i.card_id = c.id) OR EXISTS (SELECT 1 FROM collection_cards cc WHERE cc.card_id = c.id)
-                   OR EXISTS (SELECT 1 FROM lot_items l WHERE l.card_id = c.id)`),
+                   OR EXISTS (SELECT 1 FROM lot_items l WHERE l.card_id = c.id) OR EXISTS (SELECT 1 FROM art_group_cards g WHERE g.card_id = c.id)`),
     pool.query(`SELECT c.set_id || '|' || c.number || '|' || o.variant AS k, o.clp, o.usd::float AS usd, (extract(epoch FROM o.updated_at) * 1000)::bigint AS at
                 FROM price_overrides o JOIN cards c ON c.id = o.card_id`),
   ]);
@@ -528,12 +528,17 @@ app.delete('/api/locations/:id', async req => tx(async c => {
 }));
 
 // ---------- connected-art groups ----------
+// kind: panorama (one picture) | cameo (they appear in each other's card) | escena (same scene, or a continuation)
+const GROUP_KINDS = ['panorama', 'cameo', 'escena'];
+const groupKind = k => (k === undefined ? 'panorama' : GROUP_KINDS.includes(k) ? k : (() => { throw bad('Tipo de arte inválido'); })());
+const groupNote = n => String(n ?? '').trim().slice(0, 500);
 app.post('/api/groups', async req => {
   const { name, cols, cards } = req.body || {};
+  const kind = groupKind(req.body.kind), note = groupNote(req.body.note);
   if (!String(name || '').trim()) throw bad('El grupo necesita nombre');
   const image = checkImageUrl(req.body.image_url);
   const id = await tx(async c => {
-    const { rows: [g] } = await c.query('INSERT INTO art_groups (name, cols, image_url) VALUES ($1, $2, $3) RETURNING id', [name.trim(), cols || 3, image]);
+    const { rows: [g] } = await c.query('INSERT INTO art_groups (name, cols, image_url, kind, note) VALUES ($1, $2, $3, $4, $5) RETURNING id', [name.trim(), cols || 3, image, kind, note]);
     await writeGroupCards(c, g.id, cards);
     return g.id;
   });
@@ -546,7 +551,7 @@ app.put('/api/groups/:id', async req => {
   const old = await tx(async c => {
     const { rows } = await c.query('SELECT image_url FROM art_groups WHERE id = $1 FOR UPDATE', [req.params.id]);
     if (!rows.length) throw Object.assign(new Error('Grupo no encontrado'), { statusCode: 404 });
-    await c.query('UPDATE art_groups SET name = $2, cols = $3, image_url = $4 WHERE id = $1', [req.params.id, name.trim(), cols || 3, image]);
+    await c.query('UPDATE art_groups SET name = $2, cols = $3, image_url = $4, kind = $5, note = $6 WHERE id = $1', [req.params.id, name.trim(), cols || 3, image, groupKind(req.body.kind), groupNote(req.body.note)]);
     await c.query('DELETE FROM art_group_cards WHERE group_id = $1', [req.params.id]);
     await writeGroupCards(c, req.params.id, cards);
     return rows[0].image_url;
@@ -946,7 +951,8 @@ app.post('/api/import', { bodyLimit: 20 * 1024 * 1024 }, async req => {
       if (!g.name || !g.cards?.length) continue;
       await c.query('DELETE FROM art_groups WHERE name = $1', [g.name]); // same name = replace
       let image = null; try { image = checkImageUrl(g.image_url); } catch (e) {}
-      const { rows: [row] } = await c.query('INSERT INTO art_groups (name, cols, image_url) VALUES ($1, $2, $3) RETURNING id', [g.name, g.cols || 3, image]);
+      const { rows: [row] } = await c.query('INSERT INTO art_groups (name, cols, image_url, kind, note) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+        [g.name, g.cols || 3, image, GROUP_KINDS.includes(g.kind) ? g.kind : 'panorama', groupNote(g.note)]);
       await c.query('SAVEPOINT grp');
       try { await writeGroupCards(c, row.id, g.cards); importedGroups++; await c.query('RELEASE SAVEPOINT grp'); }
       catch (e) { await c.query('ROLLBACK TO SAVEPOINT grp'); await c.query('DELETE FROM art_groups WHERE id = $1', [row.id]); skipped.push(`grupo ${g.name}: ${e.message}`); }
@@ -959,7 +965,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 app.get('/api/export.json', async (req, reply) => {
   const { rows } = await pool.query("SELECT set_id, number, variant, lang, cond, coalesce(location, '') AS location, qty, personal FROM inventory_full ORDER BY set_id, number, variant, lang, cond, location");
   const { rows: locations } = await pool.query('SELECT name, kind, note, rule FROM locations ORDER BY pos, id');
-  const groups = (await groupsWithCards()).map(g => ({ name: g.name, cols: g.cols, image_url: g.image_url, cards: g.cards.map(c => ({ sid: c.sid, num: c.num })) }));
+  const groups = (await groupsWithCards()).map(g => ({ name: g.name, cols: g.cols, image_url: g.image_url, kind: g.kind, note: g.note, cards: g.cards.map(c => ({ sid: c.sid, num: c.num })) }));
   const key = r => `${r.set_id}|${r.number}|${r.variant}|${r.lang}|${r.cond}|${r.location}`;
   const inv = Object.fromEntries(rows.map(r => [key(r), r.qty]));
   const personal = Object.fromEntries(rows.filter(r => r.personal).map(r => [key(r), r.personal]));
