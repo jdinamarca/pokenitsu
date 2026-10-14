@@ -94,6 +94,7 @@ async function syncSetCards(setId) {
 export async function ensureSetCards(setId, force = false) {
   const { rows } = await pool.query('SELECT cards_synced_at, source FROM sets WHERE id = $1', [setId]);
   if (!rows.length) throw Object.assign(new Error(`La expansión ${setId} no existe`), { statusCode: 404 });
+  // typed by hand, or left from the old PokeCottage checklists (in use, so kept): nothing to download
   if (['manual', 'pokecottage'].includes(rows[0].source) || (!force && rows[0].cards_synced_at)) return;
   const sync = rows[0].source === 'tcgdex-ja' ? syncJaSet : syncSetCards;
   if (!syncing.has(setId)) syncing.set(setId, sync(setId).finally(() => syncing.delete(setId)));

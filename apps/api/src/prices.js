@@ -166,7 +166,7 @@ export async function ensureCardPrice(cardId) {
   } catch (e) { console.warn('precio de', cardId, e.message); }
 }
 
-// Cards worth pricing: everything in the inventory, collections' checklists, lots and connected-art groups (the user's in a request, everyone's in asSystem)
+// Cards worth pricing: everything in the inventory, cards added to collections, lots and connected-art groups (the user's in a request, everyone's in asSystem)
 const WANTED = `
   SELECT DISTINCT c.id, c.set_id, s.source FROM cards c JOIN sets s ON s.id = c.set_id
   WHERE (EXISTS (SELECT 1 FROM inventory i WHERE i.card_id = c.id) OR EXISTS (SELECT 1 FROM collection_cards cc WHERE cc.card_id = c.id)
