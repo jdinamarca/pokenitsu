@@ -9,8 +9,11 @@ import { norm, ensureSetCards } from './catalog.js';
 const DATA = 'https://pokecottagecdn.com/mastersets/data/';
 const LANG_OF = { International: '', Japan: 'JA', China: 'ZH' };
 
+// says honestly who is asking, with a way to reach us (PokeCottage was asked for permission to use its data)
+const USER_AGENT = 'NitsuCollectibles/0.1 (+https://github.com/jdinamarca/pokenitsu)';
+
 async function fetchText(url) {
-  const r = await fetch(url, { signal: AbortSignal.timeout(30000), headers: { 'user-agent': 'Mozilla/5.0 (inventario-pokemon)' } });
+  const r = await fetch(url, { signal: AbortSignal.timeout(30000), headers: { 'user-agent': USER_AGENT } });
   if (!r.ok) throw new Error(`HTTP ${r.status} en ${url}`);
   return r.text();
 }
