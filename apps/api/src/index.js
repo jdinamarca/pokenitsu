@@ -6,7 +6,7 @@ import { createHash } from 'node:crypto';
 import { dirname, join } from 'node:path';
 import { fromNodeHeaders } from 'better-auth/node';
 import { pool, tx, migrate, runAsUser, endUser } from './db.js';
-import { createAuth } from './auth.js';
+import { createAuth, googleEnabled } from './auth.js';
 import { norm, ensureSets, syncSets, ensureSetCards, syncAllCards, syncJaDex, applyJaNames } from './catalog.js';
 import { importChecklist, fillJaImages } from './pokecottage.js';
 import { syncCameos, cameosJob, CAMEO_SOURCE } from './cameos.js';
@@ -99,8 +99,10 @@ app.route({
     return reply.send(res.body ? await res.text() : null);
   },
 });
-// the landing's sign-up form and the login itself are the only API calls without a session
-const PUBLIC_API = [/^\/api\/auth\//, /^\/api\/alpha$/];
+// the landing's sign-up form, the login itself and which ways to log in exist are the only API calls without a session
+const PUBLIC_API = [/^\/api\/auth\//, /^\/api\/auth-options$/, /^\/api\/alpha$/];
+// which ways to log in this server offers (the login screen shows the Google button only when it works)
+app.get('/api/auth-options', async () => ({ google: googleEnabled() }));
 // callback style on purpose: the rest of the request runs inside runAsUser, so every query sees only this user's rows
 app.addHook('onRequest', (req, reply, done) => {
   const path = req.url.split('?')[0];
@@ -135,7 +137,9 @@ app.get('/', async (req, reply) => {
 // the login screen (the app shows it without a session); already logged in → home
 app.get('/entrar', async (req, reply) => {
   const session = auth && await auth.api.getSession({ headers: fromNodeHeaders(req.headers) }).catch(() => null);
-  return session ? reply.redirect('/') : reply.sendFile('index.html');
+  // keep the query: the email link lands here with ?verificado=1 and the app shows it
+  const q = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '';
+  return session ? reply.redirect('/' + q) : reply.sendFile('index.html');
 });
 app.post('/api/alpha', async req => {
   const b = req.body || {}, txt = (x, n) => String(x ?? '').trim().slice(0, n);
