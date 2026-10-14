@@ -22,7 +22,8 @@ const WIDTH = { small: 245, large: 600 };
 const ALLOWED = /^https:\/\/(images\.pokemontcg\.io|assets\.tcgdex\.net)\//;
 const TCGDEX_EN = 'https://api.tcgdex.net/v2/en';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const safe = s => String(s).replace(/[^\w.-]/g, '_');
+// a file name for an id: each sign a file can't take becomes _ and its hex code, so Unown ex10-? and ex10-! don't share one
+const safe = s => String(s).replace(/[^\w.-]/g, c => '_' + c.codePointAt(0).toString(16));
 
 // the biggest picture we can take for a card: the hi-res PNG of pokemontcg.io or the 600 px WebP of TCGdex
 function bigOf(url) {
@@ -98,16 +99,24 @@ export async function copyCard(card) {
   return 'ok';
 }
 
+const fileOf = card => `cards/${safe(card.set_id)}/${safe(card.id)}-small.webp`;
+
 // cards still to copy: catalog cards (international and Japanese) without both sizes done; `retry` also tries the ones
-// marked missing, skipped or failed before
+// marked missing, skipped or failed before, and the ones saved under the old file name, which gave the same file to
+// Unown ex10-? and ex10-! (so one of them may show the other's picture)
 export async function pendingCards({ set, retry = false, limit } = {}) {
+  const renamed = !retry ? [] : (await pool.query(
+    `SELECT c.id, c.set_id, c.number_norm, c.image_small, c.image_large, s.source, ci.path FROM cards c JOIN sets s ON s.id = c.set_id
+     JOIN card_images ci ON ci.card_id = c.id AND ci.size = 'small' AND ci.status = 'ok'
+     WHERE s.source IN ('ptcg', 'tcgdex-ja') AND ($1::text IS NULL OR c.set_id = $1) AND (c.id ~ '[^\\w.-]' OR c.set_id ~ '[^\\w.-]')`,
+    [set || null])).rows.filter(c => c.path !== fileOf(c));
   const { rows } = await pool.query(
     `SELECT c.id, c.set_id, c.number_norm, c.image_small, c.image_large, s.source FROM cards c JOIN sets s ON s.id = c.set_id
      WHERE s.source IN ('ptcg', 'tcgdex-ja') AND ($1::text IS NULL OR c.set_id = $1)
        AND (SELECT count(*) FROM card_images ci WHERE ci.card_id = c.id AND (ci.status = 'ok' OR (NOT $2 AND ci.status IN ('missing', 'skipped')))) < 2
      ORDER BY s.release_date DESC NULLS LAST, c.set_id, c.number_norm
      LIMIT $3`, [set || null, retry, limit || null]);
-  return rows;
+  return [...renamed, ...rows].slice(0, limit || undefined);
 }
 
 // the whole run: a few cards at a time, a short pause between each, progress on the console; safe to stop and run again
