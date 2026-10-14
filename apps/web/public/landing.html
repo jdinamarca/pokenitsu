@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Challadex · Alfa privada</title>
+<title>Nitsu Collectibles · Alfa privada</title>
 <meta name="description" content="Carga miles de cartas Pokémon en minutos, conoce su precio en pesos y arma kits, master sets y lotes listos para vender. Alfa privada con cupos limitados.">
-<meta property="og:title" content="Challadex · Tu challa vale más de lo que crees">
+<meta property="og:title" content="Nitsu Collectibles · Tu challa vale más de lo que crees">
 <meta property="og:description" content="Inventario, precios en CLP, master sets y kits de Pokédex para coleccionistas y vendedores de cartas Pokémon. Únete a la alfa.">
 <meta property="og:image" content="/landing/inventario.jpg">
 <meta name="theme-color" content="#0d0f16">
@@ -42,6 +42,8 @@ h1,h2,h3{font-family:"Bricolage Grotesque",Nunito,system-ui,sans-serif;line-heig
 .nav .wrap{display:flex;align-items:center;gap:28px;height:68px}
 .logo{display:flex;align-items:center;gap:10px;font:800 21px "Bricolage Grotesque",sans-serif;text-decoration:none;letter-spacing:-.02em}
 .logo .ball{width:28px;height:28px;border-radius:50%;background:linear-gradient(var(--red) 0 46%,#11131b 46% 54%,#f3f3f3 54%);border:2.5px solid #11131b;box-shadow:0 0 0 2px #fff2;position:relative}
+.logo .lt b{display:block;font-size:21px;line-height:1}
+.logo .lt small{display:block;font:800 9.5px/1.5 Nunito,sans-serif;letter-spacing:.32em;text-transform:uppercase;color:var(--gold)}
 .logo .ball::after{content:"";position:absolute;inset:50% auto auto 50%;width:9px;height:9px;transform:translate(-50%,-50%);border-radius:50%;background:#fff;border:2.5px solid #11131b}
 .nav .links{display:flex;gap:22px;margin-left:auto;font-weight:700;font-size:15px}
 .nav .links a{text-decoration:none;color:var(--muted)}
@@ -164,8 +166,7 @@ kbd{font:700 14px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--ink);b
 .feat li::before{content:"";position:absolute;left:0;top:2px;width:22px;height:22px;border-radius:7px;background:var(--panel2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232fd28a' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center/14px no-repeat;border:1px solid var(--line)}
 .pic{position:relative;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);box-shadow:0 40px 90px -30px rgba(0,0,0,.8);background:var(--panel)}
 .pic{aspect-ratio:16/11}
-/* zoom into the interesting part of each screenshot: --z width, --x / --y offsets (% of the frame width) */
-.pic img{width:var(--z,100%);max-width:none;margin-left:var(--x,0);margin-top:var(--y,0)}
+.pic img{width:100%;height:auto}
 .pic::after{content:"";position:absolute;inset:auto 0 0;height:30%;background:linear-gradient(transparent,rgba(13,15,22,.85));pointer-events:none}
 .pic .chip{position:absolute;z-index:2;left:18px;bottom:18px;padding:10px 14px;border-radius:12px;background:rgba(23,26,38,.92);border:1px solid var(--line);font-weight:800;font-size:15px;backdrop-filter:blur(8px)}
 .pic .chip span{color:var(--green)}
@@ -295,7 +296,7 @@ footer p{margin:0;max-width:640px}
 
 <header class="nav">
   <div class="wrap">
-    <a class="logo" href="#top" aria-label="Challadex, inicio"><span class="ball" aria-hidden="true"></span>Challadex</a>
+    <a class="logo" href="#top" aria-label="Nitsu Collectibles, inicio"><span class="ball" aria-hidden="true"></span><span class="lt"><b>Nitsu</b><small>Collectibles</small></span></a>
     <nav class="links" aria-label="Secciones">
       <a href="#como">Cómo funciona</a>
       <a href="#funciones">Funciones</a>
@@ -411,7 +412,7 @@ footer p{margin:0;max-width:640px}
           <li>Valor total de tu colección y de lo que tienes para vender.</li>
         </ul>
       </div>
-      <div class="pic" style="--z:163%;--x:-4.7%;--y:-44%"><img src="/landing/inventario.jpg" alt="Mi colección con el valor de venta y el precio de cada carta" loading="lazy"><div class="chip">Valor de la colección: <span>$325.895</span></div></div>
+      <div class="pic"><img src="/landing/precios.jpg" width="1400" height="962" alt="Cartas de Mi colección con su variante, idioma, ubicación y precio en pesos" loading="lazy"><div class="chip">Valor de la colección: <span>$325.067</span></div></div>
     </div>
 
     <div class="feat flip rv">
@@ -425,7 +426,7 @@ footer p{margin:0;max-width:640px}
           <li>Filtra por rareza, precio o idioma.</li>
         </ul>
       </div>
-      <div class="pic" style="--z:150%;--x:-44.5%;--y:-14%"><img src="/landing/colecciones.jpg" alt="Colección Eevee con progreso, valor y costo para completarla" loading="lazy"><div class="chip">⭐ Eevee · 11/434 variantes</div></div>
+      <div class="pic"><img src="/landing/colecciones.jpg" width="1400" height="962" alt="Colección Eevee con progreso, valor y costo para completarla" loading="lazy"><div class="chip">⭐ Eevee · 11/434 variantes</div></div>
     </div>
 
     <div class="feat rv">
@@ -439,7 +440,7 @@ footer p{margin:0;max-width:640px}
           <li>¿Buscas una carta? Te dice en qué caja está.</li>
         </ul>
       </div>
-      <div class="pic" style="--z:139%;--x:-4%;--y:-31.8%"><img src="/landing/ubicaciones.jpg" alt="Ubicaciones: carpetas y cajas con sus reglas y el valor de cada una" loading="lazy"><div class="chip">📍 8 ubicaciones · orden sugerido</div></div>
+      <div class="pic"><img src="/landing/ubicaciones.jpg" width="1400" height="962" alt="Ubicaciones: carpetas y cajas con sus reglas y el valor de cada una" loading="lazy"><div class="chip">📍 8 ubicaciones · orden sugerido</div></div>
     </div>
 
     <div class="feat flip rv">
@@ -453,7 +454,21 @@ footer p{margin:0;max-width:640px}
           <li><b>Artes conectados:</b> sets de cartas que forman un paisaje.</li>
         </ul>
       </div>
-      <div class="pic" style="--z:123%;--x:-3.5%;--y:-16%"><img src="/landing/grupos.jpg" alt="Artes conectados: cartas de Neo Discovery cuyas ilustraciones forman una imagen" loading="lazy"><div class="chip">🧩 Ruinas de Eevee · 1/3 piezas</div></div>
+      <div class="pic"><img src="/landing/grupos.jpg" width="1400" height="962" alt="Artes conectados: tres cartas de Neo Discovery y Premium File 2 cuyas ilustraciones forman las Ruinas de Eevee" loading="lazy"><div class="chip">🧩 Ruinas de Eevee · 3 cartas, un paisaje</div></div>
+    </div>
+
+    <div class="feat rv">
+      <div class="txt">
+        <span class="kicker">🎨 Ilustradores</span>
+        <h2>Colecciona a tus <span class="grad">artistas favoritos.</span></h2>
+        <p>Cada ilustrador del catálogo con cuántas de sus cartas tienes y tu mejor nivel. Pasa el mouse y aparece una de sus cartas en alta resolución.</p>
+        <ul>
+          <li>Sus cartas por año: las que tienes en color y las que faltan en blanco y negro.</li>
+          <li>Marca favoritos ★ y la app te avisa al cargar una carta suya.</li>
+          <li>Arma un kit con todas sus cartas para vender y conoce su valor.</li>
+        </ul>
+      </div>
+      <div class="pic"><img src="/landing/artistas.jpg" width="1400" height="962" alt="Ilustradores: tarjetas con iniciales, avance y nivel; al pasar el mouse aparece una carta del ilustrador" loading="lazy"><div class="chip">🎨 Sumiyoshi Kizuki · 2 de 214 cartas</div></div>
     </div>
 
   </div>
@@ -566,8 +581,8 @@ footer p{margin:0;max-width:640px}
 
 <footer>
   <div class="wrap">
-    <div><b style="color:var(--ink)">Challadex</b> · hecho en Chile 🇨🇱</div>
-    <p>Challadex es un proyecto independiente y no está afiliado, patrocinado ni respaldado por Nintendo, Creatures, GAME FREAK ni The Pokémon Company. Pokémon y sus nombres son marcas de sus respectivos dueños.</p>
+    <div><b style="color:var(--ink)">Nitsu Collectibles</b> · hecho en Chile 🇨🇱</div>
+    <p>Nitsu Collectibles es un proyecto independiente y no está afiliado, patrocinado ni respaldado por Nintendo, Creatures, GAME FREAK ni The Pokémon Company. Pokémon y sus nombres son marcas de sus respectivos dueños.</p>
   </div>
 </footer>
 

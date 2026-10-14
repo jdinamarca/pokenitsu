@@ -4,7 +4,7 @@ context: |
   Language: es
   All artifacts must be written in es (Spanish from Chile). Keep OpenSpec structural headings and SHALL/MUST keywords in English.
 
-  Producto: app web para inventariar, valorizar y vender cartas Pokémon TCG (nombre de trabajo "Challadex", repo "pokenitsu").
+  Producto: app web para inventariar, valorizar y vender cartas Pokémon TCG (nombre "Nitsu Collectibles", repo "pokenitsu").
   Usuario principal: coleccionista y vendedor chileno con ~6.000 cartas "challa" (bulk); arma kits curados (Pokédex por región,
   ilustradores, artes conectados) y colecciones personales (master set de Eevee de pokecottage.com).
   Se prepara una alfa privada con testers externos.
