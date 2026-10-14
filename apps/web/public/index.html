@@ -1204,6 +1204,7 @@ const AVATARS = [['misty', 'Misty', 'sm115/62', 44, 22], ['brock', 'Brock', 'sm1
   ['marnie', 'Marnie', 'swsh35/56', 50, 22], ['leon', 'Leon', 'swsh12pt5/134', 50, 22], ['nessa', 'Nessa', 'swsh4/157', 50, 22],
   ['iono', 'Iono', 'sv4pt5/80', 50, 22], ['nemona', 'Nemona', 'sv4pt5/82', 50, 22], ['penny', 'Penny', 'sv1/183', 50, 22]];
 let ME = null, mySessionId = null, profileView = '';
+const canEditArt = () => !ME || !!ME.owner;
 const initials = n => String(n || '?').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
 function avatarHtml(u, size) {
   const a = AVATARS.find(x => 'trainer:' + x[0] === u.image);
@@ -1211,6 +1212,7 @@ function avatarHtml(u, size) {
     : `<span class="avatar ini" aria-hidden="true" style="width:${size}px;height:${size}px;font-size:${Math.round(size * 0.4)}px">${esc(initials(u.name))}</span>`;
 }
 function renderMe() {
+  $('gNew').hidden = !canEditArt();
   if (!ME) return;
   $('profileMenu').hidden = false;
   $('meAvatar').innerHTML = avatarHtml(ME, 28); $('meName').textContent = String(ME.name || ME.email).split(' ')[0];
@@ -1230,6 +1232,12 @@ async function renderProfile() {
   ME = me; renderMe();
   let copies = 0; const langs = new Set();
   for (const k in data.inv) { copies += data.inv[k]; const l = splitKey(k).lang; if (l) langs.add(l); }
+  // connected art: the same groups for everyone; what counts is how many of them this account has complete or started
+  let artDone = 0, artStarted = 0;
+  for (const g of data.groups) {
+    const have = g.cards.filter(c => cardQty(c.sid, c.num) > 0).length;
+    if (have && have === g.cards.length) artDone++; else if (have) artStarted++;
+  }
   const val = invValue(), lastAdd = Math.max(0, ...Object.values(data.added || {}).map(Number).filter(Boolean));
   const cur = sessions.find(x => x.id === mySessionId), others = sessions.filter(x => x.id !== mySessionId).length;
   const stat = (n, label, cls = '') => `<div class="stat"><b class="${cls}">${n}</b><span>${label}</span></div>`;
@@ -1237,7 +1245,7 @@ async function renderProfile() {
       <div class="tags">${me.owner ? '<span class="tag gold">Dueño</span>' : ''}<span class="tag">Alfa</span>${me.emailVerified ? '' : '<span class="tag warn">Email sin verificar</span>'}</div></div></div>
     <div class="muted" style="font-size:13px">Coleccionista desde el ${dateCL(me.createdAt)}${lastAdd ? ` · última carga el ${dateCL(lastAdd)}` : ''}</div>
     <div><h3>Tu colección</h3><div class="stats">${stat(fmt(copies), 'cartas')}${stat($('sUnique').textContent, 'distintas')}${stat(val.priced ? clp(val.sale + val.pers) : '—', 'valor estimado', 'ok')}
-      ${stat(fmt((cl || []).length), (cl || []).length === 1 ? 'colección' : 'colecciones')}${stat(fmt(data.groups.length), 'artes conectados')}${stat(fmt(LOCS.length), 'ubicaciones')}</div>
+      ${stat(fmt((cl || []).length), (cl || []).length === 1 ? 'colección' : 'colecciones')}<div class="stat"><b>${fmt(artDone)} <span class="muted" style="font-size:14px">/ ${fmt(data.groups.length)}</span></b><span>artes conectados completos${artStarted ? ` · ${fmt(artStarted)} empezados` : ''}</span></div>${stat(fmt(LOCS.length), 'ubicaciones')}</div>
       <div class="muted" style="font-size:12.5px;margin-top:8px">Idiomas: ${[...langs].map(l => LNAME[l] || l).join(' · ') || '—'} · ${fmt(LOTS.lots.filter(l => l.status !== 'done').length)} lotes abiertos</div></div>
     <div><h3>Cuenta</h3>
       <div class="prow"><span>Avatar</span><button type="button" class="link" data-act="avatar">${profileView === 'avatar' ? 'Listo' : 'Elegir entrenador'}</button></div>
@@ -3142,7 +3150,7 @@ function renderGroupView() {
       <div class="r">${p.qty ? `<b>×${p.qty}</b><br>` : ''}${p.pr ? clp(p.pr.clp) : '<span class="muted">sin precio</span>'}</div></div>`).join('');
   paint($('grpView'), `<div class="expdhead"><div class="t"><button id="grpBack">← Artes conectados</button><div><h1>${esc(g.name)}</h1>
       <div class="muted">${kindChip(g.kind)} ${x.have}/${x.total} piezas · valor ${priceOrDash(x.value, x.noPrice)}</div>${g.note ? `<div class="gnote">${esc(g.note)}</div>` : ''}</div></div>
-      <div class="row"><button id="grpEdit">✏️ Editar</button>${x.missing.length ? '<button id="grpCopy">📋 Copiar lista de faltantes</button>' : ''}</div></div>
+      <div class="row">${canEditArt() ? '<button id="grpEdit">✏️ Editar</button>' : ''}${x.missing.length ? '<button id="grpCopy">📋 Copiar lista de faltantes</button>' : ''}</div></div>
     <div class="dexsum"><div class="expbar"><i style="width:${pct(x.have, x.total)}%"></i></div>
       <div class="dexkits">${x.done ? '<b>✓ Completo</b>' : `Te faltan <b>${x.missing.length}</b> ${x.missing.length === 1 ? 'pieza' : 'piezas'} · completarlo cuesta <b>${priceOrDash(x.cost)}</b>`}</div>
       <div class="artkit">${kit}</div></div>
@@ -4034,6 +4042,7 @@ currentSession().then(s => {
   if (s && s.open) return boot();
   if (!s || !s.user) return showLogin();
   ME = s.user; mySessionId = s.session && s.session.id; renderMe(); boot();
+  api('GET', '/me').then(me => { ME = me; renderMe(); if ($('tab-grupos').classList.contains('on')) renderGroups(); }).catch(() => {});
 });
 function boot() {
 const hashTab = location.hash.slice(1);
