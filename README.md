@@ -35,15 +35,31 @@ En `.env`:
 ```bash
 BETTER_AUTH_SECRET=...            # secreto aleatorio para firmar sesiones (openssl rand -base64 33)
 AUTH_ALLOWED_EMAILS=tu@email.com  # solo estos emails pueden crear cuenta (separados por coma)
+BETTER_AUTH_URL=http://localhost:3000   # la dirección con que abres la app: va en los links de los correos y en el regreso de Google
+RESEND_API_KEY=re_...             # correos (sin esto, los links se muestran en la consola del servidor)
+EMAIL_FROM="Nitsu Collectibles <hola@jdinamarca.dev>"   # remitente, de un dominio verificado en Resend
+GOOGLE_CLIENT_ID=...apps.googleusercontent.com          # "Continuar con Google" (sin esto, el botón no aparece)
+GOOGLE_CLIENT_SECRET=...
 ```
 
 La primera vez, abre la app, toca **Crear cuenta** con un email de esa lista y una contraseña de al menos 10 caracteres. **Cerrar sesión** está en **Datos ▾**.
+
+**Confirmar el correo, recuperar la contraseña y Google** (fase 3):
+- Una cuenta nueva con contraseña recibe un correo **Confirma tu correo** (link válido 24 horas) y no puede entrar hasta abrirlo; al abrirlo queda adentro y ve "¡Correo confirmado!". Si intenta entrar antes, se le reenvía el link; la pantalla "Revisa tu correo" tiene **Reenviar el correo**. Las cuentas creadas antes de esto quedaron confirmadas (migración `029`).
+- **¿Olvidaste tu contraseña?** pide el email y responde siempre lo mismo, exista o no la cuenta. El link vale 1 hora y abre **Nueva contraseña** (dos veces); al guardarla se cierran las demás sesiones.
+- Crear cuenta con un email que no está invitado avisa de inmediato. Con un email que ya tiene cuenta, la pantalla es la misma que al crearla (para no revelar qué emails tienen cuenta) y al dueño le llega **Ya tienes una cuenta**.
+- **Continuar con Google** respeta la lista de invitados (si no está, vuelve al login con el aviso) y, si el email ya tiene cuenta, entra a esa misma cuenta.
+- **Sin `RESEND_API_KEY`** (modo desarrollo) los correos no se envían: el link aparece en la consola del servidor (`✉️ Correo (modo desarrollo…)`). Antes de invitar testers configura Resend, o no podrán confirmar su correo.
+
+Para activar Resend: en [resend.com](https://resend.com) agrega tu dominio (por ejemplo `jdinamarca.dev`) en **Domains**, copia los registros DNS (SPF y DKIM) en tu proveedor de dominio y espera que diga *Verified*; crea una **API key** con permiso de envío y ponla en `RESEND_API_KEY`, y usa un remitente de ese dominio en `EMAIL_FROM`.
+
+Para activar Google: en [Google Cloud Console](https://console.cloud.google.com/apis/credentials) → **Crear credenciales → ID de cliente de OAuth → Aplicación web**. En **URIs de redireccionamiento autorizados** agrega `http://localhost:3000/api/auth/callback/google` (y la de producción cuando exista, `https://<tu-dominio>/api/auth/callback/google`). Copia el ID y el secreto a `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET`. `BETTER_AUTH_URL` debe ser exactamente la dirección con que abres la app (`localhost` y `127.0.0.1` son distintas para Google). Reinicia el servidor después de cambiar `.env`.
 
 **Mi perfil**: el botón con tu avatar (arriba a la derecha) muestra tu nombre, email, si eres el dueño, un resumen de tu colección (cartas, distintas, valor estimado, colecciones, artes conectados completos de los 35 y cuántos empezados, ubicaciones, idiomas, lotes abiertos; cada cifra es un link: cartas y distintas abren Mi colección, el valor la abre ordenada por valor total, y colecciones, artes conectados y ubicaciones su sección; al pasar el mouse asoma una ball distinta en cada una (Premier, Luxury, Master, Poké, Great y Ultra Ball) que se tambalea) y deja elegir un avatar de entre 15 entrenadores (el arte de sus cartas de Partidario del catálogo) o tus iniciales, cambiar el nombre y la contraseña, ver esta sesión y cerrar las de otros dispositivos, y **Cerrar sesión**.
 
 **Datos por usuario** ([ADR 0010](docs/adr/0010-multiusuario-con-user-id-y-rls.md), [0018](docs/adr/0018-rls-forzado-con-usuario-por-conexion.md)): inventario, registro, ubicaciones, lotes, colecciones, favoritos, precios y fotos propias y la configuración de precios y lotes son de cada cuenta (`user_id` + Row Level Security forzado). El catálogo, los precios de mercado, el tipo de cambio, las checklists, los cameos y los **artes conectados** son compartidos ([ADR 0019](docs/adr/0019-artes-conectados-compartidos.md)): los mismos grupos para todos, cada cuenta con su propio avance según su inventario, y solo el dueño (la primera cuenta) los crea, edita o borra. Al actualizar, los datos que había pasan a la **primera cuenta creada** (la tuya); si no hay ninguna, la migración pide crear la cuenta primero. Para invitar a alguien, agrega su email a `AUTH_ALLOWED_EMAILS`: empieza con todo vacío y no ve nada tuyo. Borrar una cuenta (`DELETE FROM "user" WHERE email = …`) borra sus datos.
 
-Para SQL nuevo: las consultas de una petición ya ven solo los datos de su usuario (la API fija `app.user_id` en la conexión). Sin usuario (tareas en segundo plano) las tablas por usuario se ven vacías; una tarea de sistema que deba ver a todos usa `asSystem()` de `db.js`. La verificación de correo, recuperar contraseña y Google llegan en la fase 3.
+Para SQL nuevo: las consultas de una petición ya ven solo los datos de su usuario (la API fija `app.user_id` en la conexión). Sin usuario (tareas en segundo plano) las tablas por usuario se ven vacías; una tarea de sistema que deba ver a todos usa `asSystem()` de `db.js`.
 
 ## Cargar cartas
 
