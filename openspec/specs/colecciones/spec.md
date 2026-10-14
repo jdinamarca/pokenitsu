@@ -12,13 +12,6 @@ El sistema SHALL permitir crear una colección por número de Pokédex con un id
 - **WHEN** la colección cuenta solo en inglés y el usuario tiene una copia en español
 - **THEN** esa copia no cuenta para la colección
 
-### Requirement: Seguir una checklist de PokeCottage
-El sistema SHALL permitir que una colección siga una checklist de pokecottage.com. Solo cuentan las cartas de la lista; cada una se busca en el catálogo y las que no existen se crean en expansiones `pc-*`. Cada variante de la checklist es un espacio aparte (ej. Unlimited, 1st Edition, misprint). Las cartas donde el Pokémon no es protagonista van como cameos, con su propio contador. La checklist se puede actualizar o dejar de seguir.
-
-#### Scenario: Variante con nombre especial
-- **WHEN** la única versión estándar de una carta en la checklist es "Cosmos Holo" y el usuario tiene una copia holo
-- **THEN** la copia cuenta para ese espacio
-
 ### Requirement: Vistas y filtros
 El sistema SHALL mostrar las colecciones como tarjetas con avance de cartas y de cameos, y cada colección con pestañas **Cartas** y **Cameos**. En Cartas: todas / las que tengo / las que me faltan, "Por año" o "Por región", y en Filtros el orden (mismos criterios de Mi colección), rareza, precio y ver ocultas.
 
@@ -63,7 +56,7 @@ La lista de colecciones SHALL tener un buscador "¿En qué cartas aparece…?" q
 - **THEN** ve sus cameos y un botón para crear la colección de Snorlax
 
 ### Requirement: Acciones de una colección
-Las acciones de una colección (editar, agregar carta a mano, agregar cameo, seguir o dejar una checklist, buscar japonesas, borrar) SHALL estar en un menú "⋯" del encabezado, y borrar SHALL pedir confirmación.
+Las acciones de una colección (editar, agregar carta a mano, agregar cameo, buscar japonesas, borrar) SHALL estar en un menú "⋯" del encabezado, y borrar SHALL pedir confirmación.
 
 #### Scenario: Borrar cancelado
 - **WHEN** el usuario elige Borrar y cancela la confirmación
