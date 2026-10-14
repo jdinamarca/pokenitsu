@@ -144,7 +144,26 @@ kbd{font:700 14px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--ink);b
 .term .input{margin:14px 0;height:66px;display:flex;align-items:center;padding:0 18px;border-radius:12px;border:2px solid var(--red);background:#0d0f16;font:800 30px ui-monospace,Menlo,monospace;letter-spacing:.04em}
 .term .input .caret{width:3px;height:32px;background:var(--red);margin-left:3px;animation:blink 1s steps(1) infinite}
 @keyframes blink{50%{opacity:0}}
-.log{display:flex;flex-direction:column;gap:8px;min-height:236px}
+.tgrid{display:grid;grid-template-columns:minmax(0,1fr) 150px;grid-template-areas:"inp pv" "hint pv" "log pv";grid-template-rows:auto auto 1fr;column-gap:16px;margin-top:14px}
+.inwrap{grid-area:inp;position:relative}
+.term .tgrid .input{margin:0}
+.hint{grid-area:hint;margin:10px 2px 12px;font-size:13.5px;font-weight:700;color:var(--muted);min-height:22px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hint b{color:var(--ink)}
+.sugg{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:3;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:6px;box-shadow:0 24px 50px -12px rgba(0,0,0,.8);animation:pop .25s cubic-bezier(.23,1,.32,1)}
+.sugg div{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:center;padding:6px 8px;border-radius:9px;font-size:14px}
+.sugg img{width:28px;height:39px;border-radius:3px;object-fit:cover;display:block}
+.sugg b{font-weight:800}.sugg small{color:var(--muted);font-weight:700;margin-left:6px}
+.sugg em{font-style:normal;font-size:12px;font-weight:800;color:var(--muted)}
+.sugg .on{background:rgba(90,168,255,.16);box-shadow:inset 0 0 0 1px rgba(90,168,255,.5)}
+.pv{grid-area:pv;align-self:start;text-align:center;border-radius:14px;padding:10px;border:2px solid transparent;transition:border-color .2s}
+.pv.pending{border:2px dashed var(--blue)}
+.pvlbl{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);margin-bottom:8px}
+.pv.pending .pvlbl{color:var(--blue)}.pv.done .pvlbl{color:var(--green)}
+.pvimg{aspect-ratio:63/88;border-radius:8px;background:var(--bg2);overflow:hidden}
+.pvimg img{width:100%;height:100%;object-fit:cover;display:block}
+.pvtxt{margin-top:8px;line-height:1.3}
+.pvtxt b{display:block;font-size:14px}.pvtxt small{color:var(--muted);font-size:12px;font-weight:700}
+.log{grid-area:log;display:flex;flex-direction:column;gap:8px;min-height:236px}
 .row{display:grid;grid-template-columns:54px 1fr auto;gap:12px;align-items:center;padding:10px 12px;border-radius:12px;background:var(--bg2);border:1px solid var(--line);animation:pop .35s cubic-bezier(.2,.9,.3,1.3)}
 .row .n{font:800 13px ui-monospace,Menlo,monospace;color:var(--muted)}
 .row b{font-size:15.5px}
@@ -287,6 +306,11 @@ footer p{margin:0;max-width:640px}
   .row{grid-template-columns:44px 1fr;}
   .row .tag{grid-column:2;justify-self:start}
   .term .input{font-size:24px}
+  .tgrid{grid-template-columns:minmax(0,1fr);grid-template-areas:"inp" "hint" "pv" "log"}
+  .pv{display:grid;grid-template-columns:72px minmax(0,1fr);gap:4px 12px;align-items:center;text-align:left;margin-bottom:12px}
+  .pvlbl{grid-column:2;margin:0}.pvimg{grid-column:1;grid-row:1 / span 2}.pvtxt{grid-column:2;margin:0}
+  .hint{white-space:normal}
+  .sugg{position:static;margin-top:6px}
   form{padding:22px}
   .ctas .btn{width:100%}
 }
@@ -316,7 +340,7 @@ footer p{margin:0;max-width:640px}
       <div class="hero-copy">
         <span class="badge"><b>ALFA PRIVADA</b> Cupos limitados para coleccionistas y vendedores</span>
         <h1>Tu challa vale <span class="grad">más de lo que crees.</span></h1>
-        <p class="lead">Carga miles de cartas Pokémon escribiendo solo el número, conoce su <b>precio en pesos chilenos</b> al instante y arma <b>master sets, kits de Pokédex y lotes</b> listos para vender.</p>
+        <p class="lead">Carga miles de cartas Pokémon escribiendo su número o su nombre, conoce su <b>precio en pesos chilenos</b> al instante y arma <b>master sets, kits de Pokédex y lotes</b> listos para vender.</p>
         <div class="ctas">
           <a class="btn primary" href="#alfa">Quiero ser alfa tester →</a>
           <a class="btn ghost" href="/entrar">Ya tengo cuenta · Entrar</a>
@@ -377,12 +401,15 @@ footer p{margin:0;max-width:640px}
   <div class="wrap demo-grid">
     <div class="rv">
       <span class="kicker">⌨️ Carga ultrarrápida</span>
-      <h2>Escribe el número. <span class="grad">Enter.</span> Siguiente.</h2>
-      <p>Eliges la expansión una vez (como sale impresa en la carta, por ejemplo <b>MEW ES</b>) y después solo tecleas números. La app reconoce la carta, su variante y su precio, y te dice en qué caja guardarla.</p>
+      <h2>Escribe el número o el nombre. <span class="grad">Mírala.</span> Enter.</h2>
+      <p>Eliges la expansión una vez (como sale impresa en la carta, por ejemplo <b>MEW ES</b>) y después tecleas el número o parte del nombre: con <b>char</b> aparecen Charmander, Charmeleon y las Charizard ex para elegir con las flechas. Antes de presionar Enter ves la carta que vas a agregar, con su variante, idioma, estado y la caja donde guardarla.</p>
       <div class="keys">
         <div><kbd>25</kbd> carta normal</div>
         <div><kbd>25r</kbd> reverse</div>
         <div><kbd>25*4</kbd> cuatro copias</div>
+        <div><kbd>char</kbd> busca por nombre</div>
+        <div><kbd>↑↓</kbd> elige de la lista</div>
+        <div><kbd>Tab</kbd> pasa al número</div>
         <div><kbd>lp</kbd> cambia el estado</div>
         <div><kbd>-25</kbd> quita una</div>
         <div><kbd>⌘Z</kbd> deshacer</div>
@@ -390,8 +417,15 @@ footer p{margin:0;max-width:640px}
     </div>
     <div class="term rv" aria-label="Demostración de carga de cartas" role="img">
       <div class="set"><code>MEW</code> 151 <span>· Español · NM · Guardar en: Automático</span></div>
-      <div class="input"><span id="typed"></span><span class="caret"></span></div>
-      <div class="log" id="log"></div>
+      <div class="tgrid">
+        <div class="inwrap">
+          <div class="input"><span id="typed"></span><span class="caret"></span></div>
+          <div class="sugg" id="sugg" hidden></div>
+        </div>
+        <div class="hint" id="hint">Escribe un número o un nombre…</div>
+        <div class="pv" id="pv"><div class="pvlbl" id="pvlbl">Vista previa</div><div class="pvimg"><img id="pvimg" alt="" width="360" height="502" hidden></div><div class="pvtxt"><b id="pvname"></b><small id="pvsub"></small></div></div>
+        <div class="log" id="log"></div>
+      </div>
     </div>
   </div>
 </section>
@@ -594,16 +628,26 @@ document.querySelectorAll('.rv, #shot').forEach(el => io.observe(el));
 new IntersectionObserver(([e]) => document.getElementById('duel').classList.toggle('off', !e.isIntersecting)).observe(document.getElementById('duel'));
 
 
-// loading demo: types card numbers and shows what the app answers
+// loading demo: types a number or a name, previews the card and loads it with Enter
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const C = {
+  1: { n: '001', name: 'Bulbasaur', sub: 'Normal · Español', tag: ['loc', '📍 Caja 1'] },
+  25: { n: '025', name: 'Pikachu', sub: 'Reverse Holo · Español', tag: ['rev', 'Reverse'] },
+  4: { n: '004', name: 'Charmander', sub: 'Normal · Español', r: 'C' },
+  5: { n: '005', name: 'Charmeleon', sub: 'Normal · Español', r: 'U' },
+  6: { n: '006', name: 'Charizard ex', sub: 'Holo · Español', r: 'RR' },
+  199: { n: '199', name: 'Charizard ex', sub: 'Special Illustration Rare · Español', r: 'SIR', tag: ['gold', '💰 ¡Sepárala!'], alert: true },
+  133: { n: '133', name: 'Eevee ×3', sub: 'Normal · Español', tag: ['loc', '📍 Caja 1'] },
+};
+for (const id in C) { C[id].img = `/landing/demo-${id}.webp`; new Image().src = C[id].img; }
 const DEMO = [
-  { k: '1', n: '001', name: 'Bulbasaur', sub: 'Normal · Español', tag: ['loc', '📍 Caja 1'] },
-  { k: '25r', n: '025', name: 'Pikachu', sub: 'Reverse Holo · Español', tag: ['rev', 'Reverse'] },
-  { k: '133*3', n: '133', name: 'Eevee ×3', sub: 'Normal · Español', tag: ['loc', '📍 Caja 1'] },
-  { k: '199', n: '199', name: 'Charizard ex', sub: 'Special Illustration Rare', tag: ['gold', '💰 ¡Sepárala!'], alert: true },
-  { k: '54r', n: '054', name: 'Psyduck', sub: 'Reverse Holo · Español', tag: ['rev', 'Reverse'] },
+  { k: '1', id: 1 },
+  { k: '25r', id: 25 },
+  { k: 'char', list: [4, 5, 6, 199], pick: 3 },
+  { k: '133*3', id: 133 },
 ];
-const typed = document.getElementById('typed'), log = document.getElementById('log');
+const $ = id => document.getElementById(id);
+const typed = $('typed'), log = $('log'), sugg = $('sugg'), hint = $('hint'), pv = $('pv');
 const wait = ms => new Promise(r => setTimeout(r, ms));
 function addRow(d) {
   const r = document.createElement('div');
@@ -612,14 +656,40 @@ function addRow(d) {
   log.prepend(r);
   while (log.children.length > 4) log.lastChild.remove();
 }
+function preview(d, state) {
+  pv.className = 'pv' + (state ? ' ' + state : '');
+  $('pvlbl').textContent = state === 'pending' ? 'Se cargará' : state === 'done' ? 'Cargada ✓' : 'Vista previa';
+  const img = $('pvimg');
+  img.hidden = !d; if (d) img.src = d.img;
+  $('pvname').textContent = d ? `${d.name.replace(' ×3', '')} #${d.n}` : '';
+  $('pvsub').textContent = d ? (d.sub || '').replace(' · Español', '') : '';
+  hint.innerHTML = d && state === 'pending' ? `Se cargará: <b>${d.name} #${d.n}</b> · ${d.sub.replace('Special Illustration Rare', 'SIR')} · NM` : 'Escribe un número o un nombre…';
+}
+function list(ids, on) {
+  sugg.hidden = false;
+  sugg.innerHTML = ids.map((id, i) => `<div${i === on ? ' class="on"' : ''}><img src="${C[id].img}" alt=""><span><b>${C[id].name}</b><small>#${C[id].n}</small></span><em>${C[id].r}</em></div>`).join('');
+}
 async function demo() {
-  if (reduce) { DEMO.slice(0, 4).reverse().forEach(addRow); typed.textContent = '25r'; return; }
+  if (reduce) {
+    [C[1], C[25]].forEach(addRow); typed.textContent = 'char';
+    list(DEMO[2].list, 3); preview(C[199], 'pending'); return;
+  }
   for (;;) {
     for (const d of DEMO) {
       for (const ch of d.k) { typed.textContent += ch; await wait(150 + Math.random() * 90); }
-      await wait(380); typed.textContent = ''; addRow(d); await wait(d.alert ? 1800 : 900);
+      let card = C[d.id];
+      if (d.list) {
+        hint.textContent = `${d.list.length} cartas con «${d.k}» · ↑↓ elige · Enter carga`;
+        const lh = hint.textContent;
+        for (let i = 0; i <= d.pick; i++) { list(d.list, i); preview(C[d.list[i]], 'pending'); hint.textContent = lh; await wait(i ? 520 : 900); }
+        card = C[d.list[d.pick]];
+      }
+      preview(card, 'pending'); await wait(d.list ? 1100 : 900);
+      typed.textContent = ''; sugg.hidden = true; addRow(card); preview(card, 'done');
+      hint.textContent = 'Escribe un número o un nombre…';
+      await wait(card.alert ? 1800 : 900);
     }
-    await wait(1200); log.innerHTML = '';
+    await wait(1200); log.innerHTML = ''; preview(null);
   }
 }
 new IntersectionObserver(([e], o) => { if (e.isIntersecting) { demo(); o.disconnect(); } }, { threshold: .3 }).observe(document.querySelector('.term'));
