@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Colección Pokémon</title>
+<title>Nitsu Collectibles</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -48,6 +48,7 @@ code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
 .appbar-in{max-width:1320px;margin:0 auto;display:flex;align-items:center;gap:14px;padding:10px 16px}
 .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px;letter-spacing:-.01em;white-space:nowrap}
 .brand svg{width:30px;height:30px;flex:none}
+.brand small{font-size:10px;font-weight:800;letter-spacing:.24em;text-transform:uppercase;color:var(--warn);margin-left:2px}
 .hstats{display:flex;gap:8px;flex-wrap:wrap}
 .pill{display:inline-flex;align-items:center;gap:6px;background:var(--chip);border-radius:999px;padding:4px 11px;font-size:13px;color:var(--muted);white-space:nowrap}
 .pill b{color:var(--ink);font-variant-numeric:tabular-nums}
@@ -680,9 +681,26 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
 .avpick .avatar{width:56px;height:56px}
 .profilepop .out{border-color:var(--err);color:var(--err);background:transparent;padding:10px}
 .profilepop .avpick button:hover{background:var(--chip)}
-.authgate{position:fixed;inset:0;z-index:100;background:var(--bg);display:grid;place-items:center;padding:16px}
-.authcard{width:min(400px,100%);background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-lg);padding:24px;display:flex;flex-direction:column;gap:12px}
-.authcard h1{margin:0;font-size:22px}
+.authgate{position:fixed;inset:0;z-index:100;background:radial-gradient(520px 420px at 30% 30%,rgba(167,123,255,.18),transparent 70%),radial-gradient(480px 380px at 72% 72%,rgba(255,90,60,.14),transparent 70%),var(--bg);display:grid;place-items:center;padding:84px 16px 24px;overflow:auto}
+.authlogo{position:absolute;z-index:1;left:24px;top:20px;display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink)}
+.authlogo svg{width:32px;height:32px}
+.authlogo b{display:block;font-size:22px;line-height:1;letter-spacing:-.02em}
+.authlogo small{display:block;font-size:10px;font-weight:800;letter-spacing:.3em;text-transform:uppercase;color:var(--warn)}
+/* floating canvases: card-shaped color paintings (one per type) that drift and turn slowly; CSS only, sharp at any density */
+.lienzos{position:fixed;inset:0;overflow:hidden;pointer-events:none}
+.lienzo{--k:1;position:absolute;left:var(--l);top:var(--tp);width:calc(var(--w) * var(--k));aspect-ratio:63/88;border-radius:calc(16px * var(--k));opacity:var(--o,.9);filter:blur(var(--b,0));
+  background:radial-gradient(120% 60% at 25% 18%,rgba(255,255,255,.5),transparent 45%),radial-gradient(90% 70% at 85% 95%,rgba(0,0,0,.28),transparent 60%),repeating-linear-gradient(var(--a,120deg),rgba(255,255,255,.07) 0 3px,transparent 3px 11px),var(--g);
+  box-shadow:0 30px 60px -24px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,255,255,.25);transform:rotate(var(--r));animation:flotar var(--t,20s) ease-in-out var(--d,0s) infinite}
+.lienzo::before{content:"";position:absolute;inset:7%;border-radius:calc(9px * var(--k));border:1.5px solid rgba(255,255,255,.28)}
+.lienzo::after{content:"";position:absolute;inset:0;border-radius:inherit;background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.32) 48%,rgba(255,255,255,0) 60%);background-size:260% 100%;animation:lienzobrillo 9s ease-in-out var(--d,0s) infinite}
+@keyframes flotar{0%,100%{transform:translate(0,0) rotate(var(--r))}33%{transform:translate(var(--x),calc(var(--y) * -.6)) rotate(calc(var(--r) + 3deg))}66%{transform:translate(calc(var(--x) * -.5),var(--y)) rotate(calc(var(--r) - 2deg))}}
+@keyframes lienzobrillo{0%,40%{background-position:130% 0}70%,100%{background-position:-130% 0}}
+@media (max-width:560px){.lienzo{--k:.6}}
+.authwrap{position:relative;z-index:1;width:min(400px,100%)}
+.authcard{position:relative;z-index:2;width:100%;background:color-mix(in srgb,var(--panel) 80%,transparent);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow-lg);padding:26px;display:flex;flex-direction:column;gap:12px}
+.authgate[data-shake] .authcard{animation:authshake .4s}
+@keyframes authshake{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+.authcard h1{margin:0;font-size:26px;letter-spacing:-.02em}
 .authback{align-self:center;font-size:14px;text-decoration:none}
 .authback:hover{text-decoration:underline}
 .authcard p{margin:0}
@@ -710,6 +728,7 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
   dialog.dlg,dialog.dlg[open],.toast,.toast.out,.tile:hover .img,.cell:hover,.slot:hover .pic{transform:none}
   @starting-style{dialog.dlg[open],.toast{transform:none}}
   .entry.errf{animation:none}
+  .lienzo,.lienzo::after,.authgate[data-shake] .authcard{animation:none}
   .artcard.sig .artpeek img,.artcard.sig:hover .artpeek img{transform:scale(1.3) !important;transition:none !important}
   .profilepop .golink .ball svg{animation:none !important}
   .profilepop .golink,.profilepop .golink:hover,.profilepop .golink .ball{transform:none !important}
@@ -719,8 +738,11 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
 </head>
 <body>
 <div class="authgate" id="authGate" hidden>
+  <a class="authlogo" href="/" aria-label="Nitsu Collectibles, inicio"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="#fff" stroke="#1c1f2e" stroke-width="2"/><path d="M1 16a15 15 0 0 1 30 0z" fill="#e3350d" stroke="#1c1f2e" stroke-width="2"/><circle cx="16" cy="16" r="4.5" fill="#fff" stroke="#1c1f2e" stroke-width="2"/></svg><span><b>Nitsu</b><small>Collectibles</small></span></a>
+  <div class="lienzos" aria-hidden="true"><span class="lienzo" style="--g:linear-gradient(160deg,#ffd08a,#ff7a2a 45%,#c2185b);--l:8%;--tp:14%;--w:150px;--r:-12deg;--x:26px;--y:30px;--t:19s;--d:0s;--a:140deg"></span><span class="lienzo" style="--g:linear-gradient(160deg,#9fe3ff,#2a75bb 55%,#23308f);--l:76%;--tp:9%;--w:170px;--r:10deg;--x:-24px;--y:34px;--t:23s;--d:-6s;--a:60deg"></span><span class="lienzo" style="--g:linear-gradient(160deg,#e3f98a,#2fd28a 50%,#0f6b52);--l:13%;--tp:62%;--w:134px;--r:8deg;--x:30px;--y:-26px;--t:21s;--d:-11s;--a:100deg"></span><span class="lienzo" style="--g:linear-gradient(160deg,#ffc4f2,#a77bff 50%,#3f2391);--l:81%;--tp:57%;--w:152px;--r:-9deg;--x:-28px;--y:-30px;--t:25s;--d:-3s;--a:160deg"></span><span class="lienzo" style="--g:linear-gradient(160deg,#fff8b8,#ffc83d 45%,#ff8a00);--l:42%;--tp:3%;--w:92px;--r:6deg;--x:20px;--y:18px;--t:17s;--d:-8s;--a:80deg;--b:2px;--o:.55"></span><span class="lienzo" style="--g:linear-gradient(160deg,#7ef0ff,#a77bff 35%,#ff7ac8 65%,#ffd36b);--l:61%;--tp:80%;--w:112px;--r:14deg;--x:-18px;--y:22px;--t:22s;--d:-14s;--a:30deg;--b:1.5px;--o:.7"></span><span class="lienzo" style="--g:linear-gradient(160deg,#e4fbff,#7fd6ff 50%,#3b6fd1);--l:1%;--tp:38%;--w:82px;--r:-6deg;--x:16px;--y:20px;--t:27s;--d:-2s;--a:120deg;--b:3px;--o:.45"></span><span class="lienzo" style="--g:linear-gradient(160deg,#ffe0ef,#ff8fc7 50%,#c2367a);--l:90%;--tp:33%;--w:80px;--r:9deg;--x:-14px;--y:24px;--t:24s;--d:-17s;--a:70deg;--b:3px;--o:.45"></span><span class="lienzo" style="--g:linear-gradient(160deg,#8d93ad,#3a3f55 50%,#14161f);--l:29%;--tp:83%;--w:70px;--r:-14deg;--x:14px;--y:-16px;--t:26s;--d:-9s;--a:150deg;--b:4px;--o:.5"></span></div>
+  <div class="authwrap">
   <form class="authcard" id="authForm" novalidate>
-    <h1>Colección Pokémon</h1>
+    <h1 id="authTitle">¡Qué bueno verte!</h1>
     <p class="muted" id="authSub">Inicia sesión para ver tu colección.</p>
     <div class="authtabs" role="tablist"><button type="button" role="tab" data-mode="in" class="on" aria-selected="true">Entrar</button><button type="button" role="tab" data-mode="up" aria-selected="false">Crear cuenta</button></div>
     <label id="authNameWrap" hidden>Tu nombre <input id="authName" autocomplete="name"></label>
@@ -731,12 +753,13 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
     <p class="msg" id="authMsg" role="alert"></p>
     <a class="muted authback" href="/">← Volver al inicio</a>
   </form>
+  </div>
 </div>
 <header class="appbar">
   <div class="appbar-in">
     <div class="brand">
       <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="#fff" stroke="#1c1f2e" stroke-width="2"/><path d="M1 16a15 15 0 0 1 30 0z" fill="#e3350d" stroke="#1c1f2e" stroke-width="2"/><circle cx="16" cy="16" r="4.5" fill="#fff" stroke="#1c1f2e" stroke-width="2"/></svg>
-      <span>Colección Pokémon</span>
+      <span>Nitsu <small>Collectibles</small></span>
     </div>
     <div class="hstats">
       <span class="pill"><b id="sTotal">0</b> cartas</span>
@@ -1223,6 +1246,7 @@ function setAuthMode(m) {
   for (const b of document.querySelectorAll('.authtabs button')) { b.classList.toggle('on', b.dataset.mode === m); b.setAttribute('aria-selected', String(b.dataset.mode === m)); }
   $('authNameWrap').hidden = m !== 'up'; $('authHint').hidden = m !== 'up';
   $('authGo').textContent = m === 'up' ? 'Crear cuenta' : 'Entrar';
+  $('authTitle').textContent = m === 'up' ? '¡Únete a Nitsu!' : '¡Qué bueno verte!';
   $('authPass').autocomplete = m === 'up' ? 'new-password' : 'current-password';
 }
 async function submitAuth(e) {
@@ -1239,7 +1263,10 @@ async function submitAuth(e) {
   } catch (err) { authFail('No pude conectar con el servidor: ' + err.message); }
   finally { $('authGo').disabled = false; }
 }
-function authFail(t) { $('authMsg').textContent = t; $('authMsg').className = 'msg err'; }
+function authFail(t) {
+  $('authMsg').textContent = t; $('authMsg').className = 'msg err';
+  const g = $('authGate'); delete g.dataset.shake; void g.offsetWidth; g.dataset.shake = ''; // the card shakes on every wrong try
+}
 // ---------- profile ----------
 // avatars: the art of trainers' Supporter cards (catalog images), cropped to the face: [key, name, image path, x%, y%]
 const AVATARS = [['misty', 'Misty', 'sm115/62', 44, 22], ['brock', 'Brock', 'sm115/53', 50, 22], ['erika', 'Erika', 'sm115/56', 50, 22],
