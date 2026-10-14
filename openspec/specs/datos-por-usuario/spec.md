@@ -21,7 +21,7 @@ El inventario, su registro, las ubicaciones, los lotes, las colecciones, los ilu
 - **THEN** la ubicación de la otra cuenta queda igual
 
 ### Requirement: Datos compartidos
-El catálogo, los precios de mercado, el tipo de cambio, los nombres de variantes, las checklists, los cameos y los grupos de artes conectados SHALL ser los mismos para todas las cuentas.
+El catálogo, los precios de mercado, el tipo de cambio, los nombres de variantes, los cameos y los grupos de artes conectados SHALL ser los mismos para todas las cuentas.
 
 #### Scenario: Precio de mercado
 - **WHEN** se descarga el precio de una carta que tienen dos cuentas
