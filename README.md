@@ -57,7 +57,7 @@ Para activar Google: en [Google Cloud Console](https://console.cloud.google.com/
 
 **Mi perfil**: el botón con tu avatar (arriba a la derecha) muestra tu nombre, email, si eres el dueño, un resumen de tu colección (cartas, distintas, valor estimado, colecciones, artes conectados completos de los 35 y cuántos empezados, ubicaciones, idiomas, lotes abiertos; cada cifra es un link: cartas y distintas abren Mi colección, el valor la abre ordenada por valor total, y colecciones, artes conectados y ubicaciones su sección; al pasar el mouse asoma una ball distinta en cada una (Premier, Luxury, Master, Poké, Great y Ultra Ball) que se tambalea) y deja elegir un avatar de entre 15 entrenadores (el arte de sus cartas de Partidario del catálogo) o tus iniciales, cambiar el nombre y la contraseña, ver esta sesión y cerrar las de otros dispositivos, y **Cerrar sesión**.
 
-**Datos por usuario** ([ADR 0010](docs/adr/0010-multiusuario-con-user-id-y-rls.md), [0018](docs/adr/0018-rls-forzado-con-usuario-por-conexion.md)): inventario, registro, ubicaciones, lotes, colecciones, favoritos, precios y fotos propias y la configuración de precios y lotes son de cada cuenta (`user_id` + Row Level Security forzado). El catálogo, los precios de mercado, el tipo de cambio, las checklists, los cameos y los **artes conectados** son compartidos ([ADR 0019](docs/adr/0019-artes-conectados-compartidos.md)): los mismos grupos para todos, cada cuenta con su propio avance según su inventario, y solo el dueño (la primera cuenta) los crea, edita o borra. Al actualizar, los datos que había pasan a la **primera cuenta creada** (la tuya); si no hay ninguna, la migración pide crear la cuenta primero. Para invitar a alguien, agrega su email a `AUTH_ALLOWED_EMAILS`: empieza con todo vacío y no ve nada tuyo. Borrar una cuenta (`DELETE FROM "user" WHERE email = …`) borra sus datos.
+**Datos por usuario** ([ADR 0010](docs/adr/0010-multiusuario-con-user-id-y-rls.md), [0018](docs/adr/0018-rls-forzado-con-usuario-por-conexion.md)): inventario, registro, ubicaciones, lotes, colecciones, favoritos, precios y fotos propias y la configuración de precios y lotes son de cada cuenta (`user_id` + Row Level Security forzado). El catálogo, los precios de mercado, el tipo de cambio, los cameos y los **artes conectados** son compartidos ([ADR 0019](docs/adr/0019-artes-conectados-compartidos.md)): los mismos grupos para todos, cada cuenta con su propio avance según su inventario, y solo el dueño (la primera cuenta) los crea, edita o borra. Al actualizar, los datos que había pasan a la **primera cuenta creada** (la tuya); si no hay ninguna, la migración pide crear la cuenta primero. Para invitar a alguien, agrega su email a `AUTH_ALLOWED_EMAILS`: empieza con todo vacío y no ve nada tuyo. Borrar una cuenta (`DELETE FROM "user" WHERE email = …`) borra sus datos.
 
 Para SQL nuevo: las consultas de una petición ya ven solo los datos de su usuario (la API fija `app.user_id` en la conexión). Sin usuario (tareas en segundo plano) las tablas por usuario se ven vacías; una tarea de sistema que deba ver a todos usa `asSystem()` de `db.js`.
 
@@ -137,7 +137,7 @@ En **Mi colección → Tabla** puedes cambiar el estado de algunas o todas las c
 - Si pokemontcg.io no tiene precio (expansiones recién salidas), se usa el catálogo en inglés de TCGdex como respaldo: la expansión se busca por nombre y código, y queda guardada en `sets.tcgdex_en`.
 - Japonesas: [TCGdex](https://tcgdex.dev) (Cardmarket, EUR).
 - Se convierten a CLP con el tipo de cambio de exchangerate-api.com (respaldo: mindicador.cl).
-- Se descargan solas en segundo plano para las cartas del inventario y de las checklists, y se renuevan una vez al día (`card_prices`).
+- Se descargan solas en segundo plano para las cartas del inventario y de las colecciones, y se renuevan una vez al día (`card_prices`).
 - El precio es en NM; los otros estados se descuentan con los % de **Datos → Precios** (`settings`).
 - Tus precios a mano guardan la fecha (`price_overrides.updated_at`). Después de N días (7 por defecto, en Datos → Precios) se marcan ⚠️; el filtro "Mi precio por actualizar" los junta, y guardar el mismo valor los marca como revisados hoy.
 - Tu precio se escribe en **dólares** (`349,99` o `349.99`) y se guarda en `price_overrides.usd`; el valor en CLP se calcula con el tipo de cambio del día, así que sigue al dólar.
@@ -204,11 +204,10 @@ Cada fila del inventario tiene una ubicación (`inventory.loc`, 0 = sin ubicaci�
 ## Fotos por variante
 
 Si la foto del catálogo no corresponde, puedes cambiarla para esa variante: tocando la imagen en **Mi colección** o con **📷** en la vista previa de Cargar. Sirve un link o una foto de tu carta (se guarda en `apps/web/public/art/`, tabla `variant_images`). Un ejemplo: en todas las fuentes públicas, el Eevee de Jungle Unlimited aparece con la foto de la 1st Edition.
-Las variantes especiales de una checklist (1st Edition, Poké Ball, misprints…) usan automáticamente la foto de la checklist.
 
 Si la carta no tiene foto, la vista previa de Cargar muestra **📷 Tomar o subir la foto de tu carta**; en el celular el diálogo ofrece **📸 Tomar foto** con la cámara. Las fotos de más de 1200 px se achican antes de subirse.
 
-**Fotos de cartas japonesas desde PokeCottage.** TCGdex no tiene imagen para la mayoría de las cartas japonesas antiguas (en Rocket Gang, ninguna). Con `POKECOTTAGE_IMAGES=on` en `.env`, al elegir una expansión japonesa la API busca las fotos de sus cartas de Pokémon en las checklists por especie de PokeCottage (`POST /api/sets/:id/photos`), las cruza por código de expansión y número y guarda el link (sin descargar la imagen); cada especie se consulta una vez cada 30 días (tabla `pokecottage_checks`) y llena todas las expansiones japonesas a la vez. Rocket Gang pasa de 1 a 53 de 65 fotos; entrenadores y energías no están en esas checklists. Los términos de PokeCottage permiten uso personal: **para la alfa con testers, déjalo apagado salvo que PokeCottage lo autorice.** Las consultas a PokeCottage se identifican como `NitsuCollectibles/0.1 (+https://github.com/jdinamarca/pokenitsu)`. Sin foto, se muestra una imagen de referencia del mismo Pokémon. Para quitar los links: `UPDATE cards SET image_small = NULL, image_large = NULL WHERE set_id LIKE 'ja-%' AND image_small LIKE 'https://pokecottagecdn.com/%'`.
+**Sin PokeCottage.** Antes la app podía tomar de PokeCottage las fotos de cartas japonesas y sus checklists de master sets. PokeCottage no autorizó usar sus datos en otras herramientas, ni siquiera privadas, así que esa integración se quitó: la migración `030` borra lo que había (links a sus fotos, colecciones que seguían una checklist y las cartas `pc-*` que nada usa). Las cartas japonesas sin foto muestran una imagen de referencia del mismo Pokémon hasta tener una foto propia.
 
 ## Mis colecciones (ej. todos los Eevee)
 
@@ -216,15 +215,13 @@ Una carta = una expansión + número. Las internacionales (pokemontcg.io) son la
 español, portugués…; la colección elige en qué idioma cuentan. Las japonesas vienen de TCGdex
 (sets `ja-*`) y las que no están en ningún catálogo (ej. chinas) se agregan a mano (sets `x-<idioma>-*`).
 
-Una colección puede **seguir una checklist de PokeCottage** (ej. https://pokecottage.com/pokemon-master-sets/eevee):
-entonces solo cuentan las cartas de esa lista. Cada carta se busca en el catálogo (internacionales en pokemontcg.io,
-japonesas en TCGdex); las que no están se crean en sets `pc-*` con las imágenes de PokeCottage.
-Las cartas donde el Pokémon no es el protagonista que vienen en la checklist o que agregas a mano
+La colección cuenta todas las cartas con el número de Pokédex del Pokémon, más las que agregas a mano.
+Las cartas donde el Pokémon no es el protagonista que agregas a mano
 (menú ⋯ → Agregar cameo) se guardan como cameos de la colección (`collection_cards.role = 'cameo'`).
 
 La pestaña muestra cada colección como una tarjeta con portada, avance de **Cartas** y de **Cameos** y su valor.
 Dentro, el encabezado fijo tiene las pestañas **Cartas** / **Cameos** y el menú **⋯** (editar, carta a mano, cameo,
-checklist, buscar japonesas, borrar). En Cartas: Todas / Tengo / Me faltan, Por año / Por región y, en **Filtros**,
+buscar japonesas, borrar). En Cartas: Todas / Tengo / Me faltan, Por año / Por región y, en **Filtros**,
 orden, rareza, precio y ocultas.
 
 ### Cameos
@@ -242,8 +239,7 @@ Vienen de la **[Cameo Pokémon Card Database de RotomAmiti](https://docs.google.
   **Cómo aparece** (personaje, silueta, disfraz, dibujo o imagen, peluche o juguete, estatua, parcial, jumbo, otro), sacado de la nota de la planilla.
 - **¿En qué cartas aparece…?** muestra los cameos de cualquier Pokémon, aunque no tengas su colección, con un botón para crearla.
 
-Con checklist, cada **variante** es un espacio aparte (Jungle Eevee: Unlimited, 1st Edition, 1st Edition d Misprint),
-igual que en PokeCottage. La variante del inventario es `normal`, `holo`, `reverse` o el slug de la checklist
+La variante del inventario es `normal`, `holo`, `reverse` o una especial
 (`firstedition`, `pokeballholo`, `masterballholo`, `pokemoncardgym`…; nombres en `variant_labels`).
 En Cargar: `25e` 1st Edition, `25p` Poké Ball, `25m` Master Ball; las demás se agregan con ＋1 desde la colección.
 

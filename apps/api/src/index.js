@@ -8,7 +8,6 @@ import { fromNodeHeaders } from 'better-auth/node';
 import { pool, tx, migrate, runAsUser, endUser } from './db.js';
 import { createAuth, googleEnabled } from './auth.js';
 import { norm, ensureSets, syncSets, ensureSetCards, syncAllCards, syncJaDex, applyJaNames } from './catalog.js';
-import { importChecklist, fillJaImages } from './pokecottage.js';
 import { syncCameos, cameosJob, CAMEO_SOURCE } from './cameos.js';
 import { fillDetails, startDetailsJob, detailsJob, startVariantsJob, variantsJob, startVariantsForMySets } from './details.js';
 import { ensureCardPrice, ensureSetPrices, refreshPrices, staleCount, getSetting, putSetting, getFx } from './prices.js';
@@ -25,7 +24,7 @@ const IMAGE_EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp
 const CARD_COLS = `c.set_id AS sid, c.number AS num, c.name, c.dex, c.artist, c.rarity, c.image_small AS img, c.supertype`;
 
 const bad = msg => Object.assign(new Error(msg), { statusCode: 400 });
-// normal / holo / reverse, or a checklist variant slug (firstedition, pokeballholo…)
+// normal / holo / reverse, or a special variant slug (firstedition, pokeballholo…)
 const VARIANT_RE = /^[a-z0-9]{1,60}$/;
 const checkVariant = v => { if (!VARIANT_RE.test(String(v))) throw bad(`Variante inválida: ${v}`); return v; };
 // group pictures: an http(s) URL or a file we stored under /art/
@@ -184,8 +183,6 @@ app.get('/api/sets/master', async () => {
 });
 // downloads the variants of an expansion's cards (master set); poll it with GET
 app.post('/api/sets/:id/variants', async req => ({ job: startVariantsJob(req.params.id) }));
-// photos of Japanese cards without an image, from PokeCottage (only with POKECOTTAGE_IMAGES=on)
-app.post('/api/sets/:id/photos', async req => fillJaImages(req.params.id));
 app.get('/api/sets/:id/variants', async req => ({ job: variantsJob(req.params.id) }));
 
 // full-catalog download, started from the page and polled via GET /api/catalog
@@ -369,21 +366,13 @@ app.get('/api/state', async () => {
 });
 
 // ---------- pictures per variant ----------
-// own: my pictures; checklist: the checklist's picture of special variants (1st Edition, Poké Ball, misprints…).
-// Keys "sid|num|variant". Plain normal / holo / reverse keep the catalog picture unless I set my own.
+// own: my pictures, keys "sid|num|variant"; the rest keep the catalog picture
 async function variantImages() {
-  const [own, ck] = await Promise.all([
-    pool.query(`SELECT c.set_id || '|' || c.number || '|' || v.variant AS k, v.img FROM variant_images v JOIN cards c ON c.id = v.card_id`),
-    pool.query(`SELECT DISTINCT ON (k) k, img FROM (
-                  SELECT c.set_id || '|' || c.number || '|' || (x->>'slug') AS k, x->>'img' AS img
-                  FROM collection_cards cc JOIN cards c ON c.id = cc.card_id, jsonb_array_elements(cc.vlist) x
-                  WHERE x->>'img' IS NOT NULL AND x->>'slug' NOT IN ('normal', 'holo', 'reverse')) t ORDER BY k`),
-  ]);
+  const own = await pool.query(`SELECT c.set_id || '|' || c.number || '|' || v.variant AS k, v.img FROM variant_images v JOIN cards c ON c.id = v.card_id`);
   const { rows: vars } = await pool.query(
     `SELECT c.set_id || '|' || c.number AS k, array_agg(DISTINCT x->>'slug') AS slugs
      FROM collection_cards cc JOIN cards c ON c.id = cc.card_id, jsonb_array_elements(cc.vlist) x GROUP BY 1`);
-  return { own: Object.fromEntries(own.rows.map(r => [r.k, r.img])), checklist: Object.fromEntries(ck.rows.map(r => [r.k, r.img])),
-           variants: Object.fromEntries(vars.map(r => [r.k, r.slugs])) };
+  return { own: Object.fromEntries(own.rows.map(r => [r.k, r.img])), variants: Object.fromEntries(vars.map(r => [r.k, r.slugs])) };
 }
 async function imageCard(q) {
   const variant = checkVariant(q.variant);
@@ -668,7 +657,7 @@ app.delete('/api/groups/:id', async req => {
 // A card is one print: same set + number = same card whatever the language (international catalog).
 // Japanese, Chinese and hand-typed cards have their own sets and numbers, so they count as different cards.
 // Owned: international cards (set without language) need a copy in the collection's language; the rest, any copy.
-// Members: the cards of a checklist when the collection follows one, otherwise every card with the Pokédex number;
+// Members: every card with the Pokédex number;
 // plus cards added by hand. role: main (the Pokémon is the protagonist) or cameo (it appears in the art).
 const COLL_CARDS = `
   WITH co AS (SELECT * FROM collections WHERE id = $1),
@@ -676,7 +665,7 @@ const COLL_CARDS = `
     SELECT cc.card_id, cc.role, cc.variants, cc.name, cc.set_name, cc.vlist FROM collection_cards cc WHERE cc.collection_id = $1
     UNION ALL
     SELECT c.id, 'main', '{}'::text[], NULL, NULL, '[]'::jsonb FROM cards c, co
-    WHERE co.checklist_url IS NULL AND co.dex = ANY (c.dex)
+    WHERE co.dex = ANY (c.dex)
       AND NOT EXISTS (SELECT 1 FROM collection_cards cc WHERE cc.collection_id = $1 AND cc.card_id = c.id))
   SELECT ${CARD_COLS}, c.id AS card_id, m.role, m.variants, m.vlist, coalesce(m.name, c.name) AS label, c.name AS printed_name, coalesce(m.set_name, s.name_en, s.name) AS set_name, coalesce(s.code, '') AS set_code, s.source, s.lang AS set_lang,
          coalesce(to_char(s.release_date, 'YYYY'), '') AS year, coalesce(to_char(s.release_date, 'YYYY-MM-DD'), '') AS date,
@@ -691,9 +680,9 @@ const COLL_CARDS = `
   GROUP BY c.id, s.id, m.role, m.variants, m.vlist, m.name, m.set_name, co.id, co.lang`;
 
 async function collectionList() {
-  const { rows: list } = await pool.query('SELECT id, name, dex, lang, checklist_url, checklist_at FROM collections ORDER BY created_at');
+  const { rows: list } = await pool.query('SELECT id, name, dex, lang FROM collections ORDER BY created_at');
   for (const co of list) {
-    // one slot per checklist variant (or per card when the collection has no variants)
+    // one slot per variant listed for the card (or per card when it has none)
     const { rows: [x] } = await pool.query(
       `SELECT count(*) FILTER (WHERE role = 'main')::int AS total, count(*) FILTER (WHERE role = 'main' AND owned)::int AS owned,
               count(*) FILTER (WHERE role = 'cameo')::int AS cameos, count(*) FILTER (WHERE role = 'cameo' AND owned)::int AS cameos_owned,
@@ -741,21 +730,6 @@ app.post('/api/collections/:id/hide', async req => {
   else await pool.query('DELETE FROM collection_hidden WHERE collection_id = $1 AND card_id = $2', [req.params.id, card]);
   return { ok: true };
 });
-// Follow a PokeCottage master-set checklist (and refresh it)
-app.post('/api/collections/:id/checklist', async req => {
-  const url = String(req.body?.url || '').trim();
-  if (!url) throw bad('Falta el link de la checklist');
-  const stats = await importChecklist(req.params.id, url);
-  return { ...stats, collections: await collectionList() };
-});
-// Stop following the checklist: back to every card with the Pokédex number (hand-added cards stay)
-app.delete('/api/collections/:id/checklist', async req => {
-  await tx(async c => {
-    await c.query('DELETE FROM collection_cards WHERE collection_id = $1 AND from_checklist', [req.params.id]);
-    await c.query('UPDATE collections SET checklist_url = NULL, checklist_at = NULL WHERE id = $1', [req.params.id]);
-  });
-  return collectionList();
-});
 // Protagonist or cameo for one card
 app.post('/api/collections/:id/role', async req => {
   const role = req.body?.role === 'cameo' ? 'cameo' : 'main', card = String(req.body?.card_id || '');
@@ -784,7 +758,7 @@ app.post('/api/collections/:id/cards', async req => {
 });
 // Remove a hand-added card from the collection
 app.delete('/api/collections/:id/cards/:card', async req => {
-  await pool.query('DELETE FROM collection_cards WHERE collection_id = $1 AND card_id = $2 AND NOT from_checklist', [req.params.id, req.params.card]);
+  await pool.query('DELETE FROM collection_cards WHERE collection_id = $1 AND card_id = $2', [req.params.id, req.params.card]);
   return { ok: true };
 });
 // Downloads the Japanese cards of the collection's Pokémon from TCGdex
