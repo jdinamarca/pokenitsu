@@ -81,7 +81,7 @@ app.setErrorHandler((err, req, reply) => {
   if (code === 500) req.log.error(err);
   reply.code(code).send({ error: err.message });
 });
-app.register(fastifyStatic, { root: PUBLIC_DIR });
+app.register(fastifyStatic, { root: PUBLIC_DIR, index: false });
 
 // ---------- accounts (Better Auth): /api/auth/* and a session for every other API call ----------
 let auth; // set right after the migrations, before listening
@@ -127,6 +127,16 @@ app.addContentTypeParser(/^image\//, { parseAs: 'buffer', bodyLimit: 15 * 1024 *
 
 // ---------- landing (/alfa) and its alpha sign-ups ----------
 app.get('/alfa', (req, reply) => reply.sendFile('landing.html'));
+// home: the app with a session; without one, the landing (which links to the login at /entrar)
+app.get('/', async (req, reply) => {
+  const session = auth && await auth.api.getSession({ headers: fromNodeHeaders(req.headers) }).catch(() => null);
+  return reply.sendFile(session ? 'index.html' : 'landing.html');
+});
+// the login screen (the app shows it without a session); already logged in → home
+app.get('/entrar', async (req, reply) => {
+  const session = auth && await auth.api.getSession({ headers: fromNodeHeaders(req.headers) }).catch(() => null);
+  return session ? reply.redirect('/') : reply.sendFile('index.html');
+});
 app.post('/api/alpha', async req => {
   const b = req.body || {}, txt = (x, n) => String(x ?? '').trim().slice(0, n);
   if (b.website) return { ok: true }; // honeypot filled in: a bot

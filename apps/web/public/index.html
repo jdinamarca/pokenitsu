@@ -683,6 +683,8 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
 .authgate{position:fixed;inset:0;z-index:100;background:var(--bg);display:grid;place-items:center;padding:16px}
 .authcard{width:min(400px,100%);background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-lg);padding:24px;display:flex;flex-direction:column;gap:12px}
 .authcard h1{margin:0;font-size:22px}
+.authback{align-self:center;font-size:14px;text-decoration:none}
+.authback:hover{text-decoration:underline}
 .authcard p{margin:0}
 .authcard label{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:700;color:var(--muted)}
 .authcard input{font-size:16px;padding:10px 12px}
@@ -727,6 +729,7 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
     <p class="muted authhint" id="authHint" hidden>Durante la alfa solo pueden crear cuenta los emails invitados. Contraseña de al menos 10 caracteres.</p>
     <button class="primary" id="authGo" type="submit">Entrar</button>
     <p class="msg" id="authMsg" role="alert"></p>
+    <a class="muted authback" href="/">← Volver al inicio</a>
   </form>
 </div>
 <header class="appbar">

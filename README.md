@@ -256,13 +256,15 @@ docker exec -i -e PGOPTIONS='-c app.all_users=on' postgres-mac pg_restore -U pok
 
 El botón **Datos ▾ → Descargar respaldo (JSON)** descarga solo los datos de tu cuenta, importable.
 
-## Landing para alfa testers (`/alfa`)
+## Home y landing para alfa testers (`/` y `/alfa`)
 
-`apps/web/public/landing.html` (servida en `http://localhost:3000/alfa`) presenta la app con capturas reales (`apps/web/public/landing/*.jpg`) y un formulario para postular a la alfa.
+`apps/web/public/landing.html` es la home: `http://localhost:3000/` la muestra a quien no tiene sesión (con sesión, `/` abre la app) y también queda en `/alfa`. Presenta la app con capturas reales (`apps/web/public/landing/*.jpg`) y un formulario para postular a la alfa.
+- **Duelo**: junto al título, Charizard lanza fuego a Gengar y Gengar responde con una Shadow Ball (CSS, ciclo de 6 s; se pausa fuera de pantalla y queda quieto con "reducir movimiento"; cartas en `landing/duelo-*.webp`).
+- **Iniciar sesión** (arriba) y **Ya tengo cuenta · Entrar** llevan a `/entrar`, la pantalla de login de la app, que tiene "← Volver al inicio". Con sesión, `/entrar` lleva a `/`; al cerrar sesión vuelves a la home.
 Las postulaciones quedan en la tabla `alpha_signups` (una por email; si alguien postula de nuevo se actualizan sus respuestas):
 
 ```bash
 docker exec postgres-mac psql -U pokemon -d pokemon -c "SELECT created_at, name, email, handle, role, size, note FROM alpha_signups ORDER BY created_at DESC"
 ```
 
-El nombre "Challadex" es provisorio. Antes de publicar: la app todavía no tiene login ni separa datos por usuario, así que cada alfa tester necesitaría su propia instancia o hay que agregar cuentas.
+El nombre "Challadex" es provisorio.
