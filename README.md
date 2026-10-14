@@ -39,6 +39,8 @@ AUTH_ALLOWED_EMAILS=tu@email.com  # solo estos emails pueden crear cuenta (separ
 
 La primera vez, abre la app, toca **Crear cuenta** con un email de esa lista y una contraseña de al menos 10 caracteres. **Cerrar sesión** está en **Datos ▾**.
 
+**Mi perfil**: el botón con tu avatar (arriba a la derecha) muestra tu nombre, email, si eres el dueño, un resumen de tu colección (cartas, distintas, valor estimado, colecciones, artes conectados, ubicaciones, idiomas, lotes abiertos) y deja elegir un avatar de entre 15 entrenadores (el arte de sus cartas de Partidario del catálogo) o tus iniciales, cambiar el nombre y la contraseña, ver esta sesión y cerrar las de otros dispositivos, y **Cerrar sesión**.
+
 **Datos por usuario** ([ADR 0010](docs/adr/0010-multiusuario-con-user-id-y-rls.md), [0018](docs/adr/0018-rls-forzado-con-usuario-por-conexion.md)): inventario, registro, ubicaciones, lotes, colecciones, artes conectados, favoritos, precios y fotos propias y la configuración de precios y lotes son de cada cuenta (`user_id` + Row Level Security forzado). El catálogo, los precios de mercado, el tipo de cambio, las checklists y los cameos son compartidos. Al actualizar, los datos que había pasan a la **primera cuenta creada** (la tuya); si no hay ninguna, la migración pide crear la cuenta primero. Para invitar a alguien, agrega su email a `AUTH_ALLOWED_EMAILS`: empieza con todo vacío y no ve nada tuyo. Borrar una cuenta (`DELETE FROM "user" WHERE email = …`) borra sus datos.
 
 Para SQL nuevo: las consultas de una petición ya ven solo los datos de su usuario (la API fija `app.user_id` en la conexión). Sin usuario (tareas en segundo plano) las tablas por usuario se ven vacías; una tarea de sistema que deba ver a todos usa `asSystem()` de `db.js`. La verificación de correo, recuperar contraseña y Google llegan en la fase 3.
@@ -244,8 +246,15 @@ WHERE lang = 'ES' AND d BETWEEN 1 AND 151 GROUP BY d ORDER BY d;
 
 ## Respaldo
 
-`docker exec postgres-mac pg_dump -U nitsu pokemon > respaldo.sql`
-(o el botón **Respaldo** en la página, que descarga un JSON importable).
+`docker exec postgres-mac pg_dump -U nitsu pokemon > respaldo.sql` (con el administrador del contenedor).
+Con el rol de la app (`pokemon`) las tablas por usuario tienen Row Level Security forzado: hay que respaldar y restaurar en modo sistema o `pg_dump` se niega:
+
+```bash
+docker exec -e PGOPTIONS='-c app.all_users=on' postgres-mac pg_dump -U pokemon -d pokemon -Fc --enable-row-security > respaldo.dump
+docker exec -i -e PGOPTIONS='-c app.all_users=on' postgres-mac pg_restore -U pokemon -d <base-vacía> --no-owner < respaldo.dump
+```
+
+El botón **Datos ▾ → Descargar respaldo (JSON)** descarga solo los datos de tu cuenta, importable.
 
 ## Landing para alfa testers (`/alfa`)
 
