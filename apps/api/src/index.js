@@ -1,12 +1,13 @@
 import Fastify from 'fastify';
 import fastifyStatic from '@fastify/static';
 import { fileURLToPath } from 'node:url';
-import { writeFile, unlink } from 'node:fs/promises';
+import { writeFile, unlink, stat } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { dirname, join } from 'node:path';
 import { fromNodeHeaders } from 'better-auth/node';
 import { pool, tx, migrate, runAsUser, endUser } from './db.js';
 import { createAuth, googleEnabled } from './auth.js';
+import { IMAGE_DIR } from './imagenes.js';
 import { norm, ensureSets, syncSets, ensureSetCards, syncAllCards, syncJaDex, applyJaNames } from './catalog.js';
 import { importChecklist, fillJaImages } from './pokecottage.js';
 import { syncCameos, cameosJob, CAMEO_SOURCE } from './cameos.js';
@@ -82,6 +83,17 @@ app.setErrorHandler((err, req, reply) => {
   reply.code(code).send({ error: err.message });
 });
 app.register(fastifyStatic, { root: PUBLIC_DIR, index: false });
+// our copy of the card pictures (imagenes.js): from IMAGE_DIR when the file is here; otherwise from the storage
+// (IMAGE_BASE_URL, in production) or, while it isn't there either, from the original link
+app.get('/img/*', async (req, reply) => {
+  const path = req.params['*'];
+  if (!/^cards\/[\w.-]+\/[\w.-]+\.webp$/.test(path)) return reply.code(404).send();
+  if (await stat(join(IMAGE_DIR, path)).then(s => s.isFile(), () => false))
+    return reply.sendFile(path, IMAGE_DIR, { maxAge: 7 * 24 * 3600 * 1000 });   // a week in the browser's cache
+  if (process.env.IMAGE_BASE_URL) return reply.redirect(`${process.env.IMAGE_BASE_URL.replace(/\/$/, '')}/${path}`, 301);
+  const { rows: [r] } = await pool.query('SELECT source_url FROM card_images WHERE path = $1', [path]);
+  return r?.source_url ? reply.redirect(r.source_url, 302) : reply.code(404).send();
+});
 
 // ---------- accounts (Better Auth): /api/auth/* and a session for every other API call ----------
 let auth; // set right after the migrations, before listening

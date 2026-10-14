@@ -11,6 +11,8 @@
     "sync": "pnpm --filter @pokenitsu/api sync",
     "test": "pnpm -r --if-present test",
     "typecheck": "pnpm -r --if-present typecheck",
-    "lint": "pnpm -r --if-present lint"
+    "lint": "pnpm -r --if-present lint",
+    "imagenes:descargar": "pnpm --filter @pokenitsu/api imagenes:descargar",
+    "imagenes:estado": "pnpm --filter @pokenitsu/api imagenes:estado"
   }
 }
