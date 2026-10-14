@@ -80,3 +80,14 @@ El perfil SHALL mostrar la sesión actual (equipo y navegador, desde cuándo y c
 #### Scenario: Cerrar en otros dispositivos
 - **WHEN** hay una sesión abierta en un celular y el usuario toca "Cerrar 1 en otros dispositivos" en el computador
 - **THEN** el celular queda sin sesión y el computador sigue conectado
+
+### Requirement: Avance de artes conectados en el perfil
+El resumen de la colección en Mi perfil SHALL mostrar cuántos grupos de artes conectados tiene completos la cuenta sobre el total de grupos, y cuántos tiene empezados, en vez del número de grupos.
+
+#### Scenario: Ninguna carta de los grupos
+- **WHEN** la cuenta no tiene ninguna carta de los 35 grupos
+- **THEN** el perfil muestra "0 / 35 artes conectados completos"
+
+#### Scenario: Un grupo empezado
+- **WHEN** la cuenta tiene 1 carta de un grupo de 3
+- **THEN** el perfil muestra "0 / 35 artes conectados completos · 1 empezados"
