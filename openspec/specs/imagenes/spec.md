@@ -6,7 +6,7 @@ Tener una copia propia de las imágenes de las cartas del catálogo, para no dep
 ## Requirements
 
 ### Requirement: Copia propia de las imágenes del catálogo
-El sistema SHALL poder copiar la imagen de cada carta del catálogo a `IMAGE_DIR` como WebP en dos tamaños (245 y 600 px de ancho), descargando una sola imagen por carta, solo desde `images.pokemontcg.io` o `assets.tcgdex.net`, identificándose como Nitsu. MUST NOT descargar imágenes de PokeCottage ni de Scrydex; para las cartas con imagen de Scrydex SHALL usar la de TCGdex si existe. La descarga SHALL poder cortarse y retomarse sin repetir lo hecho.
+El sistema SHALL poder copiar la imagen de cada carta del catálogo a `IMAGE_DIR` como WebP en dos tamaños (245 y 600 px de ancho), descargando una sola imagen por carta, solo desde `images.pokemontcg.io` o `assets.tcgdex.net`, identificándose como Nitsu. MUST NOT descargar imágenes de PokeCottage ni de Scrydex; para las cartas con imagen de Scrydex SHALL usar la de TCGdex si existe. La descarga SHALL poder cortarse y retomarse sin repetir lo hecho. Cada carta SHALL tener un nombre de archivo distinto aunque su id tenga signos que no sirven en un archivo.
 
 #### Scenario: Carta internacional
 - **WHEN** se copia Caterpie de 151 (`sv3pt5-10`)
@@ -19,6 +19,10 @@ El sistema SHALL poder copiar la imagen de cada carta del catálogo a `IMAGE_DIR
 #### Scenario: Cortar y retomar
 - **WHEN** la descarga se corta a mitad de camino y se vuelve a ejecutar
 - **THEN** sigue con las cartas que faltan, sin archivos a medias
+
+#### Scenario: Unown con signos
+- **WHEN** se copian las Unown `ex10-?` y `ex10-!`
+- **THEN** cada una queda en su propio archivo (`ex10-_3f-small.webp` y `ex10-_21-small.webp`) y ninguna queda con error
 
 ### Requirement: Registro de las imágenes
 Por cada carta y tamaño, el sistema SHALL guardar el estado (copiada, sin foto, omitida o con error), el archivo, el link original, el peso, las dimensiones, la huella sha256, la fecha y cuándo se subió al storage. Una sincronización del catálogo MUST NOT reemplazar la imagen de una carta ya copiada.
