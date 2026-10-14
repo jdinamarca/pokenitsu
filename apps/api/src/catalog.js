@@ -118,10 +118,13 @@ export async function syncAllCards(onProgress = () => {}) {
 const TCGDEX = 'https://api.tcgdex.net/v2/ja';
 const JA_SUPERTYPE = { Pokemon: 'Pokémon', Trainer: 'Trainer', Energy: 'Energy' };
 const jaImg = (base, size) => base ? `${base}/${size}.webp` : null;
-// English collector names of Japanese sets (TCGdex only has the Japanese one) and Japanese names TCGdex has wrong, by set code
+// English collector names of Japanese sets (TCGdex only has the Japanese one), Japanese names TCGdex has wrong, and junk entries
+// to leave out (by set code): the CS* sets are empty placeholders all named トリプレットビート, and SM1+ / sm2+ / SM3+ / SM4+ / SM5+
+// are empty duplicates of SM1p… SM5p, which have the cards
 const JA_NAMES = JSON.parse(readFileSync(new URL('./ja-sets.json', import.meta.url), 'utf8'));
 const jaName = (code, name) => JA_NAMES.fixJa[code] || name;
 const jaNameEn = code => JA_NAMES.en[code] || null;
+const JA_HIDDEN = new Set(JA_NAMES.hidden || []);
 
 // fills the names for sets already in the database, without waiting for the next sync
 export async function applyJaNames() {
@@ -134,12 +137,15 @@ export async function applyJaNames() {
     `UPDATE sets s SET name = v.name FROM unnest($1::text[], $2::text[]) AS v(code, name)
      WHERE s.source = 'tcgdex-ja' AND s.code = v.code AND s.name <> v.name`,
     [fix.map(x => x[0]), fix.map(x => x[1])]);
+  // junk entries from an earlier sync: gone, as long as nothing hangs from them
+  await pool.query(`DELETE FROM sets s WHERE s.source = 'tcgdex-ja' AND s.code = ANY($1::text[]) AND NOT EXISTS (SELECT 1 FROM cards c WHERE c.set_id = s.id)`, [[...JA_HIDDEN]]);
 }
 
 export async function syncJaSets() {
   const list = await fetchJSON(`${TCGDEX}/sets`);
   await tx(async c => {
     for (const s of list) {
+      if (JA_HIDDEN.has(s.id)) continue;
       await c.query(
         `INSERT INTO sets (id, name, code, total, printed_total, source, lang, synced_at, name_en)
          VALUES ($1, $2, $3, $4, $5, 'tcgdex-ja', 'JA', now(), $6)
