@@ -82,7 +82,9 @@ async function syncSetCards(setId) {
       await c.query(
         `INSERT INTO cards (id, set_id, number, number_norm, name, supertype, rarity, artist, dex, image_small, image_large)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
-         ON CONFLICT (id) DO UPDATE SET number=$3, number_norm=$4, name=$5, supertype=$6, rarity=$7, artist=$8, dex=$9, image_small=$10, image_large=$11`,
+         ON CONFLICT (id) DO UPDATE SET number=$3, number_norm=$4, name=$5, supertype=$6, rarity=$7, artist=$8, dex=$9,
+           -- a picture we already copied (/img/…, imagenes.js) stays
+           image_small=CASE WHEN cards.image_small LIKE '/img/%' THEN cards.image_small ELSE $10 END, image_large=CASE WHEN cards.image_large LIKE '/img/%' THEN cards.image_large ELSE $11 END`,
         [x.id, setId, x.number, norm(x.number), x.name, x.supertype || null, x.rarity || null, x.artist || null,
          x.nationalPokedexNumbers || [], x.images?.small || null, x.images?.large || null]);
     }
@@ -185,7 +187,8 @@ async function upsertJaCard(x) {
   await pool.query(
     `INSERT INTO cards (id, set_id, number, number_norm, name, supertype, rarity, artist, dex, image_small, image_large)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
-     ON CONFLICT (id) DO UPDATE SET name=$5, supertype=$6, rarity=$7, artist=$8, dex=$9, image_small=$10, image_large=$11`,
+     ON CONFLICT (id) DO UPDATE SET name=$5, supertype=$6, rarity=$7, artist=$8, dex=$9,
+       image_small=CASE WHEN cards.image_small LIKE '/img/%' THEN cards.image_small ELSE $10 END, image_large=CASE WHEN cards.image_large LIKE '/img/%' THEN cards.image_large ELSE $11 END`,
     ['ja-' + x.id, setId, x.localId, norm(x.localId), x.name, JA_SUPERTYPE[x.category] || x.category || null, x.rarity || null,
      x.illustrator || null, x.dexId || [], jaImg(x.image, 'low'), jaImg(x.image, 'high')]);
 }

@@ -5,13 +5,16 @@
   "scripts": {
     "start": "node --env-file=../../.env src/index.js",
     "dev": "node --watch --env-file=../../.env src/index.js",
-    "sync": "node --env-file=../../.env src/sync.js"
+    "sync": "node --env-file=../../.env src/sync.js",
+    "imagenes:descargar": "node --env-file=../../.env src/imagenes-cli.js descargar",
+    "imagenes:estado": "node --env-file=../../.env src/imagenes-cli.js estado"
   },
   "dependencies": {
     "@fastify/static": "^10.1.6",
     "@pokenitsu/core": "workspace:*",
     "better-auth": "1.7.7",
     "fastify": "^5.12.5",
-    "pg": "^8.23.1"
+    "pg": "^8.23.1",
+    "sharp": "^0.35.5"
   }
 }

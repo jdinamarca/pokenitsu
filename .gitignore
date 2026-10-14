@@ -10,3 +10,6 @@ apps/web/public/core.js
 # local screenshots and source images, not used by the app
 /images/
 /newart01.jpg
+
+# our copy of the card pictures (pnpm imagenes:descargar); goes to the storage, not to git
+/data/

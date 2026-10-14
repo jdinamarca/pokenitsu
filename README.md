@@ -201,6 +201,26 @@ Cada fila del inventario tiene una ubicación (`inventory.loc`, 0 = sin ubicaci�
 - **Al cerrar un lote de venta** se sacan las copias de donde estén, y se recuerda de dónde (`lot_items.taken`) para que al reabrir vuelvan ahí. **📍 Lista para buscar las cartas** copia la lista ordenada por ubicación.
 - El respaldo JSON y el CSV llevan la ubicación por nombre.
 
+## Imágenes de las cartas (copia propia)
+
+**pokemontcg.io está obsoleto.** Su documentación dice que las claves existentes funcionan hasta el 1 de marzo de 2027 y recomienda migrar a Scrydex. De ahí vienen las imágenes de las cartas internacionales, así que la app guarda una **copia propia** y deja de depender de otros sitios para mostrar una carta.
+
+```bash
+pnpm imagenes:descargar                   # todo lo que falta (se puede cortar con Ctrl+C y retomar)
+pnpm imagenes:descargar -- --set sv3pt5   # una expansión
+pnpm imagenes:descargar -- --reintentar   # vuelve a intentar las sin foto, omitidas o con error
+pnpm imagenes:estado                      # cuántas hay copiadas, cuánto pesan y por qué faltan las demás
+```
+
+- **Qué guarda:** de cada carta se baja la imagen grande **una sola vez** y se guardan dos WebP, de 245 px (listas) y 600 px (vista previa), en `data/imagenes/cards/<expansión>/<carta>-small|large.webp`. La carpeta está fuera de git; se cambia con `IMAGE_DIR`. La carta pasa a apuntar a `/img/…` y el link original queda en la tabla `card_images`, con el estado, el peso, la huella sha256 y cuándo se subió al storage.
+- **Fuentes:** `images.pokemontcg.io` (internacionales) y `assets.tcgdex.net` (japonesas).
+  - Las internacionales cuya imagen venía de **Scrydex** se toman de TCGdex, porque los términos de Scrydex no permiten replicarlo.
+  - **PokeCottage nunca.**
+  - Las japonesas antiguas sin foto en ninguna fuente quedan "sin foto" y muestran la imagen de referencia.
+- **Cómo descarga:** 4 cartas a la vez, con una pausa entre cada una, identificándose como `NitsuCollectibles` (para TCGdex, con el formato `Mozilla/5.0 (compatible; …)` que pide su CDN). El catálogo completo son ~22.000 cartas: alrededor de 14 GB de descarga, ~2 GB guardados y cerca de una hora.
+- **Cómo se sirve:** `GET /img/…` entrega el archivo con una semana de caché. Si no está en esta máquina, redirige al storage (`IMAGE_BASE_URL`, en producción) o al link original. Las sincronizaciones del catálogo no reemplazan una imagen ya copiada.
+- **Producción:** la carpeta se sube al storage (Supabase Storage o Cloudflare R2) y se configura `IMAGE_BASE_URL`. El comando de subida se agrega al elegir el storage.
+
 ## Fotos por variante
 
 Si la foto del catálogo no corresponde, puedes cambiarla para esa variante: tocando la imagen en **Mi colección** o con **📷** en la vista previa de Cargar. Sirve un link o una foto de tu carta (se guarda en `apps/web/public/art/`, tabla `variant_images`). Un ejemplo: en todas las fuentes públicas, el Eevee de Jungle Unlimited aparece con la foto de la 1st Edition.
