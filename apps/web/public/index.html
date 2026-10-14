@@ -1601,7 +1601,7 @@ const meta = (sid, num) => metaMap[sid + '|' + num];
 // standard variants of each card, per expansion: cardVariants[sid][num] = ['normal', 'reverse'] (null = not known yet)
 const cardVariants = {};
 // larger picture of the catalog images (pokemontcg.io, TCGdex); anything else as is
-const bigImg = u => !u ? '' : u.endsWith('/small') ? u.slice(0, -6) + '/large' : u.endsWith('/low.webp') ? u.slice(0, -8) + 'high.webp'
+const bigImg = u => !u ? '' : u.endsWith('-small.webp') ? u.slice(0, -11) + '-large.webp' : u.endsWith('/small') ? u.slice(0, -6) + '/large' : u.endsWith('/low.webp') ? u.slice(0, -8) + 'high.webp'
   : /^https:\/\/images\.pokemontcg\.io\/.*\d\.png$/.test(u) ? u.replace(/\.png$/, '_hires.png') : u.endsWith('__thumb.webp') ? u.slice(0, -12) + '__large.webp' : u;
 
 async function loadState() {
