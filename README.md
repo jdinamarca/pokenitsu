@@ -208,7 +208,7 @@ Cada fila del inventario tiene una ubicación (`inventory.loc`, 0 = sin ubicaci�
 ```bash
 pnpm imagenes:descargar                   # todo lo que falta (se puede cortar con Ctrl+C y retomar)
 pnpm imagenes:descargar -- --set sv3pt5   # una expansión
-pnpm imagenes:descargar -- --reintentar   # vuelve a intentar las sin foto, omitidas o con error
+pnpm imagenes:descargar -- --reintentar   # vuelve a intentar las sin foto, omitidas o con error (y rehace las guardadas con el nombre antiguo)
 pnpm imagenes:estado                      # cuántas hay copiadas, cuánto pesan y por qué faltan las demás
 ```
 
