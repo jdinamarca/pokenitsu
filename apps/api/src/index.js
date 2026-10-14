@@ -112,6 +112,11 @@ app.addHook('onRequest', (req, reply, done) => {
   }, done);
 });
 app.addHook('onResponse', async req => endUser(req.dataStore));
+// the profile: the account, when it was created and whether it is the owner's (the first account, which got the data from before accounts)
+app.get('/api/me', async req => {
+  const u = req.user, { rows: [first] } = await pool.query('SELECT id FROM "user" ORDER BY "createdAt" LIMIT 1');
+  return { id: u.id, name: u.name, email: u.email, image: u.image || '', emailVerified: !!u.emailVerified, createdAt: u.createdAt, owner: first?.id === u.id };
+});
 app.addHook('onRequestAbort', async req => endUser(req.dataStore));
 app.addContentTypeParser(/^image\//, { parseAs: 'buffer', bodyLimit: 15 * 1024 * 1024 }, (req, body, done) => done(null, body));
 

@@ -61,8 +61,8 @@ code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
 .menu-pop{position:absolute;right:0;top:calc(100% + 6px);background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-lg);padding:6px;min-width:230px;display:flex;flex-direction:column;z-index:30}
 /* menus open from their trigger corner (animated from JS on toggle); closing is instant */
 .menu-pop,.colmenu .items{transform-origin:top right}
-.menu-pop button{border:0;background:none;text-align:left;font-weight:600;padding:9px 12px;border-radius:8px}
-.menu-pop button:hover{background:var(--chip)}
+.menu-pop:not(.profilepop) button{border:0;background:none;text-align:left;font-weight:600;padding:9px 12px;border-radius:8px}
+.menu-pop:not(.profilepop) button:hover{background:var(--chip)}
 .menu-pop hr{border:0;border-top:1px solid var(--line);margin:6px 4px}
 .tabs{max-width:1320px;margin:0 auto;display:flex;gap:4px;padding:0 12px;overflow-x:auto;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
@@ -615,6 +615,33 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
 .gdlg-actions{margin-top:6px}
 .gdlg-prev{flex:1 1 320px;display:flex;flex-direction:column;gap:10px;min-width:0}
 .gdlg-prev .pano{max-width:100%}
+.avatar{display:inline-grid;place-items:center;border-radius:50%;background-color:var(--chip);background-size:260% auto;background-repeat:no-repeat;flex:none;overflow:hidden}
+.avatar.ini{background:var(--red);color:#fff;font-weight:800}
+.profile summary{display:flex;align-items:center;gap:8px;padding:4px 12px 4px 4px}
+.profile .mename{font-weight:700}
+@media (max-width:640px){.profile .mename{display:none}.profile summary{padding:4px}}
+.profilepop{width:min(420px,calc(100vw - 24px));padding:18px;gap:14px}
+.profilepop .ph{display:flex;align-items:center;gap:14px}
+.profilepop .ph b{font-size:18px}
+.profilepop .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.profilepop .tag{font-size:11px;font-weight:800;border-radius:6px;padding:2px 7px;background:var(--chip);color:var(--muted)}
+.profilepop .tag.gold{background:var(--gold);color:#2b2000}.profilepop .tag.warn{color:var(--warn)}
+.profilepop h3{margin:0 0 8px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.profilepop .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.profilepop .stat{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:8px 10px}
+.profilepop .stat b{display:block;font-size:18px}.profilepop .stat b.ok{color:var(--ok)}.profilepop .stat span{font-size:12px;color:var(--muted);font-weight:700}
+.profilepop .prow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid var(--line);font-size:14px}
+.profilepop .prow small{display:block;color:var(--muted)}
+.profilepop .link{border:0;background:none;padding:0;color:var(--blue);font-weight:700;font-size:13.5px;text-align:right}
+.profilepop form{display:flex;flex-direction:column;gap:8px;padding:8px 0;border-top:1px solid var(--line)}
+.profilepop form input{padding:8px 10px}
+.profilepop form .row{display:flex;gap:8px;justify-content:flex-end}
+.avpick{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;padding:8px 0;border-top:1px solid var(--line)}
+.avpick button{border:2px solid transparent;background:none;padding:2px;border-radius:50%;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:700;color:var(--muted)}
+.avpick button.on{border-color:var(--gold)}
+.avpick .avatar{width:56px;height:56px}
+.profilepop .out{border-color:var(--err);color:var(--err);background:transparent;padding:10px}
+.profilepop .avpick button:hover{background:var(--chip)}
 .authgate{position:fixed;inset:0;z-index:100;background:var(--bg);display:grid;place-items:center;padding:16px}
 .authcard{width:min(400px,100%);background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-lg);padding:24px;display:flex;flex-direction:column;gap:12px}
 .authcard h1{margin:0;font-size:22px}
@@ -683,11 +710,13 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
         <button id="btnPrices">💰 Precios y tipo de cambio…</button>
         <hr>
         <button id="btnReset" class="danger">🗑️ Vaciar inventario…</button>
-        <hr>
-        <button id="btnLogout">🚪 Cerrar sesión <small class="muted" id="whoami"></small></button>
       </div>
     </details>
     <input type="file" id="fileImport" accept=".json,.csv" hidden>
+    <details class="menu profile" id="profileMenu" hidden>
+      <summary aria-label="Mi perfil"><span id="meAvatar"></span><span class="mename" id="meName"></span></summary>
+      <div class="menu-pop profilepop" id="profilePop"></div>
+    </details>
   </div>
   <nav class="tabs" id="tabs">
     <button data-tab="cargar" class="on"><span class="ico">➕</span>Cargar</button>
@@ -1138,7 +1167,8 @@ async function api(method, path, body) {
 }
 // ---------- account (Better Auth at /api/auth) ----------
 const AUTH_ERR = { INVALID_EMAIL_OR_PASSWORD: 'Email o contraseña incorrectos.', USER_ALREADY_EXISTS: 'Ya existe una cuenta con ese email: entra con tu contraseña.', USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL: 'Ya existe una cuenta con ese email: entra con tu contraseña.',
-  PASSWORD_TOO_SHORT: 'La contraseña debe tener al menos 10 caracteres.', INVALID_EMAIL: 'Ese email no es válido.' };
+  PASSWORD_TOO_SHORT: 'La contraseña debe tener al menos 10 caracteres.', INVALID_EMAIL: 'Ese email no es válido.',
+  INVALID_PASSWORD: 'La contraseña actual no es correcta.', CREDENTIAL_ACCOUNT_NOT_FOUND: 'Esta cuenta no tiene contraseña.' };
 let authMode = 'in';
 function showLogin(msg = '') {
   $('authGate').hidden = false; $('authMsg').textContent = msg; $('authMsg').className = 'msg' + (msg ? ' warn' : '');
@@ -1166,6 +1196,101 @@ async function submitAuth(e) {
   finally { $('authGo').disabled = false; }
 }
 function authFail(t) { $('authMsg').textContent = t; $('authMsg').className = 'msg err'; }
+// ---------- profile ----------
+// avatars: the art of trainers' Supporter cards (catalog images), cropped to the face: [key, name, image path, x%, y%]
+const AVATARS = [['misty', 'Misty', 'sm115/62', 44, 22], ['brock', 'Brock', 'sm115/53', 50, 22], ['erika', 'Erika', 'sm115/56', 50, 22],
+  ['sabrina', 'Sabrina', 'sm115/65', 50, 22], ['giovanni', 'Giovanni', 'sm115/57', 50, 22], ['red-blue', 'Red & Blue', 'sm12/202', 50, 22],
+  ['cynthia', 'Cynthia', 'sm5/119a', 50, 22], ['n', 'N', 'xy10/105', 46, 24], ['lillie', 'Lillie', 'sm5/125', 50, 22],
+  ['marnie', 'Marnie', 'swsh35/56', 50, 22], ['leon', 'Leon', 'swsh12pt5/134', 50, 22], ['nessa', 'Nessa', 'swsh4/157', 50, 22],
+  ['iono', 'Iono', 'sv4pt5/80', 50, 22], ['nemona', 'Nemona', 'sv4pt5/82', 50, 22], ['penny', 'Penny', 'sv1/183', 50, 22]];
+let ME = null, mySessionId = null, profileView = '';
+const initials = n => String(n || '?').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+function avatarHtml(u, size) {
+  const a = AVATARS.find(x => 'trainer:' + x[0] === u.image);
+  return a ? `<span class="avatar" role="img" aria-label="${esc(a[1])}" style="width:${size}px;height:${size}px;background-image:url(https://images.pokemontcg.io/${a[2]}.png);background-position:${a[3]}% ${a[4]}%"></span>`
+    : `<span class="avatar ini" aria-hidden="true" style="width:${size}px;height:${size}px;font-size:${Math.round(size * 0.4)}px">${esc(initials(u.name))}</span>`;
+}
+function renderMe() {
+  if (!ME) return;
+  $('profileMenu').hidden = false;
+  $('meAvatar').innerHTML = avatarHtml(ME, 28); $('meName').textContent = String(ME.name || ME.email).split(' ')[0];
+}
+// "Mac · Chrome" from a user agent
+function deviceOf(ua = '') {
+  const os = /iPhone|iPad/.test(ua) ? 'iPhone/iPad' : /Android/.test(ua) ? 'Android' : /Mac OS X/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows' : /Linux/.test(ua) ? 'Linux' : 'Otro equipo';
+  const br = /Edg\//.test(ua) ? 'Edge' : /Firefox\//.test(ua) ? 'Firefox' : /Chrome\//.test(ua) ? 'Chrome' : /Safari\//.test(ua) ? 'Safari' : 'navegador';
+  return `${os} · ${br}`;
+}
+const dateCL = d => new Date(d).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' });
+async function renderProfile() {
+  const pop = $('profilePop');
+  if (!pop.innerHTML) pop.innerHTML = '<div class="muted">Cargando…</div>';
+  const [me, sessions, cl] = await Promise.all([api('GET', '/me'), fetch('/api/auth/list-sessions').then(r => r.ok ? r.json() : []).catch(() => []),
+    colls ? Promise.resolve(colls) : api('GET', '/collections').catch(() => [])]);
+  ME = me; renderMe();
+  let copies = 0; const langs = new Set();
+  for (const k in data.inv) { copies += data.inv[k]; const l = splitKey(k).lang; if (l) langs.add(l); }
+  const val = invValue(), lastAdd = Math.max(0, ...Object.values(data.added || {}).map(Number).filter(Boolean));
+  const cur = sessions.find(x => x.id === mySessionId), others = sessions.filter(x => x.id !== mySessionId).length;
+  const stat = (n, label, cls = '') => `<div class="stat"><b class="${cls}">${n}</b><span>${label}</span></div>`;
+  pop.innerHTML = `<div class="ph">${avatarHtml(me, 56)}<div style="flex:1;min-width:0"><b>${esc(me.name)}</b><div class="muted" style="font-size:13px;overflow-wrap:anywhere">${esc(me.email)}</div>
+      <div class="tags">${me.owner ? '<span class="tag gold">Dueño</span>' : ''}<span class="tag">Alfa</span>${me.emailVerified ? '' : '<span class="tag warn">Email sin verificar</span>'}</div></div></div>
+    <div class="muted" style="font-size:13px">Coleccionista desde el ${dateCL(me.createdAt)}${lastAdd ? ` · última carga el ${dateCL(lastAdd)}` : ''}</div>
+    <div><h3>Tu colección</h3><div class="stats">${stat(fmt(copies), 'cartas')}${stat($('sUnique').textContent, 'distintas')}${stat(val.priced ? clp(val.sale + val.pers) : '—', 'valor estimado', 'ok')}
+      ${stat(fmt((cl || []).length), (cl || []).length === 1 ? 'colección' : 'colecciones')}${stat(fmt(data.groups.length), 'artes conectados')}${stat(fmt(LOCS.length), 'ubicaciones')}</div>
+      <div class="muted" style="font-size:12.5px;margin-top:8px">Idiomas: ${[...langs].map(l => LNAME[l] || l).join(' · ') || '—'} · ${fmt(LOTS.lots.filter(l => l.status !== 'done').length)} lotes abiertos</div></div>
+    <div><h3>Cuenta</h3>
+      <div class="prow"><span>Avatar</span><button type="button" class="link" data-act="avatar">${profileView === 'avatar' ? 'Listo' : 'Elegir entrenador'}</button></div>
+      ${profileView === 'avatar' ? `<div class="avpick">${AVATARS.map(a => `<button type="button" data-av="${a[0]}" class="${me.image === 'trainer:' + a[0] ? 'on' : ''}" title="${esc(a[1])}">${avatarHtml({ image: 'trainer:' + a[0] }, 56)}${esc(a[1])}</button>`).join('')}
+        <button type="button" data-av="" class="${me.image ? '' : 'on'}" title="Tus iniciales">${avatarHtml({ name: me.name }, 56)}Iniciales</button></div>` : ''}
+      <div class="prow"><span>Nombre<small>${esc(me.name)}</small></span><button type="button" class="link" data-act="name">Cambiar</button></div>
+      ${profileView === 'name' ? `<form data-form="name"><input name="name" value="${esc(me.name)}" maxlength="60" aria-label="Tu nombre" required><div class="row"><button type="button" data-act="cancel">Cancelar</button><button class="primary">Guardar</button></div></form>` : ''}
+      <div class="prow"><span>Contraseña</span><button type="button" class="link" data-act="pass">Cambiar contraseña</button></div>
+      ${profileView === 'pass' ? `<form data-form="pass"><input type="password" name="cur" autocomplete="current-password" placeholder="Contraseña actual" aria-label="Contraseña actual" required>
+        <input type="password" name="new" autocomplete="new-password" minlength="10" placeholder="Nueva (al menos 10 caracteres)" aria-label="Nueva contraseña" required>
+        <input type="password" name="rep" autocomplete="new-password" minlength="10" placeholder="Repite la nueva" aria-label="Repite la nueva contraseña" required>
+        <div class="row"><button type="button" data-act="cancel">Cancelar</button><button class="primary">Cambiar</button></div></form>` : ''}
+      <div class="prow"><span>Esta sesión<small>${cur ? `${esc(deviceOf(cur.userAgent))} · desde ${dateCL(cur.createdAt)} · vence ${dateCL(cur.expiresAt)}` : '—'}</small></span>
+        ${others ? `<button type="button" class="link" data-act="others">Cerrar ${others} en otros dispositivos</button>` : '<span class="muted" style="font-size:13px">Sin otras sesiones</span>'}</div>
+      <p class="msg" id="profileMsg" role="status"></p></div>
+    <button type="button" class="out" data-act="logout">🚪 Cerrar sesión</button>`;
+}
+function profileMsg(t, cls = '') { const m = $('profileMsg'); if (m) { m.textContent = t; m.className = 'msg ' + cls; } }
+async function authPost(path, body) {
+  const r = await fetch('/api/auth/' + path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body || {}) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(AUTH_ERR[j.code] || j.message || 'HTTP ' + r.status);
+  return j;
+}
+async function onProfileClick(e) {
+  const b = e.target.closest('button'); if (!b || b.type === 'submit' || b.classList.contains('primary')) return;
+  const act = b.dataset.act;
+  try {
+    if (b.dataset.av !== undefined) {
+      await authPost('update-user', { image: b.dataset.av ? 'trainer:' + b.dataset.av : '' });
+      toast(b.dataset.av ? `Ahora tu avatar es ${b.title}` : 'Volviste a tus iniciales');
+    } else if (act === 'avatar' || act === 'name' || act === 'pass') profileView = profileView === act ? '' : act;
+    else if (act === 'cancel') profileView = '';
+    else if (act === 'others') { await authPost('revoke-other-sessions'); toast('Cerraste las sesiones de otros dispositivos'); }
+    else if (act === 'logout') { await authPost('sign-out'); return location.reload(); }
+    else return;
+    await renderProfile();
+    $('profilePop').querySelector('form input')?.focus();
+  } catch (err) { profileMsg(err.message, 'err'); }
+}
+async function onProfileSubmit(e) {
+  e.preventDefault();
+  const f = e.target, kind = f.dataset.form;
+  try {
+    if (kind === 'name') { const name = f.name.value.trim(); if (!name) return; await authPost('update-user', { name }); toast('Nombre actualizado'); }
+    if (kind === 'pass') {
+      if (f.new.value !== f.rep.value) return profileMsg('Las contraseñas nuevas no coinciden.', 'err');
+      await authPost('change-password', { currentPassword: f.cur.value, newPassword: f.new.value, revokeOtherSessions: false });
+      toast('🔒 Contraseña cambiada');
+    }
+    profileView = ''; await renderProfile();
+  } catch (err) { profileMsg(err.message === AUTH_ERR.INVALID_EMAIL_OR_PASSWORD ? 'La contraseña actual no es correcta.' : err.message, 'err'); }
+}
 // null without a session; { open: true } when the server has no accounts at all (an older server)
 async function currentSession() {
   try { const r = await fetch('/api/auth/get-session'); return r.status === 404 ? { open: true } : r.ok ? await r.json() : null; } catch { return null; }
@@ -3139,6 +3264,7 @@ renderLangs(); renderConds(); renderLocPick(); renderPersMode(); renderCur(); re
 document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => showTab(b.dataset.tab));
 document.addEventListener('click', e => {
   const m = $('dataMenu'); if (m.open && !m.contains(e.target)) m.open = false;
+  const pm = $('profileMenu'); if (pm.open && !pm.contains(e.target)) pm.open = false;
   for (const d of document.querySelectorAll('details.pick[open]')) if (!d.contains(e.target)) d.open = false;
   const a = e.target.closest('[data-artist]'); if (a) { e.preventDefault(); openArtist(a.dataset.artist); }
 });
@@ -3901,11 +4027,13 @@ $('colDex').addEventListener('focus', fillDexNames);
 // ---------- boot ----------
 document.querySelector('.authtabs').addEventListener('click', e => { const b = e.target.closest('button[data-mode]'); if (b) { setAuthMode(b.dataset.mode); $('authMsg').textContent = ''; } });
 $('authForm').addEventListener('submit', submitAuth);
-$('btnLogout').onclick = async () => { $('dataMenu').open = false; await fetch('/api/auth/sign-out', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' }); location.reload(); };
+$('profilePop').addEventListener('click', onProfileClick);
+$('profilePop').addEventListener('submit', onProfileSubmit);
+$('profileMenu').addEventListener('toggle', () => { if ($('profileMenu').open) { profileView = ''; renderProfile().catch(e => profileMsg(e.message, 'err')); } });
 currentSession().then(s => {
-  if (s && s.open) { $('btnLogout').hidden = true; return boot(); }
+  if (s && s.open) return boot();
   if (!s || !s.user) return showLogin();
-  $('whoami').textContent = s.user.email; boot();
+  ME = s.user; mySessionId = s.session && s.session.id; renderMe(); boot();
 });
 function boot() {
 const hashTab = location.hash.slice(1);
