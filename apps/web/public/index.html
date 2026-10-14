@@ -629,6 +629,17 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
 .profilepop h3{margin:0 0 8px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 .profilepop .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .profilepop .stat{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:8px 10px}
+.profilepop .golink{position:relative;overflow:hidden;text-align:left;font:inherit;color:inherit;cursor:pointer;transition:transform .16s var(--ease-out),border-color .16s ease}
+.profilepop .golink .ball{position:absolute;right:6px;bottom:6px;width:24px;height:24px;opacity:0;transform:translate(10px,10px) scale(.9);transition:opacity .2s var(--ease-out),transform .2s var(--ease-out)}
+.profilepop .golink .ball svg{display:block;transform-origin:50% 90%}
+.profilepop .golink:focus-visible .ball{opacity:1;transform:none}
+@media (hover:hover) and (pointer:fine){
+  .profilepop .golink:hover{transform:translateY(-2px);border-color:var(--muted)}
+  .profilepop .golink:hover .ball{opacity:1;transform:none}
+  .profilepop .golink:hover .ball svg{animation:ballwobble .7s .18s var(--ease-out)}
+}
+@media (hover:none){.profilepop .golink .ball{opacity:.45;transform:none}}
+@keyframes ballwobble{20%{transform:rotate(-16deg)}40%{transform:rotate(12deg)}60%{transform:rotate(-7deg)}80%{transform:rotate(3deg)}}
 .profilepop .stat b{display:block;font-size:18px}.profilepop .stat b.ok{color:var(--ok)}.profilepop .stat span{font-size:12px;color:var(--muted);font-weight:700}
 .profilepop .prow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid var(--line);font-size:14px}
 .profilepop .prow small{display:block;color:var(--muted)}
@@ -670,6 +681,8 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
   dialog.dlg,dialog.dlg[open],.toast,.toast.out,.tile:hover .img,.cell:hover,.slot:hover .pic{transform:none}
   @starting-style{dialog.dlg[open],.toast{transform:none}}
   .entry.errf{animation:none}
+  .profilepop .golink .ball svg{animation:none !important}
+  .profilepop .golink,.profilepop .golink:hover,.profilepop .golink .ball{transform:none !important}
   button:active{transform:none}
 }
 </style>
@@ -1204,6 +1217,15 @@ const AVATARS = [['misty', 'Misty', 'sm115/62', 44, 22], ['brock', 'Brock', 'sm1
   ['marnie', 'Marnie', 'swsh35/56', 50, 22], ['leon', 'Leon', 'swsh12pt5/134', 50, 22], ['nessa', 'Nessa', 'swsh4/157', 50, 22],
   ['iono', 'Iono', 'sv4pt5/80', 50, 22], ['nemona', 'Nemona', 'sv4pt5/82', 50, 22], ['penny', 'Penny', 'sv1/183', 50, 22]];
 let ME = null, mySessionId = null, profileView = '';
+// Poké Ball, Great Ball and Ultra Ball: top color plus the marks that tell them apart
+function ballSvg(kind) {
+  const top = { poke: '#e3350d', great: '#2a75bb', ultra: '#2b2b2b' }[kind];
+  const marks = kind === 'great' ? '<path d="M5.5 7.5 9 5M18.5 7.5 15 5" stroke="#e3350d" stroke-width="2.2" stroke-linecap="round"/>'
+    : kind === 'ultra' ? '<path d="M7 4.6v5.6M17 4.6v5.6" stroke="#f2b705" stroke-width="2.4" stroke-linecap="round"/>' : '';
+  return `<svg viewBox="0 0 24 24" width="24" height="24"><path d="M2 12a10 10 0 0 1 20 0z" fill="${top}"/><path d="M2 12a10 10 0 0 0 20 0z" fill="#fff"/>${marks}`
+    + '<circle cx="12" cy="12" r="10" fill="none" stroke="#1c1f2e" stroke-width="1.6"/><path d="M2 12h20" stroke="#1c1f2e" stroke-width="1.6"/>'
+    + '<circle cx="12" cy="12" r="3.2" fill="#fff" stroke="#1c1f2e" stroke-width="1.6"/></svg>';
+}
 const canEditArt = () => !ME || !!ME.owner;
 const initials = n => String(n || '?').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
 function avatarHtml(u, size) {
@@ -1241,11 +1263,13 @@ async function renderProfile() {
   const val = invValue(), lastAdd = Math.max(0, ...Object.values(data.added || {}).map(Number).filter(Boolean));
   const cur = sessions.find(x => x.id === mySessionId), others = sessions.filter(x => x.id !== mySessionId).length;
   const stat = (n, label, cls = '') => `<div class="stat"><b class="${cls}">${n}</b><span>${label}</span></div>`;
+  // a stat that opens its section; a different ball peeks out of each one on hover
+  const go = (tab, ball, n, label, what) => `<button type="button" class="stat golink" data-go="${tab}" title="Ir a ${what}"><b>${n}</b><span>${label}</span><span class="ball" aria-hidden="true">${ballSvg(ball)}</span></button>`;
   pop.innerHTML = `<div class="ph">${avatarHtml(me, 56)}<div style="flex:1;min-width:0"><b>${esc(me.name)}</b><div class="muted" style="font-size:13px;overflow-wrap:anywhere">${esc(me.email)}</div>
       <div class="tags">${me.owner ? '<span class="tag gold">Dueño</span>' : ''}<span class="tag">Alfa</span>${me.emailVerified ? '' : '<span class="tag warn">Email sin verificar</span>'}</div></div></div>
     <div class="muted" style="font-size:13px">Coleccionista desde el ${dateCL(me.createdAt)}${lastAdd ? ` · última carga el ${dateCL(lastAdd)}` : ''}</div>
     <div><h3>Tu colección</h3><div class="stats">${stat(fmt(copies), 'cartas')}${stat($('sUnique').textContent, 'distintas')}${stat(val.priced ? clp(val.sale + val.pers) : '—', 'valor estimado', 'ok')}
-      ${stat(fmt((cl || []).length), (cl || []).length === 1 ? 'colección' : 'colecciones')}<div class="stat"><b>${fmt(artDone)} <span class="muted" style="font-size:14px">/ ${fmt(data.groups.length)}</span></b><span>artes conectados completos${artStarted ? ` · ${fmt(artStarted)} empezados` : ''}</span></div>${stat(fmt(LOCS.length), 'ubicaciones')}</div>
+      ${go('colecciones', 'poke', fmt((cl || []).length), (cl || []).length === 1 ? 'colección' : 'colecciones', 'Mis colecciones')}${go('grupos', 'great', `${fmt(artDone)} <span class="muted" style="font-size:14px">/ ${fmt(data.groups.length)}</span>`, `artes conectados completos${artStarted ? ` · ${fmt(artStarted)} empezados` : ''}`, 'Artes conectados')}${go('ubicaciones', 'ultra', fmt(LOCS.length), 'ubicaciones', 'Ubicaciones')}</div>
       <div class="muted" style="font-size:12.5px;margin-top:8px">Idiomas: ${[...langs].map(l => LNAME[l] || l).join(' · ') || '—'} · ${fmt(LOTS.lots.filter(l => l.status !== 'done').length)} lotes abiertos</div></div>
     <div><h3>Cuenta</h3>
       <div class="prow"><span>Avatar</span><button type="button" class="link" data-act="avatar">${profileView === 'avatar' ? 'Listo' : 'Elegir entrenador'}</button></div>
@@ -1272,6 +1296,7 @@ async function authPost(path, body) {
 }
 async function onProfileClick(e) {
   const b = e.target.closest('button'); if (!b || b.type === 'submit' || b.classList.contains('primary')) return;
+  if (b.dataset.go) { $('profileMenu').open = false; showTab(b.dataset.go); window.scrollTo(0, 0); return; }
   const act = b.dataset.act;
   try {
     if (b.dataset.av !== undefined) {
