@@ -4,10 +4,10 @@
 
 - [x] 1.1 "Nitsu Collectibles" en landing, app (título y logo), login, README y `openspec/config.yaml`
 
-## 2. Login con Gengar
+## 2. Login con lienzos de colores
 
-- [x] 2.1 Gengar asomado que reacciona a email, contraseña y error; Pikachu; logo; títulos por modo; reducir movimiento; celular sin desborde
-- [x] 2.2 Verificar en Chrome sin interfaz (copia de la base): estados de Gengar, error con sacudida, crear cuenta, entrar, celular, sin errores
+- [x] 2.1 Lienzos de colores flotando (CSS, sin imágenes), formulario de vidrio que se sacude con error; logo; títulos por modo; reducir movimiento; celular sin desborde
+- [x] 2.2 Verificar en Chrome sin interfaz (copia de la base): lienzos animados, sacudida, formulario por encima, entrar, reducir movimiento, claro y oscuro, celular, sin errores
 
 ## 3. Landing
 
