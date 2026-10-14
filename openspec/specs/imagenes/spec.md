@@ -1,7 +1,7 @@
 # imagenes Specification
 
 ## Purpose
-TBD - created by archiving change imagenes-locales. Update Purpose after archive.
+Tener una copia propia de las imágenes de las cartas del catálogo, para no depender de otros sitios para mostrarlas, y servirla desde la app (en local o desde un storage en producción).
 
 ## Requirements
 
