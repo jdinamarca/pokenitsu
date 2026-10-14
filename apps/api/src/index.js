@@ -5,7 +5,7 @@ import { writeFile, unlink } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { dirname, join } from 'node:path';
 import { fromNodeHeaders } from 'better-auth/node';
-import { pool, tx, migrate } from './db.js';
+import { pool, tx, migrate, runAsUser, endUser } from './db.js';
 import { createAuth } from './auth.js';
 import { norm, ensureSets, syncSets, ensureSetCards, syncAllCards, syncJaDex, applyJaNames } from './catalog.js';
 import { importChecklist, fillJaImages } from './pokecottage.js';
@@ -101,13 +101,18 @@ app.route({
 });
 // the landing's sign-up form and the login itself are the only API calls without a session
 const PUBLIC_API = [/^\/api\/auth\//, /^\/api\/alpha$/];
-app.addHook('onRequest', async (req, reply) => {
+// callback style on purpose: the rest of the request runs inside runAsUser, so every query sees only this user's rows
+app.addHook('onRequest', (req, reply, done) => {
   const path = req.url.split('?')[0];
-  if (!path.startsWith('/api/') || PUBLIC_API.some(r => r.test(path))) return;
-  const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
-  if (!session) return reply.code(401).send({ error: 'Inicia sesión para continuar', login: true });
-  req.user = session.user;
+  if (!path.startsWith('/api/') || PUBLIC_API.some(r => r.test(path))) return done();
+  auth.api.getSession({ headers: fromNodeHeaders(req.headers) }).then(session => {
+    if (!session) return reply.code(401).send({ error: 'Inicia sesión para continuar', login: true });
+    req.user = session.user;
+    req.dataStore = runAsUser(session.user.id, done);
+  }, done);
 });
+app.addHook('onResponse', async req => endUser(req.dataStore));
+app.addHook('onRequestAbort', async req => endUser(req.dataStore));
 app.addContentTypeParser(/^image\//, { parseAs: 'buffer', bodyLimit: 15 * 1024 * 1024 }, (req, body, done) => done(null, body));
 
 // ---------- landing (/alfa) and its alpha sign-ups ----------
@@ -250,7 +255,7 @@ app.put('/api/prices/own', async req => {
     if (!(clp >= 0)) throw bad(usd != null ? 'No tengo el tipo de cambio para convertir a CLP' : 'Precio inválido');
     // saving the same value again counts as "checked today"
     await pool.query(`INSERT INTO price_overrides (card_id, variant, clp, usd) VALUES ($1, $2, $3, $4)
-      ON CONFLICT (card_id, variant) DO UPDATE SET clp = $3, usd = $4, updated_at = now()`, [id, variant, clp, usd]);
+      ON CONFLICT (user_id, card_id, variant) DO UPDATE SET clp = $3, usd = $4, updated_at = now()`, [id, variant, clp, usd]);
   }
   return { ok: true };
 });
@@ -366,7 +371,7 @@ async function imageCard(q) {
 async function setVariantImage(q, img) {
   const { card, variant, old } = await imageCard(q);
   await pool.query(`INSERT INTO variant_images (card_id, variant, img) VALUES ($1, $2, $3)
-    ON CONFLICT (card_id, variant) DO UPDATE SET img = $3, updated_at = now()`, [card.id, variant, img]);
+    ON CONFLICT (user_id, card_id, variant) DO UPDATE SET img = $3, updated_at = now()`, [card.id, variant, img]);
   if (old !== img) await removeLocalImage(old);
   return variantImages();
 }
@@ -402,7 +407,7 @@ async function writeRow(c, r, qty, personal) {
   if (qty <= 0) await c.query(`DELETE FROM inventory WHERE ${ROW_WHERE}`, rowArgs(r));
   else await c.query(
     `INSERT INTO inventory (card_id, variant, lang, cond, loc, qty, personal) VALUES ($1, $2, $3, $4, $5, $6, $7)
-     ON CONFLICT (card_id, variant, lang, cond, loc) DO UPDATE SET qty = $6, personal = $7, updated_at = now()`,
+     ON CONFLICT (user_id, card_id, variant, lang, cond, loc) DO UPDATE SET qty = $6, personal = $7, updated_at = now()`,
     [...rowArgs(r), qty, Math.min(Math.max(personal, 0), qty)]);
 }
 const lockRow = (c, r) => c.query(`SELECT qty, personal, added_at FROM inventory WHERE ${ROW_WHERE} FOR UPDATE`, rowArgs(r))
@@ -481,7 +486,7 @@ async function moveRow(c, from, to, n = Infinity) {
   await writeRow(c, from, cur.qty - k, cur.personal - kp);
   await c.query(
     `INSERT INTO inventory (card_id, variant, lang, cond, loc, qty, personal, added_at) VALUES ($1, $2, $3, $4, $5, $6, $7, coalesce($8, now()))
-     ON CONFLICT (card_id, variant, lang, cond, loc) DO UPDATE SET qty = inventory.qty + excluded.qty, personal = inventory.personal + excluded.personal,
+     ON CONFLICT (user_id, card_id, variant, lang, cond, loc) DO UPDATE SET qty = inventory.qty + excluded.qty, personal = inventory.personal + excluded.personal,
        added_at = least(inventory.added_at, excluded.added_at), updated_at = now()`,
     [...rowArgs(to), k, kp, cur.added_at]);
   if (k === cur.qty) await c.query(`UPDATE inventory_log SET variant = $6, lang = $7, cond = $8, loc = $9 WHERE ${ROW_WHERE}`, [...rowArgs(from), to.variant, to.lang, to.cond, to.loc]);
@@ -997,7 +1002,7 @@ app.post('/api/import', { bodyLimit: 20 * 1024 * 1024 }, async req => {
       }
       await c.query(
         `INSERT INTO inventory (card_id, variant, lang, cond, loc, qty, personal) VALUES ($1, $2, $3, $4, $5, $6, $7)
-         ON CONFLICT (card_id, variant, lang, cond, loc) DO UPDATE SET qty = inventory.qty + excluded.qty, personal = inventory.personal + excluded.personal, updated_at = now()`,
+         ON CONFLICT (user_id, card_id, variant, lang, cond, loc) DO UPDATE SET qty = inventory.qty + excluded.qty, personal = inventory.personal + excluded.personal, updated_at = now()`,
         [card.id, it.variant, it.lang, it.cond, loc, it.qty, it.personal]);
       imported += it.qty;
     }

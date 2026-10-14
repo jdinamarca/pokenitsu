@@ -3,7 +3,7 @@
 //                         if it has none (brand-new expansions), TCGdex's English catalog: TCGplayer + Cardmarket
 //   Japanese cards      → TCGdex: Cardmarket (EUR), one card at a time
 // Checklist and hand-typed cards have no market price: set your own with price_overrides.
-import { pool } from './db.js';
+import { pool, asSystem } from './db.js';
 import { fetchJSON, norm } from './catalog.js';
 
 const PTCG = 'https://api.pokemontcg.io/v2';
@@ -122,10 +122,10 @@ async function fetchTcgdexEn(setId, cardIds) {
 }
 // international cards (of the wanted ones, or the given ones) to complete from TCGdex: without any price, or not checked there lately
 async function unpricedIntl(cardIds = null) {
-  const { rows } = await pool.query(
+  const { rows } = await asSystem(c => c.query(
     `SELECT c.id, c.set_id FROM cards c JOIN sets s ON s.id = c.set_id LEFT JOIN card_prices p ON p.card_id = c.id
      WHERE s.source = 'ptcg' AND (p.card_id IS NULL OR (p.usd IS NULL AND p.eur IS NULL) OR p.td_at IS NULL OR p.td_at < now() - '${TD_MAX_AGE}'::interval)
-       AND ($1::text[] IS NULL OR c.id = ANY($1)) AND ($1::text[] IS NOT NULL OR c.id IN (SELECT id FROM (${WANTED}) w))`, [cardIds]);
+       AND ($1::text[] IS NULL OR c.id = ANY($1)) AND ($1::text[] IS NOT NULL OR c.id IN (SELECT id FROM (${WANTED}) w))`, [cardIds]));
   const bySet = new Map();
   for (const r of rows) { if (!bySet.has(r.set_id)) bySet.set(r.set_id, []); bySet.get(r.set_id).push(r.id); }
   return bySet;
@@ -166,7 +166,7 @@ export async function ensureCardPrice(cardId) {
   } catch (e) { console.warn('precio de', cardId, e.message); }
 }
 
-// Cards worth pricing: everything in the inventory, in my collections' checklists, in my lots and in my connected-art groups
+// Cards worth pricing: everything in the inventory, collections' checklists, lots and connected-art groups (the user's in a request, everyone's in asSystem)
 const WANTED = `
   SELECT DISTINCT c.id, c.set_id, s.source FROM cards c JOIN sets s ON s.id = c.set_id
   WHERE (EXISTS (SELECT 1 FROM inventory i WHERE i.card_id = c.id) OR EXISTS (SELECT 1 FROM collection_cards cc WHERE cc.card_id = c.id)
@@ -182,9 +182,10 @@ export async function staleCount() {
 
 // Downloads missing or old prices (all of them with force); international ones a set at a time
 export async function refreshPrices(force, onProgress = () => {}) {
-  const { rows } = await pool.query(
+  // shared prices for everyone's cards
+  const { rows } = await asSystem(c => c.query(
     `SELECT w.* FROM (${WANTED}) w LEFT JOIN card_prices p ON p.card_id = w.id
-     WHERE $1 OR p.card_id IS NULL OR p.fetched_at < now() - $2::interval`, [!!force, MAX_AGE]);
+     WHERE $1 OR p.card_id IS NULL OR p.fetched_at < now() - $2::interval`, [!!force, MAX_AGE]));
   const intlSets = [...new Set(rows.filter(r => r.source === 'ptcg').map(r => r.set_id))];
   const ja = rows.filter(r => r.source === 'tcgdex-ja').map(r => r.id);
   let total = intlSets.length + ja.length;
@@ -214,13 +215,16 @@ export async function refreshPrices(force, onProgress = () => {}) {
 }
 
 // ---------- settings and exchange rates ----------
+// price and lot configuration are each user's; the exchange rate (fx) is shared
+const USER_SETTINGS = new Set(['prices', 'lots']);
 export async function getSetting(key, def) {
-  const { rows } = await pool.query('SELECT value, updated_at FROM settings WHERE key = $1', [key]);
+  const { rows } = await pool.query(`SELECT value, updated_at FROM ${USER_SETTINGS.has(key) ? 'user_settings' : 'settings'} WHERE key = $1`, [key]);
   return rows.length ? { ...def, ...rows[0].value, at: rows[0].updated_at } : def;
 }
 export async function putSetting(key, value) {
-  await pool.query(
-    `INSERT INTO settings (key, value, updated_at) VALUES ($1, $2, now()) ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = now()`,
+  await pool.query(USER_SETTINGS.has(key)
+    ? `INSERT INTO user_settings (key, value, updated_at) VALUES ($1, $2, now()) ON CONFLICT (user_id, key) DO UPDATE SET value = $2, updated_at = now()`
+    : `INSERT INTO settings (key, value, updated_at) VALUES ($1, $2, now()) ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = now()`,
     [key, JSON.stringify(value)]);
 }
 

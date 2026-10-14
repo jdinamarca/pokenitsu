@@ -21,3 +21,4 @@ Por qué el sistema es como es. El **qué** hace está en [`openspec/specs/`](..
 | [0015](0015-despliegue.md) | Despliegue: Vercel + Fly.io + Supabase | Aceptado |
 | [0016](0016-observabilidad-y-correo.md) | Sentry, logs estructurados y Resend | Aceptado |
 | [0017](0017-reconocimiento-de-cartas-con-ocr-en-el-navegador.md) | Reconocer las cartas con OCR en el navegador | **Propuesto** |
+| [0018](0018-rls-forzado-con-usuario-por-conexion.md) | RLS forzado, con el usuario fijado en la conexión de cada petición | Aceptado |
