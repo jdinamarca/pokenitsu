@@ -16,12 +16,14 @@
   --shadow-lg:0 10px 30px rgba(20,24,40,.14);
   --r:14px;
   --ease-out:cubic-bezier(.23,1,.32,1);
+  --mono-bg-l:88%;--mono-fg-l:30%;
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
     --bg:#11131b;--panel:#1a1d28;--panel2:#202433;--ink:#eceef6;--muted:#9aa0b8;--line:#2c3142;--chip:#262a3a;--track:#2a2f40;
     --red:#ff5a3c;--blue:#5aa6ea;--gold:#ffcb05;--ok:#3cc488;--warn:#f0a92a;--err:#ff6b61;--holo:#a28cff;--rev:#4fb6f2;--norm:#a3a8bd;
     --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 14px rgba(0,0,0,.25);--shadow-lg:0 10px 30px rgba(0,0,0,.45);
+    --mono-bg-l:24%;--mono-fg-l:82%;
   }
 }
 *{box-sizing:border-box}
@@ -526,6 +528,31 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
 .artcard{position:relative;display:flex;flex-direction:column;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);cursor:pointer;color:inherit;font:inherit;padding:0}
 .artcard:hover{border-color:var(--muted)}
 .artcard .cover{aspect-ratio:16/10;overflow:hidden;background:var(--chip)}
+/* signature card: monogram and name at rest; on hover (mouse only) one of their cards, sharp, fades in behind */
+.artcard.sig .body{position:relative;z-index:1;padding:14px;gap:10px;min-height:128px;justify-content:space-between}
+.artcard.sig .head{display:flex;align-items:center;gap:12px;padding-right:36px;min-width:0}
+.artcard.sig .who{min-width:0}
+.artcard.sig .nm{font-size:16px;line-height:1.2;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.artcard.sig .cat{font-size:12.5px;color:var(--muted);font-weight:600;white-space:nowrap}
+.artcard.sig .mono{width:44px;height:44px;border-radius:50%;flex:none;display:grid;place-items:center;font-weight:900;font-size:15px;background:hsl(var(--hue) 32% var(--mono-bg-l));color:hsl(var(--hue) 70% var(--mono-fg-l))}
+.artcard.sig.none .mono{filter:grayscale(1);opacity:.6}
+.artcard.sig .artthumb{display:none;width:40px;height:56px;border-radius:4px;overflow:hidden;flex:none;background:var(--chip)}
+.artcard.sig .artthumb img{width:100%;height:100%;object-fit:cover;display:block}
+.artcard.sig .artpeek{position:absolute;inset:0;opacity:0;pointer-events:none}
+.artcard.sig .artpeek img{width:100%;height:100%;object-fit:cover;object-position:50% 22%;transform:scale(1.35);transform-origin:50% 22%;display:block}
+.artcard.sig .artpeek::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(12,14,20,.72) 0%,rgba(12,14,20,.45) 45%,rgba(12,14,20,.9) 100%)}
+@media (hover:hover) and (pointer:fine){
+  .artcard.sig .artpeek{transition:opacity .25s var(--ease-out)}
+  .artcard.sig .artpeek img{transition:transform .4s var(--ease-out)}
+  .artcard.sig:hover .artpeek,.artcard.sig:focus-visible .artpeek{opacity:1}
+  .artcard.sig:hover .artpeek img,.artcard.sig:focus-visible .artpeek img{transform:scale(1.25)}
+  .artcard.sig:hover .body,.artcard.sig:focus-visible .body{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+  .artcard.sig:hover .cat,.artcard.sig:hover .nums,.artcard.sig:focus-visible .cat,.artcard.sig:focus-visible .nums{color:rgba(255,255,255,.78)}
+  .artcard.sig:hover .nums b,.artcard.sig:focus-visible .nums b{color:#fff}
+  .artcard.sig:hover .mono,.artcard.sig:focus-visible .mono{opacity:0}
+}
+/* touch screens: no hover, so a small sharp thumbnail instead of the monogram */
+@media (hover:none){.artcard.sig .artthumb{display:block}.artcard.sig .head .artthumb + .mono{display:none}}
 .artcard .cover img{width:100%;height:100%;object-fit:cover;object-position:50% 22%;transform:scale(1.55);transform-origin:50% 24%;display:block}
 .artcard.none .cover img{filter:grayscale(1);opacity:.45}
 .artcard .body{padding:10px 12px 12px;display:flex;flex-direction:column;gap:6px}
@@ -681,6 +708,7 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
   dialog.dlg,dialog.dlg[open],.toast,.toast.out,.tile:hover .img,.cell:hover,.slot:hover .pic{transform:none}
   @starting-style{dialog.dlg[open],.toast{transform:none}}
   .entry.errf{animation:none}
+  .artcard.sig .artpeek img,.artcard.sig:hover .artpeek img{transform:scale(1.3) !important;transition:none !important}
   .profilepop .golink .ball svg{animation:none !important}
   .profilepop .golink,.profilepop .golink:hover,.profilepop .golink .ball{transform:none !important}
   button:active{transform:none}
@@ -1217,6 +1245,8 @@ const AVATARS = [['misty', 'Misty', 'sm115/62', 44, 22], ['brock', 'Brock', 'sm1
   ['marnie', 'Marnie', 'swsh35/56', 50, 22], ['leon', 'Leon', 'swsh12pt5/134', 50, 22], ['nessa', 'Nessa', 'swsh4/157', 50, 22],
   ['iono', 'Iono', 'sv4pt5/80', 50, 22], ['nemona', 'Nemona', 'sv4pt5/82', 50, 22], ['penny', 'Penny', 'sv1/183', 50, 22]];
 let ME = null, mySessionId = null, profileView = '';
+// a stable hue per name (artist monograms)
+const hueOf = n => { let h = 0; for (const ch of String(n)) h = (h * 31 + ch.codePointAt(0)) % 360; return h; };
 // Poké, Great, Ultra, Premier, Luxury and Master Ball: top color, the band's color and the marks that tell them apart
 function ballSvg(kind) {
   const top = { poke: '#e3350d', great: '#2a75bb', ultra: '#2b2b2b', premier: '#f4f4f4', luxury: '#1f1f1f', master: '#6a3db8' }[kind];
@@ -1387,7 +1417,7 @@ const meta = (sid, num) => metaMap[sid + '|' + num];
 const cardVariants = {};
 // larger picture of the catalog images (pokemontcg.io, TCGdex); anything else as is
 const bigImg = u => !u ? '' : u.endsWith('/small') ? u.slice(0, -6) + '/large' : u.endsWith('/low.webp') ? u.slice(0, -8) + 'high.webp'
-  : /^https:\/\/images\.pokemontcg\.io\/.*\d\.png$/.test(u) ? u.replace(/\.png$/, '_hires.png') : u;
+  : /^https:\/\/images\.pokemontcg\.io\/.*\d\.png$/.test(u) ? u.replace(/\.png$/, '_hires.png') : u.endsWith('__thumb.webp') ? u.slice(0, -12) + '__large.webp' : u;
 
 async function loadState() {
   const s = await api('GET', '/state');
@@ -2936,12 +2966,13 @@ function renderArtists() {
   list.sort((a, b) => (favArtists.has(b.name) - favArtists.has(a.name)) || cmp(a, b));
   paint($('artList'), list.slice(0, artLimit).map(a => {
     const fav = favArtists.has(a.name), img = coverOf(a.name, a.st);
-    return `<div class="artcard ${a.have ? '' : 'none'}" data-a="${esc(a.name)}" role="button" tabindex="0">
+    return `<div class="artcard sig ${a.have ? '' : 'none'}" data-a="${esc(a.name)}" role="button" tabindex="0" style="--hue:${hueOf(a.name)}">
       <button class="favbtn ${fav ? 'on' : ''}" data-fav="${esc(a.name)}" aria-label="${fav ? 'Quitar de favoritos' : 'Marcar como favorito'}" aria-pressed="${fav}">${STAR(fav)}</button>
-      <div class="cover">${img ? `<img src="${esc(img)}" loading="lazy" alt="" onerror="this.remove()">` : ''}</div>
-      <div class="body"><div class="nm">${esc(a.name)}</div>
+      ${img ? `<span class="artpeek" aria-hidden="true"><img data-src="${esc(bigImg(img))}" alt="" onerror="this.parentNode.remove()"></span>` : ''}
+      <div class="body"><div class="head">${img ? `<span class="artthumb" aria-hidden="true"><img src="${esc(img)}" loading="lazy" alt="" onerror="this.parentNode.remove()"></span>` : ''}<span class="mono" aria-hidden="true">${esc(initials(a.name))}</span>
+          <div class="who"><div class="nm">${esc(a.name)}</div><div class="cat">${fmt(a.total)} en el catálogo</div></div></div>
         <div class="expbar"><i style="width:${pct(a.have, a.total)}%"></i></div>
-        <div class="nums"><span><b>${fmt(a.have)}</b> / ${fmt(a.total)}</span>${a.st && a.st.best && a.have ? tierChip(a.st.best.tier) : ''}</div>
+        <div class="nums"><span><b>${fmt(a.have)}</b> tienes</span>${a.st && a.st.best && a.have ? tierChip(a.st.best.tier) : ''}</div>
         ${f.copies === 'venta' && a.st && a.st.kitCopies ? `<div class="kit">Kit: ${fmt(a.st.kitCopies)} para vender · ~${clp(a.st.kitValue)}</div>` : ''}</div></div>`; }).join('')
     || `<div class="empty">${f.fav ? 'Todavía no tienes ilustradores favoritos: toca la estrella de uno.' : 'No encontré ilustradores con estos filtros.'}</div>`);
   $('artMore').innerHTML = list.length > artLimit ? `<button id="artMoreBtn" style="margin-top:14px">Ver más (${fmt(list.length - artLimit)})</button>` : '';
@@ -3544,6 +3575,10 @@ $('artTiers').addEventListener('click', e => {
   if (!next.length) next = [id];
   setArt({ tiers: next.length === all.length ? null : all.filter(x => next.includes(x)) });
 });
+// the hi-res picture of an artist card loads only when it is hovered or focused
+const peek = e => { const img = e.target.closest?.('.artcard.sig')?.querySelector('.artpeek img[data-src]'); if (img) { img.src = img.dataset.src; img.removeAttribute('data-src'); } };
+$('artList').addEventListener('pointerover', peek);
+$('artList').addEventListener('focusin', peek);
 $('tab-artistas').addEventListener('click', e => {
   const fv = e.target.closest('[data-fav]'); if (fv) { e.stopPropagation(); return toggleFav(fv.dataset.fav); }
   if (e.target.closest('#artMoreBtn')) { artLimit += 120; return renderArtists(); }
