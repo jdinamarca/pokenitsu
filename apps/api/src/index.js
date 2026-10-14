@@ -112,10 +112,15 @@ app.addHook('onRequest', (req, reply, done) => {
   }, done);
 });
 app.addHook('onResponse', async req => endUser(req.dataStore));
-// the profile: the account, when it was created and whether it is the owner's (the first account, which got the data from before accounts)
+// the owner: the first account (it got the data from before accounts and curates what is shared, like connected art)
+async function isOwner(req) { const { rows: [first] } = await pool.query('SELECT id FROM "user" ORDER BY "createdAt" LIMIT 1'); return !!req.user && first?.id === req.user.id; }
+async function ownerOnly(req) {
+  if (!(await isOwner(req))) throw Object.assign(new Error('Solo el administrador puede editar los artes conectados: son los mismos para todos.'), { statusCode: 403 });
+}
+// the profile: the account, when it was created and whether it is the owner's
 app.get('/api/me', async req => {
-  const u = req.user, { rows: [first] } = await pool.query('SELECT id FROM "user" ORDER BY "createdAt" LIMIT 1');
-  return { id: u.id, name: u.name, email: u.email, image: u.image || '', emailVerified: !!u.emailVerified, createdAt: u.createdAt, owner: first?.id === u.id };
+  const u = req.user;
+  return { id: u.id, name: u.name, email: u.email, image: u.image || '', emailVerified: !!u.emailVerified, createdAt: u.createdAt, owner: await isOwner(req) };
 });
 app.addHook('onRequestAbort', async req => endUser(req.dataStore));
 app.addContentTypeParser(/^image\//, { parseAs: 'buffer', bodyLimit: 15 * 1024 * 1024 }, (req, body, done) => done(null, body));
@@ -597,6 +602,7 @@ const GROUP_KINDS = ['panorama', 'cameo', 'escena'];
 const groupKind = k => (k === undefined ? 'panorama' : GROUP_KINDS.includes(k) ? k : (() => { throw bad('Tipo de arte inválido'); })());
 const groupNote = n => String(n ?? '').trim().slice(0, 500);
 app.post('/api/groups', async req => {
+  await ownerOnly(req);
   const { name, cols, cards } = req.body || {};
   const kind = groupKind(req.body.kind), note = groupNote(req.body.note);
   if (!String(name || '').trim()) throw bad('El grupo necesita nombre');
@@ -609,6 +615,7 @@ app.post('/api/groups', async req => {
   return { id, groups: await groupsWithCards() };
 });
 app.put('/api/groups/:id', async req => {
+  await ownerOnly(req);
   const { name, cols, cards } = req.body || {};
   if (!String(name || '').trim()) throw bad('El grupo necesita nombre');
   const image = checkImageUrl(req.body.image_url);
@@ -625,6 +632,7 @@ app.put('/api/groups/:id', async req => {
 });
 // Uploads the picture of the assembled art (raw image body) and stores it under public/art/
 app.put('/api/groups/:id/image', async req => {
+  await ownerOnly(req);
   const ext = IMAGE_EXT[req.headers['content-type']];
   if (!ext || !Buffer.isBuffer(req.body) || !req.body.length) throw bad('Sube una imagen JPG, PNG, WEBP o GIF');
   const { rows } = await pool.query('SELECT image_url FROM art_groups WHERE id = $1', [req.params.id]);
@@ -636,6 +644,7 @@ app.put('/api/groups/:id/image', async req => {
   return { id: Number(req.params.id), groups: await groupsWithCards() };
 });
 app.delete('/api/groups/:id', async req => {
+  await ownerOnly(req);
   const { rows } = await pool.query('DELETE FROM art_groups WHERE id = $1 RETURNING image_url', [req.params.id]);
   if (rows.length) await removeLocalImage(rows[0].image_url);
   return groupsWithCards();
