@@ -61,6 +61,16 @@ Para activar Google: en [Google Cloud Console](https://console.cloud.google.com/
 
 Para SQL nuevo: las consultas de una petición ya ven solo los datos de su usuario (la API fija `app.user_id` en la conexión). Sin usuario (tareas en segundo plano) las tablas por usuario se ven vacías; una tarea de sistema que deba ver a todos usa `asSystem()` de `db.js`.
 
+## En internet (producción)
+
+La app se publica como **un solo servicio en Fly.io** (São Paulo), que sirve la web, la API y las tareas de precios, con **Postgres en Supabase** ([ADR 0020](docs/adr/0020-despliegue-fly-y-supabase.md)). La guía paso a paso está en [`docs/despliegue.md`](docs/despliegue.md): proyecto y rol en Supabase, copia de la base, app y secretos en Fly, Google y despliegue automático.
+
+- `Dockerfile` y `fly.toml` en la raíz. Cada merge a `main` se despliega solo cuando el repo tiene el secreto `FLY_API_TOKEN`.
+- `GET /health` (público) dice si la app y la base responden.
+- Las fotos subidas se guardan en `ART_DIR`: en Fly es un volumen (`/data/art`), y en local, `apps/web/public/art`.
+- **Aislamiento entre cuentas:** con `NODE_ENV=production`, la API no arranca si su rol de Postgres es superusuario o tiene `BYPASSRLS`, porque así cada cuenta vería los datos de todas. En Supabase se usa el rol `nitsu_app` ([`apps/api/db/produccion/rol.sql`](apps/api/db/produccion/rol.sql)).
+- Con `DATABASE_CA_CERT` (el texto del certificado de Supabase), la conexión verifica el certificado del servidor.
+
 ## Cargar cartas
 
 Eliges la expansión (como sale impresa en la carta, ej. `MEW ES`) y escribes números + Enter.
@@ -203,7 +213,7 @@ Cada fila del inventario tiene una ubicación (`inventory.loc`, 0 = sin ubicaci�
 
 ## Fotos por variante
 
-Si la foto del catálogo no corresponde, puedes cambiarla para esa variante: tocando la imagen en **Mi colección** o con **📷** en la vista previa de Cargar. Sirve un link o una foto de tu carta (se guarda en `apps/web/public/art/`, tabla `variant_images`). Un ejemplo: en todas las fuentes públicas, el Eevee de Jungle Unlimited aparece con la foto de la 1st Edition.
+Si la foto del catálogo no corresponde, puedes cambiarla para esa variante: tocando la imagen en **Mi colección** o con **📷** en la vista previa de Cargar. Sirve un link o una foto de tu carta (se guarda en `ART_DIR`, por defecto `apps/web/public/art/`; tabla `variant_images`). Un ejemplo: en todas las fuentes públicas, el Eevee de Jungle Unlimited aparece con la foto de la 1st Edition.
 Las variantes especiales de una checklist (1st Edition, Poké Ball, misprints…) usan automáticamente la foto de la checklist.
 
 Si la carta no tiene foto, la vista previa de Cargar muestra **📷 Tomar o subir la foto de tu carta**; en el celular el diálogo ofrece **📸 Tomar foto** con la cámara. Las fotos de más de 1200 px se achican antes de subirse.

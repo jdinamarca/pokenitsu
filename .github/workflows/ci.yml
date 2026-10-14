@@ -7,7 +7,8 @@ on:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # a newer push cancels an old pull request run, but never a deploy halfway through
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   check:
@@ -25,3 +26,21 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm test
+
+  # main, once the checks pass: deploy to Fly.io (docs/despliegue.md). Skipped until the FLY_API_TOKEN secret exists.
+  deploy:
+    needs: check
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        if: env.FLY_API_TOKEN != ''
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+        if: env.FLY_API_TOKEN != ''
+      - run: flyctl deploy --remote-only
+        if: env.FLY_API_TOKEN != ''
+      - run: echo "Sin FLY_API_TOKEN todavía, no se despliega (docs/despliegue.md)."
+        if: env.FLY_API_TOKEN == ''
