@@ -91,3 +91,22 @@ El resumen de la colección en Mi perfil SHALL mostrar cuántos grupos de artes 
 #### Scenario: Un grupo empezado
 - **WHEN** la cuenta tiene 1 carta de un grupo de 3
 - **THEN** el perfil muestra "0 / 35 artes conectados completos · 1 empezados"
+
+### Requirement: Accesos desde el perfil
+En Mi perfil, las cifras SHALL abrir su sección y cerrar el perfil: cartas y distintas Mi colección, el valor estimado Mi colección ordenada por valor total, y colecciones, artes conectados y ubicaciones su pestaña. Con mouse, al pasar sobre ellas SHALL asomar una ball distinta para cada una que se tambalea una vez; con "reducir movimiento" MUST NOT tambalearse ni mover la tarjeta, y en pantallas táctiles la ball SHALL verse quieta como pista.
+
+#### Scenario: Ir a ubicaciones
+- **WHEN** el usuario toca "8 ubicaciones" en su perfil
+- **THEN** el perfil se cierra y se abre la pestaña Ubicaciones
+
+#### Scenario: Ir al valor
+- **WHEN** el usuario toca el valor estimado en su perfil
+- **THEN** se abre Mi colección ordenada por valor total, de mayor a menor
+
+#### Scenario: Pasar el mouse
+- **WHEN** el usuario pasa el mouse sobre "artes conectados"
+- **THEN** la tarjeta sube un poco y asoma una Great Ball que se tambalea
+
+#### Scenario: Reducir movimiento
+- **WHEN** el sistema pide reducir movimiento y el usuario pasa el mouse sobre una tarjeta
+- **THEN** la ball aparece sin tambalearse y la tarjeta no se mueve
