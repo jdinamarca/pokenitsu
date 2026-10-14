@@ -2,10 +2,11 @@ import Fastify from 'fastify';
 import fastifyStatic from '@fastify/static';
 import { fileURLToPath } from 'node:url';
 import { writeFile, unlink } from 'node:fs/promises';
+import { mkdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { dirname, join } from 'node:path';
 import { fromNodeHeaders } from 'better-auth/node';
-import { pool, tx, migrate, runAsUser, endUser } from './db.js';
+import { pool, rawPool, tx, migrate, runAsUser, endUser, assertSafeRole } from './db.js';
 import { createAuth, googleEnabled } from './auth.js';
 import { norm, ensureSets, syncSets, ensureSetCards, syncAllCards, syncJaDex, applyJaNames } from './catalog.js';
 import { importChecklist, fillJaImages } from './pokecottage.js';
@@ -16,9 +17,13 @@ import { pickPrice } from '@pokenitsu/core';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const LANGS = ['ES', 'EN', 'PT', 'FR', 'DE', 'IT', 'JA', 'KO', 'ZH'];
-// the web app's static files (apps/web/public); uploaded pictures live in its art/ folder
+// the web app's static files (apps/web/public)
 const PUBLIC_DIR = join(root, '..', 'web', 'public');
-const ART_DIR = join(PUBLIC_DIR, 'art');
+// pictures that come with the repo (connected art, hand-added cards) and the ones people upload: ART_DIR, which in
+// production is a volume that survives deploys; /art/ is served from ART_DIR first, then from the repo
+const REPO_ART_DIR = join(PUBLIC_DIR, 'art');
+const ART_DIR = process.env.ART_DIR || REPO_ART_DIR;
+mkdirSync(ART_DIR, { recursive: true });
 const IMAGE_EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' };
 
 // card fields the page needs, aliased to the names it uses
@@ -75,13 +80,19 @@ async function writeGroupCards(c, groupId, cards) {
   if (missing.length) throw bad('No existen: ' + missing.join(', '));
 }
 
-const app = Fastify({ logger: { level: 'warn' } });
+// behind Fly's proxy: the client's IP and https come in X-Forwarded-* headers
+const app = Fastify({ logger: { level: 'warn' }, trustProxy: true });
 app.setErrorHandler((err, req, reply) => {
   const code = err.statusCode && err.statusCode < 500 ? err.statusCode : 500;
   if (code === 500) req.log.error(err);
   reply.code(code).send({ error: err.message });
 });
 app.register(fastifyStatic, { root: PUBLIC_DIR, index: false });
+if (ART_DIR !== REPO_ART_DIR) app.register(fastifyStatic, { root: [ART_DIR, REPO_ART_DIR], prefix: '/art/', decorateReply: false });
+// for the hosting's health check: is the app up and does the database answer
+app.get('/health', async (req, reply) => {
+  try { await rawPool.query('SELECT 1'); return { ok: true }; } catch { return reply.code(503).send({ ok: false }); }
+});
 
 // ---------- accounts (Better Auth): /api/auth/* and a session for every other API call ----------
 let auth; // set right after the migrations, before listening
@@ -1079,6 +1090,7 @@ app.get('/api/export.csv', async (req, reply) => {
   return '﻿' + [head, ...lines].join('\n');
 });
 
+await assertSafeRole();
 await migrate(join(root, 'db', 'migrations'));
 auth = createAuth();
 await applyJaNames();

@@ -1,0 +1,16 @@
+node_modules
+**/node_modules
+.git
+.env
+*.log
+db-backups
+images
+newart01.jpg
+inventario.html
+coverage
+**/dist
+apps/web/public/core.js
+openspec
+docs
+.github
+.claude

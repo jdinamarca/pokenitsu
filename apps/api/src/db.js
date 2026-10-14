@@ -7,7 +7,19 @@ if (!process.env.DATABASE_URL) throw new Error('Falta DATABASE_URL (revisa el ar
 
 // the plain pool: accounts (Better Auth) and work with no user. Per-user tables have forced Row Level Security
 // (migration 027), so without app.user_id they look empty.
-export const rawPool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+// in production (Supabase) the connection is encrypted and the server checked against its CA certificate (DATABASE_CA_CERT,
+// the PEM text; leave sslmode out of DATABASE_URL, it would override this)
+const ca = process.env.DATABASE_CA_CERT;
+export const rawPool = new pg.Pool({ connectionString: process.env.DATABASE_URL, ...(ca ? { ssl: { ca: ca.replace(/\\n/g, '\n'), rejectUnauthorized: true } } : {}) });
+
+// Row Level Security is what keeps each account's data apart, and a superuser or a role with BYPASSRLS skips it
+// silently: in production the API refuses to start with such a role (see apps/api/db/produccion/rol.sql)
+export async function assertSafeRole() {
+  if (process.env.NODE_ENV !== 'production') return;
+  const { rows: [r] } = await rawPool.query('SELECT current_user AS name, rolsuper, rolbypassrls FROM pg_roles WHERE rolname = current_user');
+  if (r && (r.rolsuper || r.rolbypassrls))
+    throw new Error(`El rol de la base "${r.name}" es superusuario o tiene BYPASSRLS: cada cuenta vería los datos de todas. Conéctate con el rol nitsu_app (apps/api/db/produccion/rol.sql).`);
+}
 
 // A request runs with one connection that has app.user_id set to its user (opened on its first query, reset and
 // returned when the response is sent); its queries go one after another on it. Work still running after that

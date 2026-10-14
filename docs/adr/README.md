@@ -18,8 +18,9 @@ Por qué el sistema es como es. El **qué** hace está en [`openspec/specs/`](..
 | [0012](0012-front-react-vite-pwa.md) | Front con Vite + React + TypeScript, PWA | Aceptado |
 | [0013](0013-tareas-en-segundo-plano-con-pg-boss.md) | Tareas en segundo plano con pg-boss | Aceptado |
 | [0014](0014-pruebas-y-ci.md) | Pruebas automáticas y CI | Aceptado |
-| [0015](0015-despliegue.md) | Despliegue: Vercel + Fly.io + Supabase | Aceptado |
+| [0015](0015-despliegue.md) | Despliegue: Vercel + Fly.io + Supabase | Reemplazado por 0020 |
 | [0016](0016-observabilidad-y-correo.md) | Sentry, logs estructurados y Resend | Aceptado |
 | [0017](0017-reconocimiento-de-cartas-con-ocr-en-el-navegador.md) | Reconocer las cartas con OCR en el navegador | **Propuesto** |
 | [0018](0018-rls-forzado-con-usuario-por-conexion.md) | RLS forzado, con el usuario fijado en la conexión de cada petición | Aceptado |
 | [0019](0019-artes-conectados-compartidos.md) | Artes conectados compartidos, editados por el dueño | Aceptado |
+| [0020](0020-despliegue-fly-y-supabase.md) | Despliegue: un servicio en Fly.io + Postgres en Supabase | Aceptado |

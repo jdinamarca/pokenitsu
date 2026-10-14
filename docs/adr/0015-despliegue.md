@@ -1,6 +1,6 @@
 # 0015. Despliegue: Vercel para el front, Fly.io para la API y los workers, Supabase para Postgres e imágenes
 
-- Estado: Aceptado
+- Estado: Reemplazado por [0020](0020-despliegue-fly-y-supabase.md)
 - Fecha: 2026-10-12
 
 ## Contexto
