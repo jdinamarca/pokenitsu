@@ -133,12 +133,65 @@ button.inlot{border-color:var(--gold)}
 .locchip.none{background:var(--chip);color:var(--warn)}
 .putaway{margin-top:10px;padding:10px 14px;border-radius:12px;background:color-mix(in srgb,var(--blue) 14%,var(--panel));border:1px solid color-mix(in srgb,var(--blue) 40%,var(--line));font-size:15px;font-weight:700}
 .putaway .sub{font-size:12.5px;font-weight:600;color:var(--muted)}
-.loccards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-top:14px}
-.loccard{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:14px 16px;display:flex;flex-direction:column;gap:6px}
-.loccard h3{margin:0;font-size:17px;display:flex;gap:8px;align-items:center}
-.loccard .rule{font-size:13px;color:var(--muted)}
-.loccard .acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
-.loccard .acts button{font-size:12.5px;padding:3px 10px}
+/* Ubicaciones: binders and boxes on shelves, with the chosen one's detail on the side */
+.locwrap{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:24px;align-items:start;margin-top:14px}
+/* each shelf row is --row tall with its board at the bottom, so wrapped rows get their own board */
+.shelf{--row:300px;--board:color-mix(in srgb,#8a6a4a 45%,var(--line));display:flex;flex-wrap:wrap;align-content:flex-start;background:linear-gradient(to top,var(--board) 12px,transparent 12px) 0 0/100% var(--row) repeat-y;border-radius:0 0 4px 4px}
+.shelf.low{--row:236px}
+.shelf > .lb{height:var(--row);display:flex;align-items:flex-end;padding:0 10px 12px;margin:0}
+.shelflbl{font-size:11.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:16px 0 8px}
+.lb{position:relative;background:none;border:0;border-radius:0;font:inherit;color:inherit;cursor:pointer;animation:locin .45s var(--ease-out) both;animation-delay:calc(var(--i) * 40ms)}
+.lb:focus-visible{outline:2px solid var(--blue);outline-offset:4px}
+@keyframes locin{from{opacity:0;transform:translateY(10px)}}
+.lb .peek{position:absolute;left:50%;top:0;display:flex;transform:translate(-50%,0);opacity:0;pointer-events:none;transition:transform .45s var(--ease-out),opacity .3s}
+.lb .peek img{width:42px;aspect-ratio:63/88;object-fit:cover;border-radius:4px;box-shadow:0 6px 14px rgba(0,0,0,.45);margin:0 -9px;background:var(--chip)}
+.lb .peek img:nth-child(1){transform:rotate(-8deg)}.lb .peek img:nth-child(3){transform:rotate(8deg)}
+.lb.sel::after{content:"";position:absolute;left:22%;right:22%;bottom:-10px;height:4px;border-radius:9px;background:var(--red)}
+.binder{display:block;position:relative;width:70px;height:200px;border-radius:5px 10px 10px 5px;background:linear-gradient(90deg,rgba(0,0,0,.32),rgba(255,255,255,.1) 18%,rgba(0,0,0,.08) 30%,transparent 60%),var(--c);box-shadow:var(--shadow);transform-origin:bottom center;transition:transform .35s var(--ease-out)}
+.binder .sp{position:absolute;left:10px;right:10px;top:18px;bottom:18px;writing-mode:vertical-rl;transform:rotate(180deg);display:flex;align-items:center;justify-content:space-between;gap:8px;background:rgba(255,255,255,.85);color:#1c1f2e;border-radius:4px;padding:8px 0;font-weight:900;font-size:12.5px;overflow:hidden}
+.binder .sp span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-height:0}
+.lb.bnd .peek{top:-6px}
+.box{display:block;position:relative;width:156px;height:118px}
+.box .bd{position:absolute;inset:26px 0 0;border-radius:6px;background:linear-gradient(180deg,#e8dcc4,#cdbd9c);box-shadow:inset 0 -8px 0 rgba(0,0,0,.08),var(--shadow)}
+.box .lid{position:absolute;left:-4px;right:-4px;top:12px;height:22px;border-radius:5px;background:linear-gradient(180deg,#f3ead6,#dccaa5);box-shadow:0 3px 0 rgba(0,0,0,.15);transform-origin:0 100%;transition:transform .45s var(--ease-out);z-index:2}
+.box .tg{position:absolute;left:12px;right:12px;top:42px;bottom:12px;border-radius:4px;background:#fff;color:#1c1f2e;padding:5px 8px;font-size:11.5px;font-weight:900;line-height:1.15;border-left:5px solid var(--c);text-align:left;overflow:hidden}
+.box .tg small{display:block;font-weight:800;color:#6b7086;margin-top:3px;font-size:11px}
+.lb.bx .peek{top:30px;z-index:1}
+.box .bd,.box .tg{z-index:3}.box .lid{z-index:4}
+.lb.sel .binder{transform:translateY(-12px) rotate(-3deg)}
+.lb.sel .lid{transform:rotate(-24deg) translateY(-6px)}
+.lb.bnd.sel .peek{opacity:1;transform:translate(-50%,-58px)}
+.lb.bx.sel .peek{opacity:1;transform:translate(-50%,-48px)}
+@media (hover:hover) and (pointer:fine){
+  .lb:hover .binder{transform:translateY(-12px) rotate(-3deg)}
+  .lb:hover .lid{transform:rotate(-24deg) translateY(-6px)}
+  .lb.bnd:hover .peek{opacity:1;transform:translate(-50%,-58px)}
+  .lb.bx:hover .peek{opacity:1;transform:translate(-50%,-48px)}
+}
+.lb.empty .binder,.lb.empty .bd,.lb.empty .lid{filter:saturate(.3) brightness(.62)}
+.lb.empty .tg{opacity:.75}
+.locdet{position:sticky;top:120px;display:flex;flex-direction:column;gap:12px;animation:fadeonly .25s var(--ease-out)}
+.locdet .k{font-size:11.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.locdet h2{margin:0;font-size:20px;font-weight:900;line-height:1.2}
+.locdet .big{display:flex;gap:18px}.locdet .big b{display:block;font-size:24px;font-weight:900;line-height:1.1}.locdet .big span{font-size:12px;color:var(--muted);font-weight:700}
+.locdet .thumbs{display:flex;gap:6px}.locdet .thumbs img{width:calc((100% - 30px) / 6);aspect-ratio:63/88;object-fit:cover;border-radius:4px;background:var(--chip)}
+.locdet .chips{display:flex;flex-wrap:wrap;gap:6px}
+.locdet .chips span{font-size:12px;font-weight:800;border-radius:999px;padding:3px 10px;background:var(--chip)}
+.locdet .nt{border:1px dashed var(--line);border-radius:12px;padding:9px 12px;font-size:13px;color:var(--muted)}
+.locdet .acts{display:flex;gap:6px;flex-wrap:wrap}.locdet .acts button{font-size:13px;padding:6px 12px}
+details.guide summary{cursor:pointer;font-weight:800;list-style:none;display:inline-flex;align-items:center;gap:6px}
+details.guide summary::-webkit-details-marker{display:none}
+details.guide summary::after{content:"▾";font-size:11px;color:var(--muted);transition:transform .2s var(--ease-out)}
+details.guide[open] summary::after{transform:rotate(180deg)}
+details.guide[open] summary{margin-bottom:6px}
+@media (max-width:900px){.locwrap{grid-template-columns:1fr}.locdet{position:static}}
+@media (max-width:640px){
+  .shelf{--row:240px}.shelf.low{--row:176px}
+  .shelf > .lb{padding:0 5px 12px}
+  .box{width:112px;height:104px}.box .tg{left:8px;right:8px;top:38px;bottom:8px;font-size:10.5px;padding:4px 6px}.box .tg small{font-size:10px}
+  .binder{width:56px;height:156px}.binder .sp{font-size:11px;left:8px;right:8px}
+  .lb .peek img{width:34px}
+}
 .locform{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;margin-top:12px;padding:14px;border-radius:12px;background:var(--panel2)}
 .locform label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);font-weight:700}
 .locform .full{grid-column:1/-1}
@@ -732,6 +785,9 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
   .artcard.sig .artpeek img,.artcard.sig:hover .artpeek img{transform:scale(1.3) !important;transition:none !important}
   .profilepop .golink .ball svg{animation:none !important}
   .profilepop .golink,.profilepop .golink:hover,.profilepop .golink .ball{transform:none !important}
+  .lb{animation-name:fadeonly}
+  .lb .binder,.lb .lid,.lb .peek{transition:none !important;transform:none !important}
+  .lb .peek{display:none}
   button:active{transform:none}
 }
 </style>
@@ -1049,6 +1105,13 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
   <section class="tab" id="tab-ubicaciones">
     <div class="section-h"><div><h1>📍 Ubicaciones</h1><p>Dónde guardas cada carta: cajas de challa, carpetas… Al cargar una carta la app te dice dónde guardarla.</p></div><div class="spacer"></div>
       <button class="primary" id="locNew">＋ Nueva ubicación</button></div>
+    <details class="guide" id="locHow"><summary>🤔 ¿Cómo decide dónde va cada carta?</summary>
+    <ol><li><b>Cajas de challa: por expansión, en orden de salida, y dentro de cada expansión por número.</b> El código de la expansión y el número vienen impresos en la carta, así que guardar es rápido sin pensar. Pon un separador por expansión con su código (MEW, PAF, SV2a…). El orden alfabético no conviene: los nombres se repiten en cada expansión (hay decenas de Pikachu) y no te dice qué carta exacta es.</li>
+    <li><b>Carpetas: lo valioso aparte</b>, también por expansión y número. Una carpeta para lo que vendes (IR, SIR, full art, doradas, o lo que pase de cierto precio) y otra para tu colección personal, en el mismo orden que Mis colecciones.</li>
+    <li><b>Para armar kits de Pokédex no hace falta ordenar por número de Pokédex.</b> La app te dice en qué caja está cada copia (Pokédex → toca una especie, o la lista para buscar de un lote).</li></ol>
+    Al cargar una carta, la app te dice dónde guardarla (🪄 Automático). Entre las ubicaciones que aceptan la carta <b>gana la más específica</b>:
+    colección personal → especiales o por precio → las que nombran su expansión → las que nombran su serie → solo challa → por región → la caja general.
+    Así una caja marcada “Mega Evolution” recibe las Mega Evolution aunque esté más abajo. Si dos empatan, gana la que está más arriba.</details>
     <div id="locForm" class="panel" hidden></div>
     <div id="locView"></div>
   </section>
@@ -2108,29 +2171,87 @@ async function createSuggested() {
 }
 function locStats() {
   const st = {}; let none = 0;
-  for (const k in data.inv) { const x = splitKey(k), q = data.inv[k], pr = priceOf(k); if (!x.loc) none += q; const e = st[x.loc] || (st[x.loc] = { qty: 0, value: 0, sets: new Set() }); e.qty += q; e.value += pr ? pr.clp * q : 0; e.sets.add(x.sid); }
+  for (const k in data.inv) {
+    const x = splitKey(k), q = data.inv[k], pr = priceOf(k); if (!x.loc) none += q;
+    const e = st[x.loc] || (st[x.loc] = { qty: 0, value: 0, sets: new Set(), cards: [] });
+    e.qty += q; e.value += pr ? pr.clp * q : 0; e.sets.add(x.sid);
+    const img = imgFor(x.sid, x.num, x.v); if (img) e.cards.push({ img, clp: pr ? pr.clp : 0 });
+  }
+  for (const id in st) { const seen = new Set(); st[id].cards = st[id].cards.sort((a, b) => b.clp - a.clp).filter(c => !seen.has(c.img) && seen.add(c.img)); }
   return { st, none };
+}
+// a location's rule in collector words, one chip per part
+function ruleChips(r = {}) {
+  if (r.auto === false) return ['✋ Solo a mano'];
+  const short = { base: 'Comunes', rare: 'Raras y holo', ultra: 'Full art', ir: 'IR', sir: 'SIR', secret: 'Secretas', shiny: 'Variocolor', promo: 'Promos', mech: 'ex · GX · V' };
+  const out = [];
+  if (r.personal === true) out.push('🔒 Colección personal');
+  if (r.personal === false) out.push('💰 Para vender');
+  if (r.bulk) out.push('Challa');
+  for (const x of r.series || []) out.push(eraName(x));
+  if ((r.sets || []).length) out.push(r.sets.map(id => (setById[id] || {}).code || id).join(' · '));
+  for (const o of r.origin || []) out.push({ INT: '🌎 Internacionales', JA: '🇯🇵 Japonesas', ZH: '🇨🇳 Chinas', KO: '🇰🇷 Coreanas' }[o] || o);
+  if ((r.special || []).length) out.push('✨ ' + r.special.map(g => short[g] || g).join(' · '));
+  if (r.minPrice) out.push(`${(r.special || []).length ? 'o ' : ''}desde ${clp(r.minPrice)}`);
+  return out.length ? out : ['📦 Todo lo demás'];
+}
+const LOC_COLORS = ['#ff5a3c', '#5aa8ff', '#2fd28a', '#ff8a4c', '#ff6b9a', '#4fc3c9', '#e0b03a', '#8f96b0'];
+function locColor(l) {
+  const r = l.rule || {};
+  if (r.personal === true) return '#a77bff';
+  if ((r.special || []).length || r.minPrice) return '#ffc83d';
+  return LOC_COLORS[LOCS.indexOf(l) % LOC_COLORS.length];
+}
+let locSel = null, locHowTouched = false;
+function locItem(l, e, i) {
+  const peek = e.cards.length ? `<span class="peek">${e.cards.slice(0, 3).map(c => `<img src="${esc(c.img)}" alt="" loading="lazy">`).join('')}</span>` : '';
+  const label = `${KIND[l.kind][1]} ${l.name}: ${fmt(e.qty)} cartas`;
+  const cls = `lb ${l.kind === 'binder' ? 'bnd' : 'bx'}${e.qty ? '' : ' empty'}${l.id === locSel ? ' sel' : ''}`;
+  const body = l.kind === 'binder'
+    ? `<span class="binder">${peek}<span class="sp"><span>${esc(l.name.replace(/^carpeta\s+/i, ''))}</span><span>${fmt(e.qty)}</span></span></span>`
+    : `<span class="box">${peek}<span class="lid"></span><span class="bd"></span><span class="tg">${KIND[l.kind][0]} ${esc(l.name)}<small>${fmt(e.qty)} cartas${e.value ? ' · ' + clp(e.value) : ''}</small></span></span>`;
+  return `<button class="${cls}" style="--c:${locColor(l)};--i:${i}" data-locsel="${l.id}" aria-pressed="${l.id === locSel}" aria-label="${esc(label)}" title="${esc(l.name)}">${body}</button>`;
+}
+function locDetail(l, e) {
+  const i = LOCS.indexOf(l);
+  return `<aside class="panel locdet" aria-live="polite">
+    <div class="k">${KIND[l.kind][0]} ${KIND[l.kind][1]} · #${i + 1} en la lista</div>
+    <h2>${esc(l.name)}</h2>
+    <div class="big"><div><b>${fmt(e.qty)}</b><span>cartas</span></div><div><b>${fmt(e.sets.size)}</b><span>expansiones</span></div>${e.value ? `<div><b>${clp(e.value)}</b><span>valor</span></div>` : ''}</div>
+    ${e.cards.length ? `<div class="thumbs">${e.cards.slice(0, 6).map(c => `<img src="${esc(c.img)}" alt="" loading="lazy">`).join('')}</div>` : ''}
+    <div><div class="k" style="margin-bottom:6px">Recibe</div><div class="chips" title="${esc(describeRule(l.rule))}">${ruleChips(l.rule).map(c => `<span>${esc(c)}</span>`).join('')}</div></div>
+    ${locShadows(l).map(x => `<div class="lotwarn">⚠️ ${esc(x.what)}: no llegan aquí, antes las toma “${esc(x.by.name)}” (#${locPos(x.by.id) + 1}). Quítalas de esa regla${locScore(x.by.rule) === locScore(l.rule) ? ' o sube esta con ↑' : ''}.</div>`).join('')}
+    ${l.note ? `<div class="nt">${esc(l.note)}</div>` : ''}
+    <div class="acts"><button class="primary" data-locshow="${l.id}">${e.qty ? `Ver ${e.qty === 1 ? 'la carta' : `las ${fmt(e.qty)} cartas`}` : 'Ver cartas'}</button><button data-locedit="${l.id}">Editar</button>
+      <button data-locup="${l.id}" ${i ? '' : 'disabled'} title="Subir (solo importa si empata con otra)" aria-label="Subir">↑</button><button data-locdown="${l.id}" ${i < LOCS.length - 1 ? '' : 'disabled'} title="Bajar (solo importa si empata con otra)" aria-label="Bajar">↓</button>
+      <button data-locdel="${l.id}" class="danger">Borrar</button></div>
+  </aside>`;
+}
+// choosing a location only swaps the selection and the detail, so the shelf does not replay its entrance
+function selectLoc(id) {
+  locSel = id;
+  const v = $('locView'), e = locStats().st[id] || { qty: 0, value: 0, sets: new Set(), cards: [] };
+  v.querySelectorAll('.lb').forEach(b => { const on = +b.dataset.locsel === id; b.classList.toggle('sel', on); b.setAttribute('aria-pressed', on); });
+  v.querySelector('.locdet').outerHTML = locDetail(locById(id), e);
+  v._painted = null;
+  // on a phone the detail sits below the shelves: bring it into view
+  if (matchMedia('(max-width:900px)').matches) v.querySelector('.locdet').scrollIntoView({ behavior: reduceMotion.matches ? 'auto' : 'smooth', block: 'nearest' });
 }
 function renderLocations() {
   const { st, none } = locStats(), plan = none ? autoAssignPlan() : [];
-  let html = `<div class="guide"><b>Orden sugerido</b>
-    <ol><li><b>Cajas de challa: por expansión, en orden de salida, y dentro de cada expansión por número.</b> El código de la expansión y el número vienen impresos en la carta, así que guardar es rápido sin pensar. Pon un separador por expansión con su código (MEW, PAF, SV2a…). El orden alfabético no conviene: los nombres se repiten en cada expansión (hay decenas de Pikachu) y no te dice qué carta exacta es.</li>
-    <li><b>Carpetas: lo valioso aparte</b>, también por expansión y número. Una carpeta para lo que vendes (IR, SIR, full art, doradas, o lo que pase de cierto precio) y otra para tu colección personal, en el mismo orden que Mis colecciones.</li>
-    <li><b>Para armar kits de Pokédex no hace falta ordenar por número de Pokédex.</b> La app te dice en qué caja está cada copia (Pokédex → toca una especie, o la lista para buscar de un lote).</li></ol>
-    Al cargar una carta, la app te dice dónde guardarla (🪄 Automático). Entre las ubicaciones que aceptan la carta <b>gana la más específica</b>:
-    colección personal → especiales o por precio → las que nombran su expansión → las que nombran su serie → solo challa → por región → la caja general.
-    Así una caja marcada “Mega Evolution” recibe las Mega Evolution aunque esté más abajo. Si dos empatan, gana la que está más arriba.</div>`;
+  const E = id => st[id] || { qty: 0, value: 0, sets: new Set(), cards: [] };
+  if (!locHowTouched) $('locHow').open = !LOCS.length;   // open while there are none, until the user folds or unfolds it
+  if (!locById(locSel)) locSel = (LOCS.find(l => E(l.id).qty) || LOCS[0] || {}).id ?? null;
+  let html = '';
   if (!LOCS.length) html += `<div class="empty"><span class="big">📍</span>Aún no tienes ubicaciones.<br><br><button class="primary" id="locSeed">✨ Crear el orden sugerido</button><br><span class="muted" style="font-size:13px">2 carpetas + 6 cajas por serie. Después cambias nombres y reglas.</span></div>`;
   if (none) html += `<div class="banner" style="margin-top:14px"><b>${fmt(none)} copias sin ubicación.</b> ${plan.length ? `Tus reglas pueden ubicar ${fmt(plan.reduce((a, p) => a + data.inv[p.k], 0))}.` : ''}
     <div class="row" style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">${plan.length ? '<button class="primary" id="locAuto">🪄 Asignar automáticamente</button>' : ''}<button data-locshow="0">Ver cuáles son</button></div></div>`;
-  html += `<div class="loccards">${LOCS.map((l, i) => { const e = st[l.id] || { qty: 0, value: 0, sets: new Set() };
-    return `<div class="loccard"><h3>${KIND[l.kind][0]} ${esc(l.name)} <span class="muted" style="font-size:12px;font-weight:600">#${i + 1}</span></h3>
-      <div class="rule">${esc(describeRule(l.rule))}</div>
-      ${locShadows(l).map(x => `<div class="lotwarn">⚠️ ${esc(x.what)}: no llegan aquí, antes las toma “${esc(x.by.name)}” (#${locPos(x.by.id) + 1}). Quítalas de esa regla${locScore(x.by.rule) === locScore(l.rule) ? ' o sube esta con ↑' : ''}.</div>`).join('')}${l.note ? `<div class="rule" style="color:var(--ink)">${esc(l.note)}</div>` : ''}
-      <div><b>${fmt(e.qty)}</b> cartas · ${fmt(e.sets.size)} expansiones${e.value ? ` · ${clp(e.value)}` : ''}</div>
-      <div class="acts"><button data-locshow="${l.id}">Ver cartas</button><button data-locedit="${l.id}">Editar</button>
-        <button data-locup="${l.id}" ${i ? '' : 'disabled'} title="Subir (solo importa si empata con otra)">↑</button><button data-locdown="${l.id}" ${i < LOCS.length - 1 ? '' : 'disabled'} title="Bajar (solo importa si empata con otra)">↓</button>
-        <button data-locdel="${l.id}" class="danger">Borrar</button></div></div>`; }).join('')}</div>`;
+  if (LOCS.length) {
+    const full = LOCS.filter(l => E(l.id).qty), empty = LOCS.filter(l => !E(l.id).qty);
+    let i = 0;
+    const shelf = (list, label, low) => list.length ? `<div class="shelf${low ? ' low' : ''}">${list.map(l => locItem(l, E(l.id), i++)).join('')}</div><div class="shelflbl">${label}</div>` : '';
+    html += `<div class="locwrap"><div>${shelf(full, 'Con cartas')}${shelf(empty, 'Vacías por ahora', true)}</div>${locDetail(locById(locSel), E(locSel))}</div>`;
+  }
   paint($('locView'), html);
 }
 function openLocForm(l) {
@@ -3445,10 +3566,12 @@ $('locPick').addEventListener('click', e => {
 $('locNew').onclick = () => openLocForm(null);
 $('locForm').addEventListener('change', e => { if (e.target.id === 'lfType') $('lfSpecialBox').style.display = e.target.value === 'special' ? 'grid' : 'none'; });
 $('locForm').addEventListener('click', e => { if (e.target.id === 'lfSave') saveLocForm(); if (e.target.id === 'lfCancel') $('locForm').hidden = true; });
+$('locHow').querySelector('summary').addEventListener('click', () => { locHowTouched = true; });
 $('locView').addEventListener('click', async e => {
   const t = e.target.closest('button'); if (!t) return;
   if (t.id === 'locSeed') return createSuggested();
   if (t.id === 'locAuto') return autoAssign();
+  if (t.dataset.locsel) { selectLoc(+t.dataset.locsel); return; }
   if (t.dataset.locshow !== undefined) { fillInvLoc(t.dataset.locshow); data.invView = 'table'; data.invSort = 'loc'; $('invSort').value = 'loc'; save(); showTab('inventario'); return; }
   if (t.dataset.locedit) return openLocForm(locById(+t.dataset.locedit));
   const mv = t.dataset.locup || t.dataset.locdown;
