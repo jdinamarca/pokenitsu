@@ -6,7 +6,7 @@ Explorar las cartas por ilustrador para armar kits de un artista o coleccionarlo
 ## Requirements
 
 ### Requirement: Lista de ilustradores
-El sistema SHALL listar los ilustradores del catálogo internacional como tarjetas con una carta de portada, cuántas cartas distintas tiene el usuario y cuántas existen, buscable por nombre y ordenable por más avance, más cartas mías, más cartas en el catálogo, mayor valor para vender o nombre. Los favoritos aparecen primero.
+El sistema SHALL listar los ilustradores del catálogo internacional como tarjetas con sus iniciales en un círculo de color propio, su nombre, cuántas cartas existen en el catálogo, cuántas cartas distintas tiene el usuario y su mejor nivel, buscable por nombre y ordenable por más avance, más cartas mías, más cartas en el catálogo, mayor valor para vender o nombre. Los favoritos aparecen primero.
 
 #### Scenario: Ordenar por más tenidas
 - **WHEN** el orden es "más avance"
@@ -15,6 +15,17 @@ El sistema SHALL listar los ilustradores del catálogo internacional como tarjet
 #### Scenario: Portada
 - **WHEN** el usuario tiene cartas de un ilustrador
 - **THEN** la portada es su copia de mayor nivel; si no tiene ninguna, una carta del catálogo de ese ilustrador
+
+### Requirement: Portada de un ilustrador en la lista
+Al pasar el mouse o enfocar la tarjeta de un ilustrador, el sistema SHALL mostrar de fondo su carta de portada en alta resolución, cargada solo en ese momento; en pantallas sin hover SHALL mostrar una miniatura de la portada en lugar de las iniciales.
+
+#### Scenario: Pasar el mouse
+- **WHEN** el usuario pasa el mouse sobre la tarjeta de un ilustrador
+- **THEN** aparece de fondo su carta de portada en alta resolución y solo esa imagen se descarga
+
+#### Scenario: En el celular
+- **WHEN** el usuario abre Artistas en un celular
+- **THEN** cada tarjeta muestra una miniatura nítida de la portada al lado del nombre
 
 ### Requirement: Cartas de un ilustrador
 Al elegir un ilustrador el sistema SHALL mostrar todas sus cartas agrupadas por año, las que tiene en color con la insignia de nivel de su mejor copia y las que faltan en blanco y negro, con filtro de todas / tengo / me faltan.
