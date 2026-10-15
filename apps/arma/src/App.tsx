@@ -181,7 +181,7 @@ export function App() {
             Te faltan {missing.toLocaleString('es-CL')}.
           </p>
           <ul className="legend" aria-label="Permiso de las fuentes">
-            {(['ok', 'review', 'none', 'own'] as const).map(k => (
+            {(['ok', 'review', 'none', 'own', ...(full?.localPhotos ? (['local'] as const) : [])] as const).map(k => (
               <li key={k}>
                 <span className={'sticker ' + STICKER[k].tone} aria-hidden="true" />
                 {k === 'ok' ? 'Con permiso' : STICKER[k].label}

@@ -3,6 +3,8 @@ import Fastify from 'fastify';
 import { migrate } from './migrate.ts';
 import { pool } from './db.ts';
 import { importDex } from './importer.ts';
+import { importLocalPhotos } from './localPhotos.ts';
+import { LOCAL_IMAGE_DIR, localPhotosOn } from './local.ts';
 import { ownedCopies, requireViewer, viewerOf } from './session.ts';
 import { FULL_RULES, type ArmaRules } from '@pokenitsu/core';
 import { createReadStream } from 'node:fs';
@@ -39,16 +41,19 @@ app.get<{ Params: { dex: string } }>('/api/full/:dex', async req => {
        LEFT JOIN public.sets cs ON cs.id = p.set_key
        LEFT JOIN LATERAL (
          SELECT field, jsonb_agg(jsonb_build_object('source', source_id, 'value', value, 'ref', ref) ORDER BY source_id) AS facts
-         FROM arma.facts WHERE printing_code = p.code GROUP BY field) f ON true
+         FROM arma.facts WHERE printing_code = p.code
+           -- photos for local use only never leave this API while the switch is off
+           AND NOT (NOT $2 AND field = 'image' AND source_id IN (SELECT id FROM arma.sources WHERE permission = 'local'))
+         GROUP BY field) f ON true
        WHERE p.dex = $1
        GROUP BY p.code, d.sort_date, cs.name_en, cs.name
        ORDER BY d.sort_date NULLS LAST, p.design_id, p.release NULLS LAST, p.lang, p.finish, p.stamp NULLS FIRST`,
-      [dex],
+      [dex, localPhotosOn()],
     ),
     pool.query('SELECT id, name, url, permission, images, note FROM arma.sources ORDER BY id'),
     pool.query('SELECT summary, started_at FROM arma.imports WHERE dex = $1 ORDER BY id DESC LIMIT 1', [dex]),
   ]);
-  return { dex, printings: printings.rows, sources: sources.rows, lastImport: last.rows[0] || null };
+  return { dex, printings: printings.rows, sources: sources.rows, lastImport: last.rows[0] || null, localPhotos: localPhotosOn() };
 });
 
 // who is asking (null without a Nitsu session)
@@ -90,6 +95,25 @@ app.delete<{ Params: { id: string } }>('/api/views/:id', async req => {
   const v = await requireViewer(req);
   const { rowCount } = await pool.query('DELETE FROM arma.views WHERE id = $1 AND user_id = $2', [Number(req.params.id) || 0, v.id]);
   return { removed: rowCount };
+});
+
+// photos for local use only: downloaded once to LOCAL_IMAGE_DIR, only with ARMA_FOTOS_LOCALES=1 (403 otherwise)
+app.post<{ Params: { dex: string } }>('/api/local-photos/:dex', async req => importLocalPhotos(dexOf(req.params.dex)));
+// …and served from there, never from IMAGE_DIR; 404 for everything while the switch is off
+app.get<{ Params: { '*': string } }>('/img-local/*', async (req, reply) => {
+  if (!localPhotosOn()) return reply.code(404).send();
+  const file = normalize(join(LOCAL_IMAGE_DIR, req.params['*']));
+  const type = TYPES[extname(file).toLowerCase()];
+  if (
+    !file.startsWith(LOCAL_IMAGE_DIR + '/') ||
+    !type ||
+    !(await stat(file).then(
+      s => s.isFile(),
+      () => false,
+    ))
+  )
+    return reply.code(404).send();
+  return reply.header('cache-control', 'private, max-age=604800').type(type).send(createReadStream(file));
 });
 
 // our own copies of the card pictures (the same IMAGE_DIR as the current app); nothing outside it is ever served

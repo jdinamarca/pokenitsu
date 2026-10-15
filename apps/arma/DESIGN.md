@@ -19,6 +19,7 @@ colors:
   sticker-review: '#f0a33a'
   sticker-none: '#e2453c'
   sticker-own: '#3b7fe0'
+  sticker-local: '#9b6ef3'
 typography:
   counter:
     fontFamily: 'Archivo Narrow, Archivo, sans-serif'
@@ -115,7 +116,7 @@ Es denso pero se lee sin cansar. Las cartas siempre se ven grandes y con su foto
 
 ## Colors
 
-Un mundo nocturno y cálido: fieltro, grafito, cartulina y una sola luz, con cuatro stickers que solo hablan de permisos.
+Un mundo nocturno y cálido: fieltro, grafito, cartulina y una sola luz, con stickers que solo hablan de permisos.
 
 ### Primary
 
@@ -128,7 +129,7 @@ Un mundo nocturno y cálido: fieltro, grafito, cartulina y una sola luz, con cua
 
 ### Tertiary
 
-- **Stickers de inventario**: verde (sticker-ok) con permiso o licencia abierta, ámbar (sticker-review) licencia por revisar, rojo (sticker-none) sin permiso, azul (sticker-own) dato propio. Solo para procedencia.
+- **Stickers de inventario**: verde (sticker-ok) con permiso o licencia abierta, ámbar (sticker-review) licencia por revisar, rojo (sticker-none) sin permiso, azul (sticker-own) dato propio, violeta (sticker-local) foto solo para uso local. Solo para procedencia. El violeta solo aparece con las fotos solo locales encendidas (`ARMA_FOTOS_LOCALES=1`).
 
 ### Neutral
 
@@ -141,7 +142,7 @@ Un mundo nocturno y cálido: fieltro, grafito, cartulina y una sola luz, con cua
 
 **La Regla de la Luz Única.** La luz cálida marca una sola cosa a la vez por zona: la regla activa en el riel, la carta elegida en la vitrina. Si dos cosas brillan, ninguna está activa.
 
-**La Regla del Sticker.** Los cuatro colores de sticker hablan solo de permisos de una fuente. Nunca se usan como acento, estado de carga ni decoración.
+**La Regla del Sticker.** Los colores de sticker hablan solo de permisos de una fuente. Nunca se usan como acento, estado de carga ni decoración.
 
 ## Typography
 
@@ -207,7 +208,7 @@ Chips de fieltro hondo con borde de fieltro; la elegida pasa a cartulina. "Full"
 
 ### Impresión en la vitrina (componente firma)
 
-La carta a 112px con su foto real y, debajo, una etiqueta de cartulina con idioma y variante en Archivo Narrow y el sticker de su mejor permiso.
+La carta a 112px con su foto real y, debajo, una etiqueta de cartulina con idioma y variante en Archivo Narrow y el sticker de su mejor permiso. Si la foto es solo para uso local, lleva un sticker violeta de 10px en la esquina inferior izquierda de la foto, con un anillo de grafito para separarlo de la ilustración; en la ficha, la foto lleva la nota "Foto solo para uso local · fuente".
 
 - **Sin foto propia:** usa la foto de otra impresión del mismo diseño, un poco atenuada.
 - **Copias:** una pastilla de luz cálida (×2) en la esquina.
@@ -231,7 +232,7 @@ Luz cálida con tinta de etiqueta, 9px de esquinas, 11×16px, con icono de líne
 - **Do** mostrar las cartas grandes (112px en la vitrina, ancho completo en la ficha) y con su foto real o la de su mismo diseño.
 - **Do** apagar en su lugar lo que una regla deja fuera, en 450ms con ease-out, e instantáneo con "reducir movimiento".
 - **Do** reservar la luz cálida (#fff3dc) para una sola cosa activa por zona.
-- **Do** marcar la procedencia solo con los cuatro stickers (verde, ámbar, rojo, azul).
+- **Do** marcar la procedencia solo con los stickers de permiso (verde, ámbar, rojo, azul y, con las fotos solo locales, violeta).
 - **Do** usar cifras tabulares en todo número que cambia.
 - **Do** dibujar los iconos con una sola librería de línea (lucide), nunca con emoji ni glifos.
 

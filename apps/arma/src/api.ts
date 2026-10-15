@@ -1,7 +1,7 @@
 // The app's own API (server/index.ts), through Vite's proxy
 import type { ArmaFinish, ArmaRules } from '@pokenitsu/core';
 
-export type Permission = 'ok' | 'text_only' | 'review' | 'none' | 'own';
+export type Permission = 'ok' | 'text_only' | 'review' | 'none' | 'own' | 'local';
 export interface Source {
   id: string;
   name: string;
@@ -38,6 +38,8 @@ export interface Full {
   printings: Printing[];
   sources: Source[];
   lastImport: { summary: { printings: number }; started_at: string } | null;
+  /** ARMA_FOTOS_LOCALES=1: photos for local use only come in the Full */
+  localPhotos: boolean;
 }
 export interface Copy {
   code: string;

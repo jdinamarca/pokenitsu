@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import type { RuleResult } from '@pokenitsu/core';
 import type { Copy, Printing, Source } from '../api.ts';
-import { existsPermission, LANG_NAME, pictureOf, STICKER, tagOf, type Shelf } from '../model.ts';
+import { existsPermission, LANG_NAME, pictureOf, STICKER, tagOf, type Picture, type Shelf } from '../model.ts';
 
 interface Props {
   shelves: Shelf[];
@@ -29,8 +29,7 @@ export function Showcase({ shelves, result, sources, copies, selected, onSelect 
                 p={p}
                 lit={result.get(p.code)?.in ?? true}
                 owned={(copies.get(p.code) || []).reduce((n, c) => n + c.qty, 0)}
-                picture={pictureOf(p, sources)}
-                fallback={s.picture}
+                {...shown(pictureOf(p, sources), s.picture)}
                 tone={STICKER[existsPermission(p, sources)].tone}
                 selected={selected === p.code}
                 onSelect={onSelect}
@@ -47,14 +46,22 @@ interface ItemProps {
   p: Printing;
   lit: boolean;
   owned: number;
-  picture: string | null;
-  fallback: string | null;
+  img: string | null;
+  /** the picture is another printing's of the same design */
+  isRef: boolean;
+  /** the picture is for local use only */
+  local: boolean;
   tone: string;
   selected: boolean;
   onSelect: (code: string) => void;
 }
-const Item = memo(function Item({ p, lit, owned, picture, fallback, tone, selected, onSelect }: ItemProps) {
-  const img = picture || fallback;
+// what the case shows for a printing: its own picture, or the design's
+const shown = (own: Picture | null, design: Picture | null) => {
+  const pic = own || design;
+  return { img: pic?.src ?? null, isRef: !own && !!design, local: !!pic?.local };
+};
+
+const Item = memo(function Item({ p, lit, owned, img, isRef, local, tone, selected, onSelect }: ItemProps) {
   return (
     <li>
       <button
@@ -67,11 +74,12 @@ const Item = memo(function Item({ p, lit, owned, picture, fallback, tone, select
       >
         <span className="art">
           {img ? (
-            <img src={img} alt="" loading="lazy" decoding="async" className={picture ? '' : 'ref'} />
+            <img src={img} alt="" loading="lazy" decoding="async" className={isRef ? 'ref' : ''} />
           ) : (
             <span className="blank">{p.name || 'Sin foto'}</span>
           )}
           {owned > 0 && <span className="owned">×{owned}</span>}
+          {local && <span className="local-mark" role="img" aria-label="Foto solo para uso local" title="Foto solo para uso local" />}
         </span>
         <span className="tag">
           <span className="tag-text">{tagOf(p)}</span>

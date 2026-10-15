@@ -305,8 +305,22 @@ Una opción nueva, separada de la app actual ([ADR 0020](docs/adr/0020-arma-tu-c
   | TCGdex | Cartas en 13 idiomas, variantes detalladas, sellos y fotos | 🟢 abierta |
   | pokemontcg.io (catálogo de Nitsu) | Cartas internacionales y nuestras copias de las fotos | 🟢 abierta |
   | TCGplayer (vía `card_prices`) | Variantes y precios | 🔴 sin permiso |
-  | PokeCottage (master set) | Cartas y variantes especiales, **solo texto** | 🟢 autorizó el texto, también para producción; sus fotos no se guardan ni se muestran |
+  | PokeCottage (master set) | Cartas y variantes especiales, **solo texto** | 🟢 autorizó el texto, también para producción; sus fotos solo con las fotos solo locales (abajo) |
   | Bulbapedia ("Eevee (TCG)") | Qué carta inglesa y qué japonesa son el mismo diseño | 🟠 CC BY-NC-SA, por revisar |
+
+- **Fotos solo para uso local** (apagadas por defecto). Para ver la ilustración correcta de las impresiones que no tienen una foto con permiso (promos japonesas, sellos, variantes con error…), la app puede usar fotos de fuentes que **no** dieron permiso de imagen, solo en tu computador:
+
+  | Fuente | Qué fotos | Permiso |
+  |---|---|---|
+  | PokeCottage | La de cada entrada de su master set, por variante | 🟣 solo uso local (autorizó el texto, no las fotos) |
+  | Limitless TCG | Cartas japonesas (por expansión y número) | 🟣 solo uso local |
+  | Bulbagarden Archives | El escaneo de la carta base de la lista de Bulbapedia | 🟣 solo uso local |
+
+  - **Encenderlas:** `ARMA_FOTOS_LOCALES=1` en el `.env`, reinicia `pnpm arma` y llama a `POST /api/local-photos/133` (con `curl -X POST http://localhost:3002/api/local-photos/133`). Deja un resumen por fuente: cuántas trajo, cuántas ya estaban, cuántas no existen y cuántas fallaron.
+  - **Se copian una sola vez** a `data/imagenes-locales/` (o `LOCAL_IMAGE_DIR`), que está fuera de git y **separada de `data/imagenes`**, el almacenamiento que se sube. Volver a llamar solo baja lo que falte. Nunca se enlazan a su sitio.
+  - **Nunca salen de tu computador:** no van a git, ni al almacenamiento compartido, ni a producción. Se marcan con un sticker violeta en la carta y en la ficha ("Foto solo para uso local · PokeCottage"), y quedan registradas con su fuente para el futuro informe "Listo para producción".
+  - **Prioridad:** primero nuestra copia o TCGdex; una foto solo local se usa solo si la impresión no tiene ninguna de esas.
+  - **Apagadas** (sin la variable), la app no las descarga, no las muestra y no sirve sus archivos: se ve igual que antes. Para borrarlas: borra la carpeta y, si quieres, `DELETE FROM arma.facts WHERE source_id IN ('pokecottage-fotos', 'limitless', 'bulbagarden')`.
 
 - **Equivalencias:** la misma carta internacional en distintos idiomas, y la inglesa con su original japonesa cuando Bulbapedia las une. Solo agrupan; no cambian ningún conteo por sí solas.
 - **Reglas** (no borran nada: lo que queda fuera se apaga en la vitrina):

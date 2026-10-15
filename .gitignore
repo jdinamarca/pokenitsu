@@ -13,3 +13,5 @@ apps/web/public/core.js
 
 # our copy of the card pictures (pnpm imagenes:descargar); goes to the storage, not to git
 /data/
+# Arma tu colección: photos for local use only (fotos-solo-local); never committed, never uploaded with data/imagenes
+data/imagenes-locales/

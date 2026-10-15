@@ -37,8 +37,9 @@ export const STICKER: Record<Permission, { label: string; tone: string }> = {
   review: { label: 'Licencia por revisar', tone: 's-review' },
   none: { label: 'Sin permiso', tone: 's-none' },
   own: { label: 'Dato propio', tone: 's-own' },
+  local: { label: 'Solo uso local', tone: 's-local' },
 };
-const RANK: Permission[] = ['ok', 'text_only', 'own', 'review', 'none'];
+const RANK: Permission[] = ['ok', 'text_only', 'own', 'review', 'local', 'none'];
 
 /** the best permission among the sources that say a printing exists: what it would take to keep it in production */
 export function existsPermission(p: Printing, sources: Map<string, Source>): Permission {
@@ -46,10 +47,27 @@ export function existsPermission(p: Printing, sources: Map<string, Source>): Per
   return RANK.find(r => ps.includes(r)) || 'none';
 }
 
-/** a picture only from a source allowed to show it: our own copy first, then TCGdex */
-export function pictureOf(p: Printing, sources: Map<string, Source>): string | null {
+export interface Picture {
+  src: string;
+  /** a photo for local use only (fotos-solo-local): shown with the violet mark */
+  local: boolean;
+  source: string;
+}
+/** a picture only from a source allowed to show it: our own copy first, then TCGdex;
+ *  a photo for local use only just when there is none of those */
+export function pictureOf(p: Printing, sources: Map<string, Source>): Picture | null {
   const imgs = (p.facts.image || []).filter(f => f.value && sources.get(f.source)?.images);
-  return (imgs.find(f => f.value!.startsWith('/img/')) || imgs[0])?.value ?? null;
+  const allowed = imgs.filter(f => sources.get(f.source)?.permission !== 'local');
+  const f = allowed.find(f => f.value!.startsWith('/img/')) || allowed[0] || imgs[0];
+  return f
+    ? { src: f.value!, local: sources.get(f.source)?.permission === 'local', source: sources.get(f.source)?.name || f.source }
+    : null;
+}
+
+// the design's picture: one allowed to be shown if any printing has it, a local-only one otherwise
+function designPicture(ps: Printing[], sources: Map<string, Source>): Picture | null {
+  const pics = ps.map(p => pictureOf(p, sources)).filter((x): x is Picture => !!x);
+  return pics.find(x => !x.local) || pics[0] || null;
 }
 
 export const variantName = (p: Printing): string => {
@@ -64,7 +82,7 @@ export interface Shelf {
   subtitle: string;
   printings: Printing[];
   /** a picture of the design, to show the same artwork on printings with none of their own */
-  picture: string | null;
+  picture: Picture | null;
 }
 /** one shelf per design (an artwork and its printings in every language), oldest first */
 export function shelvesOf(printings: Printing[], sources: Map<string, Source>): Shelf[] {
@@ -93,7 +111,7 @@ export function shelvesOf(printings: Printing[], sources: Map<string, Source>): 
       title: `${lead.set_name || lead.set_key} · #${lead.number}`,
       subtitle: [lead.artist, date.slice(0, 4)].filter(Boolean).join(' · '),
       printings: ps,
-      picture: ps.map(p => pictureOf(p, sources)).find(Boolean) ?? null,
+      picture: designPicture(ps, sources),
     };
   });
   return shelves.sort((a, b) => (a.date || '9999').localeCompare(b.date || '9999') || a.title.localeCompare(b.title));

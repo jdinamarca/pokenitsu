@@ -1,6 +1,6 @@
 import type { RuleResult } from '@pokenitsu/core';
 import type { Copy, Facts, Printing, Source } from '../api.ts';
-import { LANG_NAME, pictureOf, RULES, STICKER, variantName } from '../model.ts';
+import { LANG_NAME, pictureOf, RULES, STICKER, variantName, type Picture } from '../model.ts';
 
 const FIELDS: { key: keyof Facts; label: string }[] = [
   { key: 'exists', label: 'Existe la impresión' },
@@ -15,7 +15,7 @@ const FIELDS: { key: keyof Facts; label: string }[] = [
 
 interface Props {
   p: Printing | null;
-  fallback: string | null;
+  fallback: Picture | null;
   result: RuleResult | undefined;
   copies: Copy[];
   sources: Map<string, Source>;
@@ -39,11 +39,18 @@ export function Detail({ p, fallback, result, copies, sources }: Props) {
       <p className="code">{p.code}</p>
       <div className={'big' + (out ? ' off' : '')}>
         {img ? (
-          <img src={img.replace('/low.webp', '/high.webp')} alt={`${p.name || 'Carta'} de ${p.set_name || p.set_key}`} />
+          <img src={img.src.replace('/low.webp', '/high.webp')} alt={`${p.name || 'Carta'} de ${p.set_name || p.set_key}`} />
         ) : (
           <span className="blank">Sin foto con permiso</span>
         )}
-        {!picture && img && <span className="ref-note">Foto de otra impresión del mismo diseño</span>}
+        {img && (!picture || img.local) && (
+          <span className={'ref-note' + (img.local ? ' local' : '')}>
+            {img.local && <span className="sticker s-local" aria-hidden="true" />}
+            {[!picture && 'Foto de otra impresión del mismo diseño', img.local && `Foto solo para uso local · ${img.source}`]
+              .filter(Boolean)
+              .join(' · ')}
+          </span>
+        )}
       </div>
       <div className="title">
         <h2>{p.name || 'Sin nombre'}</h2>

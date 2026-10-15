@@ -1,5 +1,10 @@
 // One client for every external source: says who is asking, at most N requests at a time per host,
 // retries, and keeps each answer for a day in arma.source_cache so a re-import does not ask again
+import { createWriteStream } from 'node:fs';
+import { mkdir, rename, stat, unlink } from 'node:fs/promises';
+import { dirname } from 'node:path';
+import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import { pool } from '../db.ts';
 
 const UA = 'NitsuCollectibles/0.1 (+https://github.com/jdinamarca/pokenitsu)';
@@ -27,14 +32,20 @@ export interface FetchStats {
 export const stats: FetchStats = { cached: 0, fetched: 0 };
 
 /** JSON from a source, from the cache when it is less than a day old; 404 → null */
-/** transform: applied before caching, so what must not be kept (a source's picture URLs) never is */
+/** transform: applied before caching, so what must not be kept (a source's picture URLs) never is;
+ *  cacheKey: to keep two views of one URL apart (PokeCottage's text and, for local photos, its picture URLs) */
 export async function fetchJson<T = unknown>(
   url: string,
-  { ttl = DAY, tries = 3, transform }: { ttl?: number; tries?: number; transform?: (body: unknown) => unknown } = {},
+  {
+    ttl = DAY,
+    tries = 3,
+    transform,
+    cacheKey = url,
+  }: { ttl?: number; tries?: number; transform?: (body: unknown) => unknown; cacheKey?: string } = {},
 ): Promise<T | null> {
   const { rows } = await pool.query<{ body: T; fresh: boolean }>(
     `SELECT body, fetched_at > now() - ($2 || ' milliseconds')::interval AS fresh FROM arma.source_cache WHERE url = $1`,
-    [url, String(ttl)],
+    [cacheKey, String(ttl)],
   );
   if (rows[0]?.fresh) {
     stats.cached++;
@@ -54,7 +65,7 @@ export async function fetchJson<T = unknown>(
       stats.fetched++;
       await pool.query(
         `INSERT INTO arma.source_cache (url, body) VALUES ($1, $2) ON CONFLICT (url) DO UPDATE SET body = EXCLUDED.body, fetched_at = now()`,
-        [url, JSON.stringify(body)],
+        [cacheKey, JSON.stringify(body)],
       );
       return body;
     } catch (e) {
@@ -80,4 +91,44 @@ export async function mapLimit<T, R>(items: readonly T[], n: number, fn: (x: T) 
     }),
   );
   return out;
+}
+
+const MAX_BYTES = 8 * 1024 * 1024;
+export const downloads = { fetched: 0, existing: 0 };
+/**
+ * A file from a source, saved once at dest: when dest exists nothing is asked. 404/403 → 'missing'.
+ * Bigger than 8 MB, or not an image, is refused. A partial file never stays behind.
+ */
+export async function downloadOnce(url: string, dest: string): Promise<'fetched' | 'existing' | 'missing'> {
+  if (
+    await stat(dest).then(
+      s => s.isFile() && s.size > 0,
+      () => false,
+    )
+  ) {
+    downloads.existing++;
+    return 'existing';
+  }
+  const host = new URL(url).host;
+  const r = await withSlot(host, () => fetch(url, { headers: { 'user-agent': UA }, signal: AbortSignal.timeout(60000) }));
+  if (r.status === 404 || r.status === 403) return 'missing';
+  if (!r.ok || !r.body) throw new Error(`HTTP ${r.status} en ${url}`);
+  if (!(r.headers.get('content-type') || '').startsWith('image/')) throw new Error(`No es una imagen: ${url}`);
+  if (Number(r.headers.get('content-length') || 0) > MAX_BYTES) throw new Error(`Más de 8 MB: ${url}`);
+  await mkdir(dirname(dest), { recursive: true });
+  const part = dest + '.part';
+  let size = 0;
+  const limited = Readable.fromWeb(r.body as never).on('data', (chunk: Buffer) => {
+    size += chunk.length;
+    if (size > MAX_BYTES) limited.destroy(new Error(`Más de 8 MB: ${url}`));
+  });
+  try {
+    await pipeline(limited, createWriteStream(part));
+    await rename(part, dest);
+  } catch (e) {
+    await unlink(part).catch(() => {});
+    throw e;
+  }
+  downloads.fetched++;
+  return 'fetched';
 }
