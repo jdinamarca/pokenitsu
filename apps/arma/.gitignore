@@ -1,0 +1,5 @@
+dist
+# Impeccable work files (decision rounds, sketches, review captures); surfaces/ and design.json are kept
+.impeccable/questions
+.impeccable/mocks
+.impeccable/review

@@ -94,7 +94,8 @@ Monorepo pnpm:
 |---|---|
 | `apps/api` | Servidor Fastify (`src/`) y migraciones SQL (`db/migrations/`). Sirve el front y la API en el puerto 3000. |
 | `apps/web` | Front actual: `public/index.html` (sin build), la landing (`landing.html`) y las fotos subidas (`public/art/`). |
-| `packages/core` | Reglas de negocio puras en TypeScript, sin red ni base de datos: precios (`pickPrice`, `parseUsd`), carga (`parseEntry`), rarezas y tipo de carta (ex/V/GX…), series, ubicaciones (gana la más específica) y slots de colección. |
+| `apps/arma` | **Arma tu colección** (app aparte, solo local): front Vite + React en el puerto 5180 y su propia API en el 3002. Ver la sección más abajo. |
+| `packages/core` | Reglas de negocio puras en TypeScript, sin red ni base de datos: precios (`pickPrice`, `parseUsd`), carga (`parseEntry`), rarezas y tipo de carta (ex/V/GX…), series, ubicaciones (gana la más específica) y slots de colección; y las reglas de "Arma tu colección" (`arma.ts`: impresiones, fusión de fuentes, equivalencias y reglas). |
 
 `pnpm build` compila `packages/core` en dos formatos: un módulo para la API (`import { pickPrice } from '@pokenitsu/core'`) y `apps/web/public/core.js`, que el front carga como `window.Core` (archivo generado, fuera de git).
 
@@ -290,6 +291,49 @@ Vienen de la **[Cameo Pokémon Card Database de RotomAmiti](https://docs.google.
 La variante del inventario es `normal`, `holo`, `reverse` o una especial
 (`firstedition`, `pokeballholo`, `masterballholo`, `pokemoncardgym`…; nombres en `variant_labels`).
 En Cargar: `25e` 1st Edition, `25p` Poké Ball, `25m` Master Ball; las demás se agregan con ＋1 desde la colección.
+
+## Arma tu colección (app aparte, solo local)
+
+Una opción nueva, separada de la app actual ([ADR 0020](docs/adr/0020-arma-tu-coleccion-app-aparte.md)), para armar un master set a medida. Por ahora es solo para Eevee (#133) y solo corre en local.
+
+- **Levantarla:** `pnpm arma`. Abre `http://localhost:5180`. Necesita la base Postgres del `.env` y una sesión de Nitsu: entra antes en `http://localhost:3000`, porque la cookie sirve en los dos puertos.
+- **El Full:** todas las impresiones del Pokémon (carta × idioma × variante: acabado, sellos, mazos de Battle Academy, World Championship Decks, jumbo…). El botón "Traer el Full", o `POST /api/import/133`, lo arma desde cuatro fuentes y deja un resumen por fuente. Reimportar no duplica nada; si una fuente falla, se conserva lo que había traído.
+- **Fuentes y permisos.** Cada dato guarda su fuente, y la ficha lo muestra con un sticker de color:
+
+  | Fuente | Qué aporta | Permiso |
+  |---|---|---|
+  | TCGdex | Cartas en 13 idiomas, variantes detalladas, sellos y fotos | 🟢 abierta |
+  | pokemontcg.io (catálogo de Nitsu) | Cartas internacionales y nuestras copias de las fotos | 🟢 abierta |
+  | TCGplayer (vía `card_prices`) | Variantes y precios | 🔴 sin permiso |
+  | PokeCottage (master set) | Cartas y variantes especiales, **solo texto** | 🟢 autorizó el texto, también para producción; sus fotos solo con las fotos solo locales (abajo) |
+  | Bulbapedia ("Eevee (TCG)") | Qué carta inglesa y qué japonesa son el mismo diseño | 🟠 CC BY-NC-SA, por revisar |
+
+- **Fotos solo para uso local** (apagadas por defecto). Para ver la ilustración correcta de las impresiones que no tienen una foto con permiso (promos japonesas, sellos, variantes con error…), la app puede usar fotos de fuentes que **no** dieron permiso de imagen, solo en tu computador:
+
+  | Fuente | Qué fotos | Permiso |
+  |---|---|---|
+  | PokeCottage | La de cada entrada de su master set, por variante | 🟣 solo uso local (autorizó el texto, no las fotos) |
+  | Limitless TCG | Cartas japonesas (por expansión y número) | 🟣 solo uso local |
+  | Bulbagarden Archives | El escaneo de la carta base de la lista de Bulbapedia | 🟣 solo uso local |
+
+  - **Encenderlas:** `ARMA_FOTOS_LOCALES=1` en el `.env`, reinicia `pnpm arma` y llama a `POST /api/local-photos/133` (con `curl -X POST http://localhost:3002/api/local-photos/133`). Deja un resumen por fuente: cuántas trajo, cuántas ya estaban, cuántas no existen y cuántas fallaron.
+  - **Se copian una sola vez** a `data/imagenes-locales/` (o `LOCAL_IMAGE_DIR`), que está fuera de git y **separada de `data/imagenes`**, el almacenamiento que se sube. Volver a llamar solo baja lo que falte. Nunca se enlazan a su sitio.
+  - **Nunca salen de tu computador:** no van a git, ni al almacenamiento compartido, ni a producción. Se marcan con un sticker violeta en la carta y en la ficha ("Foto solo para uso local · PokeCottage"), y quedan registradas con su fuente para el futuro informe "Listo para producción".
+  - **Prioridad:** primero nuestra copia o TCGdex; una foto solo local se usa solo si la impresión no tiene ninguna de esas.
+  - **Apagadas** (sin la variable), la app no las descarga, no las muestra y no sirve sus archivos: se ve igual que antes. Para borrarlas: borra la carpeta y, si quieres, `DELETE FROM arma.facts WHERE source_id IN ('pokecottage-fotos', 'limitless', 'bulbagarden')`.
+
+- **Equivalencias:** la misma carta internacional en distintos idiomas, y la inglesa con su original japonesa cuando Bulbapedia las une. Solo agrupan; no cambian ningún conteo por sí solas.
+- **Reglas** (no borran nada: lo que queda fuera se apaga en la vitrina):
+  - "Mismo diseño en EE. UU., Latam y Europa: solo inglés": compara solo idiomas occidentales; si no hay inglés, deja el primero en orden alfabético.
+  - "Asiáticas traducidas cuentan como la japonesa".
+  - Incluir sellos, productos y mazos (la 1st Edition siempre cuenta).
+  - Incluir World Championship Decks.
+  - Incluir jumbo.
+
+  Las combinaciones se guardan como **vistas** por cuenta; "Full" siempre está.
+- **La Vitrina** (maqueta AE del canvas, diseño en `apps/arma/DESIGN.md` y `PRODUCT.md`): repisas por diseño, contador "bajo luz / Full", y una ficha con el código de catálogo, tus copias (leídas de tu inventario **en solo lectura**) y de dónde sale cada dato.
+- **Datos:** esquema `arma` de la misma base (`printings`, `facts`, `sources`, `designs`, `views`, `source_cache`, `imports`), con migraciones propias en `apps/arma/server/migrations`. La app nueva solo escribe ahí. Para borrarla entera: `DROP SCHEMA arma CASCADE`.
+- **Fuera de esta versión:** editar equivalencias a mano, agregar variantes propias, el informe "Listo para producción" y otros Pokémon.
 
 ## Consultas útiles
 

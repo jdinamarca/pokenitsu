@@ -1,0 +1,238 @@
+{
+ "schemaVersion": 2,
+ "generatedAt": "2026-10-15T17:11:34.878891+00:00",
+ "title": "Design System: Arma tu colección",
+ "extensions": {
+  "colorMeta": {
+   "felt": {
+    "role": "primary",
+    "displayName": "Fieltro de vitrina",
+    "canonical": "#0f3a31",
+    "tonalRamp": [
+     "oklch(15% 0.05 170)",
+     "oklch(25% 0.05 170)",
+     "oklch(35% 0.05 170)",
+     "oklch(45% 0.05 170)",
+     "oklch(57% 0.05 170)",
+     "oklch(70% 0.05 170)",
+     "oklch(83% 0.05 170)",
+     "oklch(95% 0.05 170)"
+    ]
+   },
+   "led-light": {
+    "role": "primary",
+    "displayName": "Luz LED cálida",
+    "canonical": "#fff3dc",
+    "tonalRamp": [
+     "oklch(15% 0.04 80)",
+     "oklch(25% 0.04 80)",
+     "oklch(35% 0.04 80)",
+     "oklch(45% 0.04 80)",
+     "oklch(57% 0.04 80)",
+     "oklch(70% 0.04 80)",
+     "oklch(83% 0.04 80)",
+     "oklch(95% 0.04 80)"
+    ]
+   },
+   "card-stock": {
+    "role": "secondary",
+    "displayName": "Cartulina de etiqueta",
+    "canonical": "#e8dcc2",
+    "tonalRamp": [
+     "oklch(15% 0.04 85)",
+     "oklch(25% 0.04 85)",
+     "oklch(35% 0.04 85)",
+     "oklch(45% 0.04 85)",
+     "oklch(57% 0.04 85)",
+     "oklch(70% 0.04 85)",
+     "oklch(83% 0.04 85)",
+     "oklch(95% 0.04 85)"
+    ]
+   },
+   "room": {
+    "role": "neutral",
+    "displayName": "Sala de grafito",
+    "canonical": "#151513",
+    "tonalRamp": [
+     "oklch(15% 0.004 100)",
+     "oklch(25% 0.004 100)",
+     "oklch(35% 0.004 100)",
+     "oklch(45% 0.004 100)",
+     "oklch(57% 0.004 100)",
+     "oklch(70% 0.004 100)",
+     "oklch(83% 0.004 100)",
+     "oklch(95% 0.004 100)"
+    ]
+   },
+   "sticker-ok": {
+    "role": "tertiary",
+    "displayName": "Sticker con permiso"
+   },
+   "sticker-review": {
+    "role": "tertiary",
+    "displayName": "Sticker por revisar"
+   },
+   "sticker-none": {
+    "role": "tertiary",
+    "displayName": "Sticker sin permiso"
+   },
+   "sticker-own": {
+    "role": "tertiary",
+    "displayName": "Sticker dato propio"
+   }
+  },
+  "typographyMeta": {
+   "counter": {
+    "displayName": "Contador",
+    "purpose": "La única cifra grande: bajo luz / Full."
+   },
+   "tag": {
+    "displayName": "Etiqueta",
+    "purpose": "Idioma y variante en la etiqueta de cartulina de cada impresión."
+   },
+   "label": {
+    "displayName": "Rótulo",
+    "purpose": "Encabezados de sección y de repisa, en mayúsculas espaciadas."
+   }
+  },
+  "shadows": [
+   {
+    "name": "carta-en-repisa",
+    "value": "0 12px 22px -12px rgba(0,0,0,0.9)",
+    "purpose": "Cada carta de la vitrina."
+   },
+   {
+    "name": "vitrina-hundida",
+    "value": "inset 0 1px 0 rgba(255,243,220,0.4), inset 0 0 0 1px #24584b, 0 24px 50px -30px rgba(0,0,0,0.8)",
+    "purpose": "El cuerpo de la vitrina."
+   },
+   {
+    "name": "luz-regla-activa",
+    "value": "0 10px 28px -12px rgba(255,236,190,0.55)",
+    "purpose": "Solo la regla recién tocada."
+   },
+   {
+    "name": "foto-ficha",
+    "value": "0 30px 60px -26px rgba(0,0,0,0.9)",
+    "purpose": "La carta grande de la ficha."
+   }
+  ],
+  "motion": [
+   {
+    "name": "ease-out",
+    "value": "cubic-bezier(0.23, 1, 0.32, 1)",
+    "purpose": "Toda transición de estado."
+   },
+   {
+    "name": "penumbra",
+    "value": "450ms",
+    "purpose": "Apagar o encender una impresión por una regla (filtro y opacidad); 0ms con reducir movimiento."
+   },
+   {
+    "name": "interruptor",
+    "value": "220ms",
+    "purpose": "La perilla del interruptor de regla."
+   }
+  ],
+  "breakpoints": [
+   {
+    "name": "estrecho",
+    "value": "1360px"
+   },
+   {
+    "name": "apilado",
+    "value": "900px"
+   }
+  ]
+ },
+ "components": [
+  {
+   "name": "Interruptor de regla activo",
+   "kind": "custom",
+   "refersTo": "rule-switch-active",
+   "description": "La regla recién tocada: única luz del riel.",
+   "html": "<button class=\"ds-rule ds-rule-on\" role=\"switch\" aria-checked=\"true\"><span class=\"ds-switch\"></span><span>Mismo diseño en EE. UU., Latam y Europa: solo inglés<small>Compara solo idiomas occidentales</small></span></button>",
+   "css": ".ds-rule{display:flex;gap:11px;align-items:flex-start;max-width:250px;text-align:left;padding:9px 10px;border:0;border-radius:8px;background:#fff3dc;color:#1a1712;font:500 13px/1.35 Archivo,system-ui,sans-serif;box-shadow:0 10px 28px -12px rgba(255,236,190,.55);transition:background-color .2s cubic-bezier(.23,1,.32,1)} .ds-rule small{display:block;color:#5f574a;font-size:11.5px;margin-top:2px} .ds-switch{flex:none;width:30px;height:18px;border-radius:9px;background:#0f3a31;position:relative} .ds-switch::after{content:'';position:absolute;top:2px;left:14px;width:14px;height:14px;border-radius:50%;background:#fff3dc} .ds-rule:focus-visible{outline:2px solid #fff3dc;outline-offset:3px}"
+  },
+  {
+   "name": "Vista guardada",
+   "kind": "chip",
+   "refersTo": "view-chip",
+   "description": "Chip de vista; la elegida pasa a cartulina.",
+   "html": "<div style=\"background:#0f3a31;padding:12px;display:flex;gap:6px\"><button class=\"ds-view\">Full</button><button class=\"ds-view ds-view-sel\">Master set inglés</button></div>",
+   "css": ".ds-view{padding:6px 10px;border-radius:6px;background:#0b2e27;border:1px solid #1d5446;color:#cfe3d9;font:500 12.5px Archivo,system-ui,sans-serif;cursor:pointer;transition:background-color .16s cubic-bezier(.23,1,.32,1)} .ds-view:hover{background:#13453a} .ds-view-sel{background:#e8dcc2;color:#1a1712;border-color:#e8dcc2} .ds-view:focus-visible{outline:2px solid #fff3dc;outline-offset:3px}"
+  },
+  {
+   "name": "Impresión con etiqueta",
+   "kind": "card",
+   "refersTo": "printing-tag",
+   "description": "Componente firma: carta grande con etiqueta de cartulina y sticker de permiso; apagada cuando una regla la deja fuera.",
+   "html": "<div style=\"background:#0f3a31;padding:16px;display:flex;gap:14px\"><button class=\"ds-print\"><span class=\"ds-art\"></span><span class=\"ds-tag\">EN · Normal<i class=\"ds-dot\"></i></span></button><button class=\"ds-print ds-off\"><span class=\"ds-art\"></span><span class=\"ds-tag\">FR · Normal<i class=\"ds-dot\"></i></span></button></div>",
+   "css": ".ds-print{width:112px;display:flex;flex-direction:column;gap:7px;border:0;padding:0;background:none;cursor:pointer;transition:transform .2s cubic-bezier(.23,1,.32,1)} .ds-print:hover{transform:translateY(-3px)} .ds-art{display:block;width:112px;aspect-ratio:63/88;border-radius:5px;background:#d8c79a;border:5px solid #f0d564;box-sizing:border-box;box-shadow:0 12px 22px -12px rgba(0,0,0,.9);transition:filter .45s cubic-bezier(.23,1,.32,1)} .ds-tag{background:#e8dcc2;color:#1a1712;border-radius:3px;padding:5px 7px;font:600 11px/1.2 'Archivo Narrow',Archivo,sans-serif;display:flex;justify-content:space-between;align-items:center;transition:opacity .45s} .ds-dot{width:9px;height:9px;border-radius:50%;background:#2fae66} .ds-off .ds-art{filter:grayscale(1) brightness(.32)} .ds-off .ds-tag{opacity:.38} .ds-print:focus-visible{outline:2px solid #fff3dc;outline-offset:3px}"
+  },
+  {
+   "name": "Botón principal",
+   "kind": "button",
+   "refersTo": "button-primary",
+   "description": "Acción principal de una pantalla (entrar, traer el Full, reintentar).",
+   "html": "<button class=\"ds-btn\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4\"/><polyline points=\"10 17 15 12 10 7\"/><line x1=\"15\" y1=\"12\" x2=\"3\" y2=\"12\"/></svg>Entrar en Nitsu</button>",
+   "css": ".ds-btn{display:inline-flex;align-items:center;gap:8px;padding:11px 16px;border-radius:9px;border:0;background:#fff3dc;color:#1a1712;font:700 14px Archivo,system-ui,sans-serif;cursor:pointer;transition:transform .16s cubic-bezier(.23,1,.32,1)} .ds-btn:active{transform:scale(.97)} .ds-btn:focus-visible{outline:2px solid #fff3dc;outline-offset:3px}"
+  },
+  {
+   "name": "Campo de nombre de vista",
+   "kind": "input",
+   "refersTo": "view-chip",
+   "description": "Campo en línea para guardar una vista.",
+   "html": "<div style=\"background:#0f3a31;padding:12px\"><input class=\"ds-input\" placeholder=\"Nombre de la vista\"></div>",
+   "css": ".ds-input{padding:7px 9px;border-radius:7px;border:1px solid #1d5446;background:#0b2e27;color:#fff3dc;font:500 14px Archivo,system-ui,sans-serif} .ds-input::placeholder{color:#93b8ab} .ds-input:focus-visible{outline:2px solid #fff3dc;outline-offset:3px}"
+  }
+ ],
+ "narrative": {
+  "northStar": "El mostrador del coleccionista",
+  "overview": "El lugar donde un coleccionista serio revisa, compara y decide carta por carta, de noche, en sesiones largas frente al computador. El sistema toma su material de una tienda especializada: el riel y la vitrina son de fieltro verde profundo, la sala es grafito tibio, la luz es un LED cálido que solo toca el borde del vidrio y lo que está en juego, y cada impresión lleva una etiqueta de cartulina con un sticker de inventario que dice si su dato se puede usar.\n\nEs denso pero se lee sin cansar. Las cartas siempre se ven grandes y con su foto real; los controles son los de siempre (interruptores, botones, campos) vestidos con el material de la tienda, nunca disfrazados de otra cosa. Lo que importa es el inventario real y la procedencia de cada dato, así que el color hace trabajo: la luz marca lo activo, el sticker marca el permiso, la penumbra marca lo que una regla dejó fuera.",
+  "keyCharacteristics": [
+   "Fieltro verde como cascarón y como fondo de la vitrina; grafito tibio como sala.",
+   "Una sola luz cálida, reservada para lo activo y para el borde del vidrio.",
+   "Etiquetas de cartulina con cifras condensadas y un sticker de color por fuente.",
+   "Lo que una regla deja fuera se apaga en su lugar: nunca desaparece.",
+   "Cartas grandes, con su foto; nunca miniaturas perdidas entre controles."
+  ],
+  "rules": [
+   {
+    "name": "La Regla de la Luz Única",
+    "body": "La luz cálida marca una sola cosa a la vez por zona: la regla activa en el riel, la carta elegida en la vitrina. Si dos cosas brillan, ninguna está activa.",
+    "section": "colors"
+   },
+   {
+    "name": "La Regla del Sticker",
+    "body": "Los cuatro colores de sticker hablan solo de permisos de una fuente. Nunca se usan como acento, estado de carga ni decoración.",
+    "section": "colors"
+   },
+   {
+    "name": "La Regla de la Cifra Tabular",
+    "body": "Todo número que cambia (contador, copias, precios) usa cifras tabulares, para que no baile al cambiar.",
+    "section": "typography"
+   },
+   {
+    "name": "La Regla de la Penumbra",
+    "body": "Lo que una regla deja fuera no se oculta ni se mueve: se apaga en su lugar (escala de grises y brillo 0.32 en la foto, etiqueta al 38%) en 450ms con ease-out. Con \"reducir movimiento\" el cambio es instantáneo.",
+    "section": "elevation"
+   }
+  ],
+  "dos": [
+   "Do mostrar las cartas grandes (112px en la vitrina, ancho completo en la ficha) y con su foto real o la de su mismo diseño.",
+   "Do apagar en su lugar lo que una regla deja fuera, en 450ms con ease-out, e instantáneo con \"reducir movimiento\".",
+   "Do reservar la luz cálida (#fff3dc) para una sola cosa activa por zona.",
+   "Do marcar la procedencia solo con los cuatro stickers (verde, ámbar, rojo, azul).",
+   "Do usar cifras tabulares en todo número que cambia.",
+   "Do dibujar los iconos con una sola librería de línea (lucide), nunca con emoji ni glifos."
+  ],
+  "donts": [
+   "Don't convertir la pantalla en un dashboard de tarjetas con métricas grandes; la única cifra grande es el contador.",
+   "Don't poner un texto en mayúsculas sobre un título como \"eyebrow\": el nombre de la app va aparte, en el riel o en la esquina.",
+   "Don't usar colores de caricatura, Poké Balls decorativas ni estética infantil.",
+   "Don't usar neón, degradados decorativos, vidrio esmerilado ni texto con degradado.",
+   "Don't mostrar fotos de fuentes sin permiso de imagen (PokeCottage, Bulbapedia, tiendas)."
+  ]
+ }
+}
