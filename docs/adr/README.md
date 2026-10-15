@@ -23,3 +23,4 @@ Por qué el sistema es como es. El **qué** hace está en [`openspec/specs/`](..
 | [0017](0017-reconocimiento-de-cartas-con-ocr-en-el-navegador.md) | Reconocer las cartas con OCR en el navegador | **Propuesto** |
 | [0018](0018-rls-forzado-con-usuario-por-conexion.md) | RLS forzado, con el usuario fijado en la conexión de cada petición | Aceptado |
 | [0019](0019-artes-conectados-compartidos.md) | Artes conectados compartidos, editados por el dueño | Aceptado |
+| [0020](0020-arma-tu-coleccion-app-aparte.md) | "Arma tu colección": app aparte, esquema propio y procedencia por dato | Aceptado |
