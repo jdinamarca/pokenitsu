@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Printing, Source } from './api.ts';
-import { expansionOf, shelvesBySet } from './model.ts';
+import { cardOf, expansionOf, shelvesBySet, withPhotoShows } from './model.ts';
 
 let n = 0;
 const pr = (o: Partial<Printing> & Pick<Printing, 'set_key' | 'number' | 'lang'>): Printing => ({
@@ -83,5 +83,16 @@ describe('shelvesBySet', () => {
       '51 FR',
       '51 DE',
     ]);
+  });
+});
+
+describe('la misma carta con números distintos', () => {
+  it('074 y 74 son la misma carta: la foto compartida con su 1st Edition se reconoce', () => {
+    const shared = { source: 'pokemontcg', value: '/img/x.webp', ref: null };
+    const a = pr({ set_key: 'sv8pt5', number: '074', lang: 'EN', facts: { image: [shared] } });
+    const b = pr({ set_key: 'sv8pt5', number: '74', lang: 'EN', stamp: '1st-edition', facts: { image: [shared] } });
+    expect(cardOf(a)).toBe(cardOf(b));
+    const [wa] = withPhotoShows([a, b], {});
+    expect(wa!.facts.image![0]!.shows).toBe('1st-edition');
   });
 });

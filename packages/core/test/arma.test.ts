@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   applyRules,
   auditPrintings,
+  baseFinish,
   buildEquivalences,
   catalogCode,
   FULL_RULES,
@@ -292,5 +293,35 @@ describe('photoShows', () => {
   it('a mark made by hand wins, also a mark back to the unlimited', () => {
     expect(photoShows(unlimited, [unlimited], '1st-edition')).toBe('1st-edition');
     expect(photoShows(first, [unlimited, first], '')).toBe('');
+  });
+});
+
+describe('cartas en otros idiomas', () => {
+  it('acabado base: normal si existe; si no, su holo; nunca un sello ni un reverse', () => {
+    expect(
+      baseFinish([
+        { finish: 'reverse', stamp: null },
+        { finish: 'normal', stamp: null },
+        { finish: 'normal', stamp: '1st-edition' },
+      ]),
+    ).toBe('normal');
+    expect(
+      baseFinish([
+        { finish: 'cosmos', stamp: null },
+        { finish: 'normal', stamp: 'pokemon-center' },
+      ]),
+    ).toBe('cosmos');
+    expect(baseFinish([])).toBe('normal');
+  });
+  it('motivos "deducida" y "no salió en este idioma"', () => {
+    const base = { set_key: 'dp5', number: '62', finish: 'normal' as const, stamp: null, labels: [] };
+    const r = auditPrintings([
+      { ...base, code: 'it', lang: 'IT', sources: ['tcgdex-expansiones'], inferred: { setName: 'Alba Suprema', language: 'italiano' } },
+      { ...base, code: 'es', set_key: 'base5', number: '55', lang: 'ES', sources: ['tcgdex'], notReleased: 'Team Rocket' },
+    ]);
+    expect(r.get('it')!.map(x => x.text)).toEqual([
+      'Deducida: TCGdex lista Alba Suprema en italiano, pero ninguna fuente lista esta carta',
+    ]);
+    expect(r.get('es')!.map(x => x.text)).toEqual(['WikiDex dice que Team Rocket no se distribuyó en español']);
   });
 });

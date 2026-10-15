@@ -407,8 +407,12 @@ export interface AuditPrinting {
   sources: string[];
   /** the variant's name as each source gives it */
   labels: string[];
+  /** deduced, not listed (cartas-en-otros-idiomas): the set's name in that language and the language */
+  inferred?: { setName: string; language: string };
+  /** a source says this set was never released in this language: the set's name */
+  notReleased?: string;
 }
-export type AuditKind = 'region' | 'finish' | 'oneSource' | 'unnamed';
+export type AuditKind = 'region' | 'finish' | 'oneSource' | 'unnamed' | 'inferred' | 'notReleased';
 export interface AuditReason {
   kind: AuditKind;
   text: string;
@@ -453,11 +457,18 @@ export function auditPrintings(
           text: `Las fuentes no coinciden en el brillo: holo según ${listNames(holo.sources.map(sourceName))}, holo cosmos según ${listNames(cosmos.sources.map(sourceName))}`,
         });
       const others = [...knowCard].filter(s => !p.sources.includes(s));
-      if (p.sources.length === 1 && others.length)
+      // a deduced one has a single source by nature: its own reason says it better
+      if (p.sources.length === 1 && others.length && !p.inferred)
         add(p.code, {
           kind: 'oneSource',
           text: `Solo ${sourceName(p.sources[0]!)} dice que existe; ${listNames(others.map(sourceName))} ${others.length === 1 ? 'conoce' : 'conocen'} la carta`,
         });
+      if (p.inferred)
+        add(p.code, {
+          kind: 'inferred',
+          text: `Deducida: TCGdex lista ${p.inferred.setName} en ${p.inferred.language}, pero ninguna fuente lista esta carta`,
+        });
+      if (p.notReleased) add(p.code, { kind: 'notReleased', text: `WikiDex dice que ${p.notReleased} no se distribuyó en español` });
       if (p.labels.some(l => /^[A-Z0-9]{3}-[A-Z0-9]{3}-[A-Z0-9]{3}$/.test(l)))
         add(p.code, { kind: 'unnamed', text: 'La fuente registra esta variante solo con un código, sin decir qué la distingue' });
     }
@@ -481,4 +492,13 @@ export function photoShows(holder: PhotoHolder, holders: readonly PhotoHolder[],
   const stamps = new Set(holders.map(h => h.stamp || ''));
   if (stamps.has('1st-edition') && stamps.has('')) return '1st-edition';
   return holder.stamp || '';
+}
+
+/**
+ * The finish a card is printed in when nothing else is said: normal, or its only holo. For a printing a source confirms
+ * in another language without naming its variant (WikiDex) or one deduced from a set list: never a stamp nor a reverse.
+ */
+export function baseFinish(printings: readonly { finish: ArmaFinish; stamp: string | null }[]): ArmaFinish {
+  const plain = printings.filter(p => !p.stamp).map(p => p.finish);
+  return (['normal', 'holo', 'cosmos'] as const).find(f => plain.includes(f)) ?? plain[0] ?? 'normal';
 }

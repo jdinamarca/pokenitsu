@@ -162,7 +162,8 @@ async function run(dex: number): Promise<PhotoSummary> {
   // the printings with no photo, from a source allowed to show it, that shows their own variant (fotos-por-variante):
   // an unlimited whose only photo is the one shared with its 1st Edition still needs one
   const { rows } = await pool.query<Target & { stamp: string | null; card: string; allowed: string[] }>(
-    `SELECT p.code, p.set_key, p.number, p.lang, p.stamp, p.set_key || '|' || p.number || '|' || p.lang AS card,
+    `SELECT p.code, p.set_key, p.number, p.lang, p.stamp, -- the same card whatever zeros its number has (074 = 74), as in core's normNumber
+            p.set_key || '|' || regexp_replace(upper(p.number), '^([A-Z]*)0+(?=[0-9])', '\\1') || '|' || p.lang AS card,
             (SELECT ref FROM arma.facts WHERE printing_code = p.code AND source_id = 'pokecottage' AND field = 'exists') AS pc_ref,
             coalesce((SELECT array_agg(f.value) FROM arma.facts f JOIN arma.sources s ON s.id = f.source_id
                       WHERE f.printing_code = p.code AND f.field = 'image' AND s.images AND s.permission <> 'local'), '{}') AS allowed

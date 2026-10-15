@@ -65,7 +65,9 @@ app.get<{ Params: { dex: string } }>('/api/full/:dex', async req => {
     // what variant a photo shows, marked by hand (fotos-por-variante): { src: stamp, or '' for the unlimited }
     photoMarks: Object.fromEntries(marks.rows.map(m => [m.src, m.shows])),
     // the classification check (corregir-clasificacion-de-cartas): { code: reasons } for each doubtful printing
-    audit: Object.fromEntries(auditOf(printings.rows, sources.rows)),
+    audit: Object.fromEntries(
+      auditOf(printings.rows, sources.rows, (last.rows[0]?.summary as ImportedSummary | undefined)?.sources?.wikidex?.notReleased || []),
+    ),
   };
 });
 
@@ -77,10 +79,18 @@ type FullRow = {
   lang: string;
   finish: ArmaFinish;
   stamp: string | null;
+  set_name_local: string | null;
   facts: Record<string, { source: string; value: string | null }[]>;
 };
-function auditOf(rows: FullRow[], sources: { id: string; name: string }[]): Map<string, AuditReason[]> {
+type ImportedSummary = { sources?: { wikidex?: { notReleased?: { setKey: string; name: string }[] } } };
+const LANGUAGE: Record<string, string> = { IT: 'italiano', PT: 'portugués' };
+function auditOf(
+  rows: FullRow[],
+  sources: { id: string; name: string }[],
+  notReleased: { setKey: string; name: string }[],
+): Map<string, AuditReason[]> {
   const names = new Map(sources.map(s => [s.id, s.name]));
+  const never = new Map(notReleased.map(n => [n.setKey, n.name]));
   return auditPrintings(
     rows.map(r => ({
       code: r.code,
@@ -91,6 +101,11 @@ function auditOf(rows: FullRow[], sources: { id: string; name: string }[]): Map<
       stamp: r.stamp,
       sources: (r.facts.exists || []).map(f => f.source),
       labels: (r.facts.variant || []).map(f => f.value || ''),
+      // only deduced from a set list (cartas-en-otros-idiomas), or Spanish in a set WikiDex says never came out in Spain
+      ...((r.facts.exists || []).every(f => f.source === 'tcgdex-expansiones') && r.facts.exists?.length
+        ? { inferred: { setName: r.set_name_local || r.set_key, language: LANGUAGE[r.lang] || r.lang } }
+        : {}),
+      ...(r.lang === 'ES' && never.has(r.set_key) ? { notReleased: never.get(r.set_key)! } : {}),
     })),
     id => names.get(id) || id,
   );

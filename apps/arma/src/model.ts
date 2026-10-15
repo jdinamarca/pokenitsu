@@ -47,6 +47,9 @@ export function existsPermission(p: Printing, sources: Map<string, Source>): Per
   return RANK.find(r => ps.includes(r)) || 'none';
 }
 
+/** the same card: set, number (074 = 74) and language; its printings are its variants */
+export const cardOf = (p: Pick<Printing, 'set_key' | 'number' | 'lang'>) => `${p.set_key}|${normNumber(p.number)}|${p.lang}`;
+
 export interface Picture {
   src: string;
   /** a photo for local use only (fotos-solo-local): shown with the violet mark */
@@ -58,7 +61,7 @@ export interface Picture {
 
 /** each photo of the Full with the variant it shows (photoShows: a mark by hand, or the automatic rule) */
 export function withPhotoShows(printings: Printing[], marks: Record<string, string>): Printing[] {
-  const card = (p: Printing) => `${p.set_key}|${p.number}|${p.lang}`;
+  const card = cardOf;
   const holders = new Map<string, Printing[]>();
   for (const p of printings)
     for (const src of new Set((p.facts.image || []).map(f => f.value).filter(Boolean)))
