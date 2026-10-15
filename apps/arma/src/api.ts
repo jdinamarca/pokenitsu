@@ -40,6 +40,8 @@ export interface Full {
   lastImport: { summary: { printings: number }; started_at: string } | null;
   /** ARMA_FOTOS_LOCALES=1: photos for local use only come in the Full */
   localPhotos: boolean;
+  /** the classification check: the doubtful printings and why (corregir-clasificacion-de-cartas) */
+  audit: Record<string, { kind: string; text: string }[]>;
 }
 export interface Copy {
   code: string;

@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
   applyRules,
+  auditPrintings,
   buildEquivalences,
   catalogCode,
   FULL_RULES,
   mergeClaims,
+  misfiled,
   printingKey,
   variantFromInventory,
   variantFromPokecottage,
@@ -12,6 +14,7 @@ import {
   variantFromTcgplayer,
   variantLabel,
   type ArmaFinish,
+  type AuditPrinting,
   type Claim,
   type RulePrinting,
 } from '../src/index.js';
@@ -169,5 +172,107 @@ describe('2.3 reglas', () => {
   it('nunca quita impresiones del Full: siempre devuelve una respuesta por cada una', () => {
     const r = applyRules(full, { onlyEnglish: true, asiaAsJapanese: true, stampsAndDecks: false, wcd: false, jumbo: false });
     expect(r.size).toBe(full.length);
+  });
+});
+
+describe('correcciones de clasificación', () => {
+  const finishes = (cs: Claim[]) =>
+    mergeClaims(cs).map(m => `${m.finish}${m.stamp ? '~' + m.stamp : ''} [${[...new Set(m.facts.map(f => f.source))].sort().join(',')}]`);
+  it('Wizards Promo #11: la "Holo" de pokemontcg.io es la holo cosmos de las demás', () => {
+    expect(
+      finishes([
+        claim('basep', '11', 'EN', 'holo', 'pokemontcg'),
+        claim('basep', '11', 'EN', 'cosmos', 'tcgdex'),
+        claim('basep', '11', 'EN', 'cosmos', 'pokecottage'),
+        claim('basep', '11', 'EN', 'holo', 'tcgplayer'),
+      ]),
+    ).toEqual(['cosmos [pokecottage,pokemontcg,tcgdex,tcgplayer]']);
+  });
+  it('una holo de TCGdex sin brillo también es genérica', () => {
+    expect(
+      finishes([
+        { ...claim('bwp', 'BW94', 'EN', 'holo', 'tcgdex'), genericFinish: true },
+        claim('bwp', 'BW94', 'EN', 'cosmos', 'pokecottage'),
+      ]),
+    ).toEqual(['cosmos [pokecottage,tcgdex]']);
+  });
+  it('SM184: la "normal" de TCGdex que TCGplayer vende como holo, con PokeCottage diciendo holo cosmos, es la holo cosmos', () => {
+    expect(
+      finishes([
+        claim('smp', 'SM184', 'EN', 'normal', 'tcgdex'),
+        claim('smp', 'SM184', 'EN', 'holo', 'tcgplayer'),
+        claim('smp', 'SM184', 'EN', 'holo', 'pokemontcg'),
+        claim('smp', 'SM184', 'EN', 'cosmos', 'pokecottage'),
+      ]),
+    ).toEqual(['cosmos [pokecottage,pokemontcg,tcgdex,tcgplayer]']);
+  });
+  it('30th Celebration #116: holo y holo cosmos dichas por una fuente específica se mantienen', () => {
+    expect(
+      finishes([
+        claim('me55', '116', 'EN', 'holo', 'pokecottage'),
+        claim('me55', '116', 'EN', 'cosmos', 'pokecottage'),
+        claim('me55', '116', 'EN', 'holo', 'pokemontcg'),
+      ]),
+    ).toEqual(['holo [pokecottage,pokemontcg]', 'cosmos [pokecottage]']);
+  });
+  it('JR Stamp Rally solo existe en japonés: en una carta occidental está mal catalogado', () => {
+    expect(misfiled(claim('basep', '11', 'EN', 'normal', 'tcgdex', 'jr-stamp-rally'))).toBe(true);
+    expect(misfiled(claim('pc:jpn_unp', '157', 'JA', 'normal', 'pokecottage', 'jr-stamp-rally'))).toBe(false);
+    expect(variantFromPokecottage('JREastRally2000').stamp).toBe('jr-stamp-rally');
+  });
+  it('el mismo sello con dos nombres queda con el más completo', () => {
+    expect(
+      finishes([
+        claim('ex11', '68', 'EN', 'normal', 'tcgdex', 'jun-hasebe'),
+        claim('ex11', '68', 'EN', 'normal', 'pokecottage', 'world-championships-deck2007-jun-hasebe'),
+      ]),
+    ).toEqual(['normal~world-championships-deck2007-jun-hasebe [pokecottage,tcgdex]']);
+  });
+});
+
+describe('revisión de clasificación', () => {
+  const pr = (o: Partial<AuditPrinting> & Pick<AuditPrinting, 'code'>): AuditPrinting => ({
+    set_key: 'sv8',
+    number: '143',
+    lang: 'EN',
+    finish: 'normal',
+    stamp: null,
+    sources: ['pokemontcg', 'tcgdex'],
+    labels: ['Normal'],
+    ...o,
+  });
+  const kinds = (ps: AuditPrinting[]) => Object.fromEntries([...auditPrintings(ps)].map(([k, rs]) => [k, rs.map(r => r.kind)]));
+  it('una impresión limpia no se marca', () => {
+    expect(kinds([pr({ code: 'a' })])).toEqual({});
+  });
+  it('región: sello japonés o expansión japonesa en un idioma occidental, y japonés en una internacional', () => {
+    expect(
+      kinds([
+        pr({ code: 'gym', stamp: 'pokemon-card-gym' }),
+        pr({ code: 'jaset', set_key: 'pc:jpn_unp', number: '157' }),
+        pr({ code: 'jaint', set_key: 'base2', number: '51', lang: 'JA' }),
+      ]),
+    ).toEqual({ gym: ['region'], jaset: ['region'], jaint: ['region'] });
+  });
+  it('acabado: holo y holo cosmos que ninguna fuente comparte', () => {
+    expect(
+      kinds([
+        pr({ code: 'h', set_key: 'smp', number: 'SM184', finish: 'holo', sources: ['pokemontcg', 'tcgdex'] }),
+        pr({ code: 'c', set_key: 'smp', number: 'SM184', finish: 'cosmos', sources: ['pokecottage'] }),
+      ]),
+    ).toEqual({ h: ['finish'], c: ['finish', 'oneSource'] });
+  });
+  it('una sola fuente cuando otras conocen la carta, con el texto que las nombra', () => {
+    const r = auditPrintings(
+      [pr({ code: 'n' }), pr({ code: 'p', stamp: 'platinum', sources: ['tcgdex'] })],
+      id => ({ tcgdex: 'TCGdex', pokemontcg: 'pokemontcg.io' })[id] || id,
+    );
+    expect(r.get('p')!.map(x => x.text)).toEqual(['Solo TCGdex dice que existe; pokemontcg.io conoce la carta']);
+    expect(r.has('n')).toBe(false);
+  });
+  it('sin nombre: la variante es solo un código', () => {
+    expect(kinds([pr({ code: 'x', stamp: 'x6m1ty0f6', labels: ['X6M-1TY-0F6'], sources: ['pokecottage', 'tcgdex'] })])).toEqual({
+      x: ['unnamed'],
+    });
   });
 });

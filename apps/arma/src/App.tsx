@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { applyRules, type ArmaRules, type RuleId } from '@pokenitsu/core';
-import { LogIn, RefreshCw } from 'lucide-react';
+import { CircleHelp, LogIn, RefreshCw } from 'lucide-react';
 import { api, ApiError, type Copy, type Full, type SavedView, type Source } from './api.ts';
 import { copiesByCode, REDUCES, RULES, shelvesOf, STICKER } from './model.ts';
 import { Rail } from './components/Rail.tsx';
@@ -69,7 +69,14 @@ export function App() {
       ),
     [printings, rules],
   );
-  const shelves = useMemo(() => shelvesOf(printings, sources), [printings, sources]);
+  const audit = useMemo(() => full?.audit || {}, [full]);
+  const doubtful = Object.keys(audit).length;
+  // "Por verificar": only the doubtful printings, to go through them one by one (a view filter: the count stays)
+  const [onlyDoubtful, setOnlyDoubtful] = useState(false);
+  const shelves = useMemo(() => {
+    const all = shelvesOf(printings, sources);
+    return onlyDoubtful ? all.map(s => ({ ...s, printings: s.printings.filter(p => audit[p.code]) })).filter(s => s.printings.length) : all;
+  }, [printings, sources, onlyDoubtful, audit]);
   const owned = useMemo(() => copiesByCode(copies), [copies]);
   const lit = useMemo(() => [...result.values()].filter(r => r.in).length, [result]);
   const missing = useMemo(() => printings.filter(p => result.get(p.code)?.in && !owned.has(p.code)).length, [printings, result, owned]);
@@ -188,8 +195,29 @@ export function App() {
               </li>
             ))}
           </ul>
+          {doubtful > 0 && (
+            <div className="audit-filter">
+              <button
+                type="button"
+                className={'chip' + (onlyDoubtful ? ' sel' : '')}
+                aria-pressed={onlyDoubtful}
+                onClick={() => setOnlyDoubtful(v => !v)}
+              >
+                <CircleHelp size={13} aria-hidden="true" />
+                Por verificar ({doubtful.toLocaleString('es-CL')})
+              </button>
+            </div>
+          )}
         </header>
-        <Showcase shelves={shelves} result={result} sources={sources} copies={owned} selected={selected} onSelect={setSelected} />
+        <Showcase
+          shelves={shelves}
+          result={result}
+          sources={sources}
+          copies={owned}
+          audit={audit}
+          selected={selected}
+          onSelect={setSelected}
+        />
       </main>
       <Detail
         p={sel}
@@ -197,6 +225,7 @@ export function App() {
         result={sel ? result.get(sel.code) : undefined}
         copies={sel ? owned.get(sel.code) || [] : []}
         sources={sources}
+        reasons={sel ? audit[sel.code] || [] : []}
       />
     </div>
   );

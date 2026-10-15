@@ -31,6 +31,13 @@ context: |
   packages/core), Better Auth, user_id + RLS, pg-boss, Vitest + Playwright, GitHub Actions.
   Despliegue: front en Vercel, API + worker en Fly.io (gru), Postgres y Storage en Supabase (São Paulo).
 
+  Regla de veracidad de las cartas (pedida por el usuario, 2026-10-15): toda clasificación e identificación de una
+  impresión (expansión, número, idioma/región, acabado, sello) se verifica de forma rigurosa contra más de una fuente
+  antes de darla por buena. Las fuentes se equivocan (TCGdex colgó la promo japonesa JR Stamp Rally de la Eevee inglesa
+  Wizards Promo #11; PokeCottage marca "International" promos japonesas; pokemontcg.io llama "Holo" a una holo cosmos).
+  Al importar o cambiar un Pokémon: correr la revisión de clasificación de "Arma tu colección", investigar cada
+  impresión marcada (Bulbapedia como referencia de qué existe) y no asumir que el usuario conoce ese master set.
+
   Limitaciones conocidas:
   - Sin login ni separación por usuario: una sola persona por instalación.
   - Pruebas automáticas solo en packages/core; la API y el front se prueban a mano con Chrome headless (CDP).

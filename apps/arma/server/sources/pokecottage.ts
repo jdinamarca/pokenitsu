@@ -48,12 +48,14 @@ export async function pokecottageClaims(
   let unmatched = 0;
   for (const e of data.cards) {
     if (!e.cardId || !e.cardNumber || !e.set?.id) throw new Error(`PokeCottage: entrada sin carta, número o expansión (${e.id})`);
-    const lang = LANG[e.region] || 'ZH-CN';
+    // the set says the language better than the region: PokeCottage marks some Japanese promos "International"
+    const region = e.set.id.startsWith('jpn_') ? 'Japan' : e.set.id.startsWith('scn_') ? 'China' : e.region;
+    const lang = LANG[region] || 'ZH-CN';
     // international set ids are pokemontcg.io's; Japanese ones are found by their English collector name
     let setKey: string | undefined;
     // a few use their own ids (sv35 for 151, sv85 for Prismatic Evolutions): then by name
-    if (e.region === 'International') setKey = cat.sets.has(e.set.id) ? e.set.id : intlSetByName(cat, e.set.name);
-    if (e.region === 'Japan') setKey = cat.jaByName.get(nameKey(e.set.name));
+    if (region === 'International') setKey = cat.sets.has(e.set.id) ? e.set.id : intlSetByName(cat, e.set.name);
+    if (region === 'Japan') setKey = cat.jaByName.get(nameKey(e.set.name));
     if (!setKey) {
       setKey = `pc:${e.set.id}`;
       unmatched++;

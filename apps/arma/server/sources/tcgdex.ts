@@ -103,8 +103,11 @@ export async function tcgdexClaims(cat: Catalog, dex: number): Promise<{ claims:
     for (const d of details) {
       if (!d || POCKET.test(d.set.id)) continue;
       const setKey = setKeyOf(cat, lang, d.set.id);
-      const vs = (d.variants_detailed || []).map(variantFromTcgdex).filter((x): x is ArmaVariant => !!x);
-      const variants = vs.length ? vs : fromFlags(d.variants);
+      // a holo without its foil (or from the old flags) does not say which holo it is
+      const vs = (d.variants_detailed || [])
+        .map(v => (x => x && { ...x, genericFinish: x.finish === 'holo' && !v.foil })(variantFromTcgdex(v)))
+        .filter((x): x is ArmaVariant & { genericFinish: boolean } => !!x);
+      const variants = vs.length ? vs : fromFlags(d.variants).map(v => ({ ...v, genericFinish: v.finish === 'holo' }));
       const cardId = cardIdOf(cat, setKey, d.localId);
       for (const v of variants.length ? variants : [{ finish: 'normal' as const, stamp: null }]) {
         claims.push({

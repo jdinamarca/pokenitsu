@@ -332,6 +332,10 @@ Una opción nueva, separada de la app actual ([ADR 0020](docs/adr/0020-arma-tu-c
 
   Las combinaciones se guardan como **vistas** por cuenta; "Full" siempre está.
 - **La Vitrina** (maqueta AE del canvas, diseño en `apps/arma/DESIGN.md` y `PRODUCT.md`): repisas por diseño, contador "bajo luz / Full", y una ficha con el código de catálogo, tus copias (leídas de tu inventario **en solo lectura**) y de dónde sale cada dato.
+- **Clasificación verificada.** Las fuentes se equivocan, así que al importar se corrige lo seguro y se marca lo dudoso:
+  - **Correcciones automáticas:** una "Holo" a secas (pokemontcg.io, TCGplayer, o TCGdex sin tipo de brillo) es la holo cosmos cuando PokeCottage o TCGdex con brillo dicen holo cosmos y nadie dice holo normal; las expansiones `jpn_*` de PokeCottage van en japonés y las `scn_*` en chino simplificado aunque digan "International"; un sello exclusivo de Japón (JR Stamp Rally) en una carta occidental se descarta y se cuenta como `misfiled` en el resumen; y el mismo sello con dos nombres (TCGdex "jun-hasebe", PokeCottage "world-championships-deck2007-jun-hasebe") queda con el más completo.
+  - **Revisión de clasificación:** cada impresión dudosa queda "por verificar" con sus motivos (región, brillo, una sola fuente, variante sin nombre). Se ve con un icono en la etiqueta, con el filtro "Por verificar (N)" y en la ficha; también con `curl http://localhost:3002/api/audit/133`.
+  - **Regla del proyecto:** al importar cualquier Pokémon nuevo, correr la revisión y comprobar cada marca contra Bulbapedia ("<Pokémon> (TCG)") y las demás fuentes antes de dar el Full por bueno (también está en `openspec/config.yaml`).
 - **Datos:** esquema `arma` de la misma base (`printings`, `facts`, `sources`, `designs`, `views`, `source_cache`, `imports`), con migraciones propias en `apps/arma/server/migrations`. La app nueva solo escribe ahí. Para borrarla entera: `DROP SCHEMA arma CASCADE`.
 - **Fuera de esta versión:** editar equivalencias a mano, agregar variantes propias, el informe "Listo para producción" y otros Pokémon.
 

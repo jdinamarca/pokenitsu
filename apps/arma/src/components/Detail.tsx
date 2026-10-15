@@ -19,10 +19,12 @@ interface Props {
   result: RuleResult | undefined;
   copies: Copy[];
   sources: Map<string, Source>;
+  /** why the classification check marked it (empty when it did not) */
+  reasons: { kind: string; text: string }[];
 }
 
 /** the selected printing: what it is, whether it counts, my copies and where every fact came from */
-export function Detail({ p, fallback, result, copies, sources }: Props) {
+export function Detail({ p, fallback, result, copies, sources, reasons }: Props) {
   if (!p)
     return (
       <aside className="detail empty-detail" aria-label="Ficha">
@@ -81,6 +83,16 @@ export function Detail({ p, fallback, result, copies, sources }: Props) {
           <strong className="none">No la tienes</strong>
         )}
       </div>
+      {reasons.length > 0 && (
+        <section className="doubts" aria-labelledby="doubts-h">
+          <h3 id="doubts-h">Por verificar</h3>
+          <ul>
+            {reasons.map(r => (
+              <li key={r.kind + r.text}>{r.text}</li>
+            ))}
+          </ul>
+        </section>
+      )}
       <section className="facts" aria-labelledby="facts-h">
         <h3 id="facts-h">De dónde sale cada dato</h3>
         <dl>
