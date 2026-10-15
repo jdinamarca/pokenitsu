@@ -1,7 +1,7 @@
 # fotos-aportadas Specification
 
 ## Purpose
-TBD - created by archiving change fotos-aportadas. Update Purpose after archive.
+Completar las fotos de las cartas que ninguna fuente tiene, sobre todo las japonesas, con fotos que los coleccionistas sacan de sus propias cartas. Cada foto se comparte aceptando los términos, la aprueba el dueño y se publica con el crédito de quien la sacó. Cualquiera puede reportar una foto ajena, y el dueño puede quitarla y bloquear a quien la subió.
 
 ## Requirements
 
