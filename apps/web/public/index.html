@@ -4357,6 +4357,7 @@ function colTile(col, c) {
     ${other.length ? `<div class="note">Tienes en ${[...new Set(other)].map(esc).join(', ')}, falta en ${esc(col.lang)}</div>` : ''}
     <div class="acts">${q ? (p ? `<button class="lock on" data-cunlock="${esc(c.slot)}" title="Es de tu colección personal. Toca para pasarla a venta">🔒 Personal</button>`
       : `<button class="lock" data-clock="${esc(c.slot)}" title="La tienes, pero está para vender. Toca para guardarla en tu colección">🏷️ → 🔒</button>`) : ''}
+      ${q ? `<button data-cdel="${esc(c.slot)}" title="Quitar una copia (la última que agregaste)">−1</button>` : ''}
       <button data-cadd="${esc(c.slot)}" title="Agregar una copia a tu colección personal">＋1</button>
       <button data-crole="${esc(c.card_id)}" title="${c.role === 'cameo' ? 'Contarla como carta principal' : 'Es un cameo: el Pokémon sale en el arte pero no es el protagonista'}">${c.role === 'cameo' ? '→ Principal' : '→ Cameo'}</button>
       <button data-chide="${esc(c.card_id)}" title="${c.hidden ? 'Volver a incluirla en la colección' : 'No contarla en esta colección'}">${c.hidden ? 'Incluir' : 'Ocultar'}</button></div></div>`;
@@ -4541,6 +4542,18 @@ $('colView').addEventListener('click', async e => {
   if (t.closest('#colShow')) { colShow = t.dataset.s; return renderColView(); }
   if (t.closest('#colOrder')) { data.colOrder = t.dataset.o; save(); return renderColView(); }
   if (t.id === 'colHid') { colHidden = t.checked; return renderColView(); }
+  if (t.dataset.cdel) {
+    // the copy added last to this slot: the latest load of one of its rows, else the newest row
+    const c = colSlot(t.dataset.cdel), keys = colKeys(col, c).filter(k => data.inv[k] > 0); if (!keys.length) return;
+    const e = [...data.log].reverse().find(x => x.d > 0 && keys.includes(x.k));
+    const k = e ? e.k : keys.reduce((a, b) => (+data.added[b] || 0) > (+data.added[a] || 0) ? b : a);
+    const pers = data.pers[k] || 0, wasPersonal = e ? e.p > 0 : pers === data.inv[k];
+    addQty(k, -1);
+    // removing takes copies for sale first: when the one added was personal, take a personal one
+    if (wasPersonal && data.inv[k] && (data.pers[k] || 0) > pers - 1) setPersonal(k, pers - 1);
+    toast(`➖ Quitaste 1: ${describeKey(k)} · se deshace con ⌘Z en Cargar`);
+    renderColView(); renderColList(); renderStats(); return;
+  }
   if (t.dataset.cadd) {
     const c = colSlot(t.dataset.cadd), m = meta(c.sid, c.num);
     const lang = c.set_lang || col.lang || data.lang, v = c.v ? c.v.slug : autoVariant(m);

@@ -266,6 +266,9 @@ Dentro, el encabezado fijo tiene las pestañas **Cartas** / **Cameos** y el men�
 buscar japonesas, borrar). En Cartas: Todas / Tengo / Me faltan, Por año / Por región y, en **Filtros**,
 orden, rareza, precio y ocultas.
 
+Cada espacio tiene **＋1** (suma una copia a tu colección personal) y, si tiene copias, **−1**: quita la última copia que
+agregaste a ese espacio (si era personal, quita una personal) y avisa cuál quitó. Ambos se deshacen con ⌘Z o ↶ Deshacer en Cargar.
+
 ### Cameos
 
 **Cameos** = cartas donde el Pokémon aparece sin ser el protagonista (el Eevee en el Snorlax de Wizards Promos #49).
