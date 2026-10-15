@@ -8,3 +8,4 @@ export * from './locations.js';
 export * from './collections.js';
 export * from './tier.js';
 export * from './progress.js';
+export * from './variants.js';

@@ -2,10 +2,10 @@
 //   Japanese cards: the expansion list only brings name, number and picture; the rest is in each card's TCGdex page.
 //   International cards: pokemontcg.io is incomplete for brand-new expansions; TCGdex's English catalog has them.
 // Each card is looked up once (cards.details_at). My cards (inventory, collections, lots) go first.
-import { pool, asSystem } from './db.js';
+import { pool, asSystem, tx } from './db.js';
 import { fetchJSON } from './catalog.js';
 import { tcgdexSetOf, tcgdexCardIds } from './prices.js';
-import { guessVariants, standardVariants } from '@pokenitsu/core';
+import { guessVariants, standardVariants, suggestVariants } from '@pokenitsu/core';
 
 const TCGDEX = 'https://api.tcgdex.net/v2';
 const SUPERTYPE = { Pokemon: 'Pokémon', Trainer: 'Trainer', Energy: 'Energy' };
@@ -84,6 +84,7 @@ async function cardVariants(c, ids) {
     : ids[c.number_norm] ? `${TCGDEX}/en/cards/${encodeURIComponent(ids[c.number_norm])}` : null;
   const x = url ? await fetchJSON(url, 2).catch(() => null) : null;
   const vs = variantsOf(x);
+  if (x) await pool.query('UPDATE cards SET td_variants = $2 WHERE id = $1', [c.id, JSON.stringify(tdVariants(x))]);
   if (vs && vs.length) await pool.query('UPDATE cards SET variants = $2, variants_guessed = false WHERE id = $1', [c.id, vs]);
   else await pool.query('UPDATE cards SET variants = $2, variants_guessed = true WHERE id = $1 AND variants IS NULL', [c.id, guessVariants(c.rarity)]);
 }
@@ -115,4 +116,65 @@ export async function startVariantsForMySets() {
     const job = startVariantsJob(r.set_id);
     while (job.running) await new Promise(res => setTimeout(res, 1000));
   }
+}
+
+// ---------- the shared variant list of each card (variantes-compartidas) ----------
+// TCGdex variants_detailed without prices and ids: [{type, foil, stamp, size}]
+const tdVariants = x => (x?.variants_detailed || []).map(v => ({ type: v.type || null, foil: v.foil || null, stamp: v.stamp || null, size: v.size || null }));
+
+// Rewrites the list of the cards the owner has not reviewed, from TCGdex + the TCGplayer variants of their prices
+export async function refreshSuggestions(cardIds) {
+  const { rows } = await pool.query(
+    `SELECT c.id, c.td_variants, CASE WHEN jsonb_typeof(p.usd) = 'object' THEN (SELECT array_agg(k) FROM jsonb_object_keys(p.usd) k) END AS tp
+     FROM cards c LEFT JOIN card_prices p ON p.card_id = c.id
+     WHERE c.id = ANY ($1) AND NOT EXISTS (SELECT 1 FROM card_variants_reviewed r WHERE r.card_id = c.id)`, [cardIds]);
+  for (const r of rows) {
+    const list = suggestVariants(r.td_variants, r.tp);
+    await tx(async c => {
+      await c.query('DELETE FROM card_variants_list WHERE card_id = $1', [r.id]);
+      for (const [pos, v] of list.entries()) {
+        await c.query(
+          `INSERT INTO card_variants_list (card_id, slug, finish, stamp, label, kind, sources, pos) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          [r.id, v.slug, v.finish, v.stamp, v.label, v.type, v.sources, pos]);
+        await c.query('INSERT INTO variant_labels (slug, label) VALUES ($1, $2) ON CONFLICT DO NOTHING', [v.slug, v.label]);
+      }
+    });
+  }
+  return rows.length;
+}
+
+// For a list of cards (a collection): fetch the TCGdex details they lack, then their suggestions. One job per key.
+const suggestionJobs = new Map();
+export const suggestionsJob = key => suggestionJobs.get(key) || null;
+export function startSuggestionsJob(key, cardIds) {
+  const cur = suggestionJobs.get(key);
+  if (cur?.running) return cur;
+  const job = { running: true, done: 0, total: 0 };
+  suggestionJobs.set(key, job);
+  (async () => {
+    const { rows } = await pool.query(
+      `SELECT c.id, c.set_id, c.number_norm, c.rarity, s.source FROM cards c JOIN sets s ON s.id = c.set_id
+       WHERE c.id = ANY ($1) AND c.td_variants IS NULL AND s.source IN ('ptcg', 'tcgdex-ja')`, [cardIds]);
+    job.total = rows.length;
+    // TCGdex ids of each international expansion's cards, looked up once per expansion
+    const idsBySet = new Map();
+    const idsOf = async setId => {
+      if (!idsBySet.has(setId)) idsBySet.set(setId, tcgdexSetOf(setId).then(td => (td ? tcgdexCardIds(td) : {})).catch(() => ({})));
+      return idsBySet.get(setId);
+    };
+    let i = 0;
+    const worker = async () => {
+      while (i < rows.length) {
+        const c = rows[i++];
+        const ids = c.source === 'ptcg' ? await idsOf(c.set_id) : {};
+        await cardVariants(c, ids).catch(() => {});
+        // never looked up again: an empty list when TCGdex does not have the card
+        await pool.query("UPDATE cards SET td_variants = '[]'::jsonb WHERE id = $1 AND td_variants IS NULL", [c.id]).catch(() => {});
+        job.done++;
+      }
+    };
+    await Promise.all([worker(), worker(), worker(), worker()]);
+    job.cards = await refreshSuggestions(cardIds);
+  })().then(() => { job.running = false; }, e => Object.assign(job, { running: false, error: e.message }));
+  return job;
 }

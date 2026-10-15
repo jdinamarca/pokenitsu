@@ -9,9 +9,10 @@ import { pool, tx, migrate, runAsUser, endUser } from './db.js';
 import { createAuth, googleEnabled } from './auth.js';
 import { IMAGE_DIR } from './imagenes.js';
 import { aportesRoutes } from './aportes.js';
+import { variantSlug, variantLabel, variantType, FINISHES } from '@pokenitsu/core';
 import { norm, ensureSets, syncSets, ensureSetCards, syncAllCards, syncJaDex, applyJaNames } from './catalog.js';
 import { syncCameos, cameosJob, CAMEO_SOURCE } from './cameos.js';
-import { fillDetails, startDetailsJob, detailsJob, startVariantsJob, variantsJob, startVariantsForMySets } from './details.js';
+import { fillDetails, startDetailsJob, detailsJob, startVariantsJob, variantsJob, startVariantsForMySets, startSuggestionsJob, suggestionsJob, refreshSuggestions } from './details.js';
 import { ensureCardPrice, ensureSetPrices, refreshPrices, staleCount, getSetting, putSetting, getFx } from './prices.js';
 import { pickPrice } from '@pokenitsu/core';
 
@@ -26,9 +27,9 @@ const IMAGE_EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp
 const CARD_COLS = `c.set_id AS sid, c.number AS num, c.name, c.dex, c.artist, c.rarity, c.image_small AS img, c.supertype`;
 
 const bad = msg => Object.assign(new Error(msg), { statusCode: 400 });
-// normal / holo / reverse, or a special variant slug (firstedition, pokeballholo…)
-const VARIANT_RE = /^[a-z0-9]{1,60}$/;
-const checkVariant = v => { if (!VARIANT_RE.test(String(v))) throw bad(`Variante inválida: ${v}`); return v; };
+// normal / holo / reverse, a special variant slug (firstedition, pokeballholo…) or a shared-list one (normal~ba-charizard-12)
+const VARIANT_RE = /^[a-z0-9]+(?:[~-][a-z0-9]+)*$/;
+const checkVariant = v => { if (String(v).length > 80 || !VARIANT_RE.test(String(v))) throw bad(`Variante inválida: ${v}`); return v; };
 // group pictures: an http(s) URL or a file we stored under /art/
 const checkImageUrl = u => {
   u = String(u ?? '').trim();
@@ -388,8 +389,8 @@ app.get('/api/state', async () => {
 async function variantImages() {
   const own = await pool.query(`SELECT c.set_id || '|' || c.number || '|' || v.variant AS k, v.img FROM variant_images v JOIN cards c ON c.id = v.card_id`);
   const { rows: vars } = await pool.query(
-    `SELECT c.set_id || '|' || c.number AS k, array_agg(DISTINCT x->>'slug') AS slugs
-     FROM collection_cards cc JOIN cards c ON c.id = cc.card_id, jsonb_array_elements(cc.vlist) x GROUP BY 1`);
+    `SELECT c.set_id || '|' || c.number AS k, array_agg(DISTINCT x.slug) AS slugs
+     FROM card_variants_list x JOIN cards c ON c.id = x.card_id GROUP BY 1`);
   return { own: Object.fromEntries(own.rows.map(r => [r.k, r.img])), variants: Object.fromEntries(vars.map(r => [r.k, r.slugs])) };
 }
 async function imageCard(q) {
@@ -680,12 +681,15 @@ app.delete('/api/groups/:id', async req => {
 const COLL_CARDS = `
   WITH co AS (SELECT * FROM collections WHERE id = $1),
   members AS (
-    SELECT cc.card_id, cc.role, cc.variants, cc.name, cc.set_name, cc.vlist FROM collection_cards cc WHERE cc.collection_id = $1
+    SELECT cc.card_id, cc.role, cc.variants, cc.name, cc.set_name FROM collection_cards cc WHERE cc.collection_id = $1
     UNION ALL
-    SELECT c.id, 'main', '{}'::text[], NULL, NULL, '[]'::jsonb FROM cards c, co
+    SELECT c.id, 'main', '{}'::text[], NULL, NULL FROM cards c, co
     WHERE co.dex = ANY (c.dex)
       AND NOT EXISTS (SELECT 1 FROM collection_cards cc WHERE cc.collection_id = $1 AND cc.card_id = c.id))
-  SELECT ${CARD_COLS}, c.id AS card_id, m.role, m.variants, m.vlist, coalesce(m.name, c.name) AS label, c.name AS printed_name, coalesce(m.set_name, s.name_en, s.name) AS set_name, coalesce(s.code, '') AS set_code, s.source, s.lang AS set_lang,
+  SELECT ${CARD_COLS}, c.id AS card_id, m.role, m.variants,
+         -- the card's shared variant list (variantes-compartidas): one slot per variant
+         coalesce((SELECT jsonb_agg(jsonb_build_object('slug', l.slug, 'type', l.kind, 'label', l.label) ORDER BY l.pos)
+                   FROM card_variants_list l WHERE l.card_id = c.id), '[]'::jsonb) AS vlist, coalesce(m.name, c.name) AS label, c.name AS printed_name, coalesce(m.set_name, s.name_en, s.name) AS set_name, coalesce(s.code, '') AS set_code, s.source, s.lang AS set_lang,
          coalesce(to_char(s.release_date, 'YYYY'), '') AS year, coalesce(to_char(s.release_date, 'YYYY-MM-DD'), '') AS date,
          coalesce(sum(i.qty) FILTER (WHERE s.lang <> '' OR co.lang = '' OR i.lang = co.lang), 0)::int AS qty,
          coalesce(sum(i.personal) FILTER (WHERE s.lang <> '' OR co.lang = '' OR i.lang = co.lang), 0)::int AS personal,
@@ -695,7 +699,7 @@ const COLL_CARDS = `
   JOIN cards c ON c.id = m.card_id
   JOIN sets s ON s.id = c.set_id
   LEFT JOIN inventory i ON i.card_id = c.id
-  GROUP BY c.id, s.id, m.role, m.variants, m.vlist, m.name, m.set_name, co.id, co.lang`;
+  GROUP BY c.id, s.id, m.role, m.variants, m.name, m.set_name, co.id, co.lang`;
 
 async function collectionList() {
   const { rows: list } = await pool.query('SELECT id, name, dex, lang FROM collections ORDER BY created_at');
@@ -741,6 +745,50 @@ app.delete('/api/collections/:id', async req => {
 app.get('/api/collections/:id/cards', async req => {
   const { rows } = await pool.query(`SELECT * FROM (${COLL_CARDS}) t ORDER BY date = '', date, sid, length(num), num`, [req.params.id]);
   return rows;
+});
+// suggestions for the variant lists of a collection's cards (TCGdex details they lack, then TCGdex + TCGplayer)
+app.post('/api/collections/:id/variants', async req => {
+  const { rows } = await pool.query(`SELECT card_id FROM (${COLL_CARDS}) t`, [req.params.id]);
+  return { job: startSuggestionsJob('col-' + req.params.id, rows.map(r => r.card_id)) };
+});
+app.get('/api/collections/:id/variants', async req => ({ job: suggestionsJob('col-' + req.params.id) }));
+
+// ---------- the shared variant list of a card: everyone reads it, only the owner edits it (ADR 0020) ----------
+const VARIANTS_OWNER = 'Solo el administrador edita las variantes: son las mismas para todos.';
+const cardVariantList = async id => (await pool.query(
+  `SELECT slug, finish, stamp, deck, deck_no, note, label, kind, sources FROM card_variants_list WHERE card_id = $1 ORDER BY pos, slug`, [id])).rows;
+app.get('/api/cards/:id/variants', async req => {
+  const { rows: [r] } = await pool.query('SELECT EXISTS (SELECT 1 FROM card_variants_reviewed WHERE card_id = $1) AS reviewed', [req.params.id]);
+  return { variants: await cardVariantList(req.params.id), reviewed: r.reviewed };
+});
+app.post('/api/cards/:id/variants', async req => {
+  await ownerOnly(req, VARIANTS_OWNER);
+  const b = req.body || {}, finish = String(b.finish || '');
+  if (!FINISHES.includes(finish)) throw bad('Acabado inválido');
+  const spec = { finish, stamp: String(b.stamp || '').trim().slice(0, 60) || null, deck: String(b.deck || '').trim().slice(0, 40) || null, deckNo: String(b.deck_no || '').trim().slice(0, 10) || null };
+  if (spec.stamp === 'battle-academy' && (!spec.deck || !spec.deckNo)) throw bad('Battle Academy necesita el mazo y el número en el mazo');
+  const slug = variantSlug(spec), label = variantLabel(spec), note = String(b.note || '').trim().slice(0, 200) || null;
+  const { rows: [card] } = await pool.query('SELECT id FROM cards WHERE id = $1', [req.params.id]);
+  if (!card) throw Object.assign(new Error('Carta no encontrada'), { statusCode: 404 });
+  await tx(async c => {
+    await c.query(
+      `INSERT INTO card_variants_list (card_id, slug, finish, stamp, deck, deck_no, note, label, kind, sources, pos)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, '{owner}', (SELECT coalesce(max(pos), -1) + 1 FROM card_variants_list WHERE card_id = $1))
+       ON CONFLICT (card_id, slug) DO UPDATE SET note = coalesce(EXCLUDED.note, card_variants_list.note)`,
+      [card.id, slug, finish, spec.stamp, spec.deck, spec.deckNo, note, label, variantType(spec)]);
+    await c.query('INSERT INTO variant_labels (slug, label) VALUES ($1, $2) ON CONFLICT (slug) DO NOTHING', [slug, label]);
+    await c.query('INSERT INTO card_variants_reviewed (card_id) VALUES ($1) ON CONFLICT (card_id) DO UPDATE SET reviewed_at = now()', [card.id]);
+  });
+  return { variants: await cardVariantList(card.id), slug, label };
+});
+// removing a variant never touches anyone's inventory: those copies just stop filling a slot
+app.delete('/api/cards/:id/variants/:slug', async req => {
+  await ownerOnly(req, VARIANTS_OWNER);
+  await tx(async c => {
+    await c.query('DELETE FROM card_variants_list WHERE card_id = $1 AND slug = $2', [req.params.id, req.params.slug]);
+    await c.query('INSERT INTO card_variants_reviewed (card_id) VALUES ($1) ON CONFLICT (card_id) DO UPDATE SET reviewed_at = now()', [req.params.id]);
+  });
+  return { variants: await cardVariantList(req.params.id) };
 });
 app.post('/api/collections/:id/hide', async req => {
   const card = String(req.body?.card_id || '');

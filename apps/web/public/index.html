@@ -811,6 +811,14 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
 .cropzoom{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;color:var(--muted);width:220px}.cropzoom input{flex:1}
 .credit{font-size:13px;color:var(--muted);font-weight:700;margin:4px 0 0}
 .credit .link{border:0;background:none;padding:0;color:var(--blue);font-weight:700;font-size:13px;cursor:pointer}
+.varlist{list-style:none;margin:6px 0 14px;padding:0;display:grid;gap:6px;max-height:min(46vh,360px);overflow:auto}
+.varlist li{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);font-weight:700;font-size:14px}
+.varlist li small{display:block;color:var(--muted);font-weight:600;font-size:12px}
+.varlist .varsrc{display:flex;gap:4px;margin-left:auto;flex-wrap:wrap;justify-content:flex-end}
+.varlist .varsrc span{font-size:11px;font-weight:800;border-radius:99px;padding:2px 8px;background:var(--chip);color:var(--muted)}
+.varlist .link{border:0;background:none;padding:0 0 0 4px;color:var(--err);font-weight:800;font-size:13px}
+#varForm .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:420px){#varForm .row2{grid-template-columns:1fr}}
 .repform{display:grid;gap:10px}.repform label{display:grid;gap:4px;font-size:13px;font-weight:700;color:var(--muted)}
 .tabs .cnt:not(:empty){margin-left:6px;background:var(--err);color:#fff;border-radius:999px;font-size:11px;font-weight:800;padding:1px 7px}
 /* the owner's review */
@@ -1298,6 +1306,21 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
     <div class="row"><button type="button" id="repClose">Cancelar</button><button class="primary">Enviar reporte</button></div>
     <p class="msg" id="repMsg"></p>
   </form>
+</dialog>
+<dialog class="dlg" id="varDlg" style="width:min(94vw,500px)" aria-labelledby="varTitle">
+  <h2 id="varTitle">Variantes</h2>
+  <p class="muted" id="varSub"></p>
+  <ul class="varlist" id="varList"></ul>
+  <form class="repform" id="varForm" hidden>
+    <div class="row2"><label>Acabado <select name="finish"><option value="normal">Normal</option><option value="holo">Holo</option><option value="reverse">Reverse</option><option value="cosmos">Holo cosmos</option><option value="reversecosmos">Reverse cosmos</option><option value="pokeball">Poké Ball</option><option value="masterball">Master Ball</option></select></label>
+      <label>Sello o producto <select name="stamp"><option value="">Sin sello</option><option value="battle-academy">Battle Academy (mazo)</option><option value="1st-edition">1st Edition</option><option value="prerelease">Prerelease</option><option value="staff">Staff</option><option value="pokemon-center">Pokémon Center</option><option value="play-pokemon">Play! Pokémon</option><option value="league">Liga</option><option value="other">Otro…</option></select></label></div>
+    <div class="row2" id="varBA" hidden><label>Mazo <input name="deck" maxlength="40" placeholder="Ej. Charizard"></label><label>Número en el mazo <input name="deck_no" maxlength="10" inputmode="numeric" placeholder="Ej. 12"></label></div>
+    <label id="varOther" hidden>¿Qué sello? <input name="other" maxlength="60" placeholder="Ej. Número azul"></label>
+    <label>Nota (opcional) <input name="note" maxlength="200" placeholder="Cómo se reconoce: color del número, símbolo…"></label>
+    <div class="row"><button class="primary">＋ Agregar variante</button></div>
+  </form>
+  <p class="msg" id="varMsg" role="status"></p>
+  <div class="row"><button type="button" id="varClose">Listo</button></div>
 </dialog>
 <dialog class="dlg" id="aportesDlg" style="width:min(94vw,640px)">
   <h2>📸 Mis aportes</h2>
@@ -4338,7 +4361,63 @@ async function reloadColCards() {
   try { const list = await api('GET', `/collections/${id}/cards`); if (colSel !== id) return; list.forEach(putMeta); colCards = list; colCardsById[id] = list; }
   catch (e) { $('colView').innerHTML = `<div class="empty">No pude cargar las cartas: ${esc(e.message)}</div>`; return; }
   renderCollections();
+  if (!varJobStarted.has(id)) { varJobStarted.add(id); suggestVariantsFor(id); }
 }
+// ---------- the shared variants of each card (variantes-compartidas): everyone sees them, the owner edits them ----------
+// once per collection and visit: TCGdex details the cards lack and the suggestions of the cards not reviewed yet
+const varJobStarted = new Set();
+async function suggestVariantsFor(id) {
+  try {
+    let { job } = await api('POST', `/collections/${id}/variants`);
+    while (job && job.running) { await new Promise(r => setTimeout(r, 2000)); ({ job } = await api('GET', `/collections/${id}/variants`)); }
+    if (job && !job.error && job.cards && colSel === id) reloadColCards();
+  } catch (e) {}
+}
+const VAR_SRC = { tcgdex: 'TCGdex', tcgplayer: 'TCGplayer', owner: 'Dueño' };
+let varCard = null, varChanged = false;
+const varMsg = (t, cls = '') => { $('varMsg').textContent = t; $('varMsg').className = 'msg ' + cls; };
+async function openVariants(cardId) {
+  const c = colCards.find(x => x.card_id === cardId), own = !!(ME && ME.owner);
+  varCard = cardId; varChanged = false;
+  $('varTitle').textContent = `Variantes · ${c ? `${c.label || c.name} · ${c.set_code || c.sid} #${c.num}` : cardId}`;
+  $('varSub').textContent = own ? 'Son las mismas para todos los coleccionistas. Quita las que no existen y agrega las que falten.' : 'Las revisa el administrador: son las mismas para todos los coleccionistas.';
+  $('varForm').hidden = !own; $('varForm').reset(); varFormFields(); varMsg('');
+  $('varList').innerHTML = '<li class="muted">Cargando…</li>';
+  if (!$('varDlg').open) $('varDlg').showModal();
+  try { drawVariants((await api('GET', `/cards/${encodeURIComponent(cardId)}/variants`)).variants); } catch (e) { $('varList').innerHTML = ''; varMsg(e.message, 'err'); }
+}
+function drawVariants(list) {
+  const own = !!(ME && ME.owner);
+  list.forEach(v => { VLABEL[v.slug] = VLABEL[v.slug] || v.label; });
+  $('varList').innerHTML = list.length ? list.map(v => `<li><span>${esc(v.label)}${v.note ? `<small>${esc(v.note)}</small>` : ''}</span>
+      <span class="varsrc">${v.sources.map(x => `<span>${esc(VAR_SRC[x] || x)}</span>`).join('')}</span>
+      ${own ? `<button type="button" class="link" data-vdel="${esc(v.slug)}" aria-label="Quitar ${esc(v.label)}">Quitar</button>` : ''}</li>`).join('')
+    : '<li class="muted">Sin variantes registradas: la carta cuenta como un solo espacio.</li>';
+}
+// Battle Academy asks for the deck and its number; "Otro…" for the stamp's name
+function varFormFields() {
+  const st = $('varForm').stamp.value;
+  $('varBA').hidden = st !== 'battle-academy'; $('varOther').hidden = st !== 'other';
+}
+$('varForm').addEventListener('change', e => { if (e.target.name === 'stamp') varFormFields(); });
+$('varForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = e.target, st = f.stamp.value === 'other' ? f.other.value.trim() : f.stamp.value;
+  if (f.stamp.value === 'other' && !st) return varMsg('Escribe qué sello es.', 'err');
+  try {
+    const r = await api('POST', `/cards/${encodeURIComponent(varCard)}/variants`, { finish: f.finish.value, stamp: st, deck: f.deck.value, deck_no: f.deck_no.value, note: f.note.value });
+    drawVariants(r.variants); varChanged = true; f.reset(); varFormFields(); varMsg(`Agregada: ${r.label}`, 'ok');
+  } catch (err) { varMsg(err.message, 'err'); }
+});
+$('varList').addEventListener('click', async e => {
+  const b = e.target.closest('[data-vdel]'); if (!b) return;
+  try { drawVariants((await api('DELETE', `/cards/${encodeURIComponent(varCard)}/variants/${encodeURIComponent(b.dataset.vdel)}`)).variants); varChanged = true; varMsg('Quitada. Las copias que alguien tenga de ella no se borran.'); }
+  catch (err) { varMsg(err.message, 'err'); }
+});
+$('varClose').addEventListener('click', () => $('varDlg').close());
+// a tap on the backdrop closes it too (Esc already does)
+$('varDlg').addEventListener('click', e => { if (e.target === $('varDlg')) $('varDlg').close(); });
+$('varDlg').addEventListener('close', () => { if (varChanged) reloadColCards(); });
 const SHORT_VARIANT = { 'Standard': '', 'Holo': 'Holo', 'Reverse Holo': 'Reverse', 'Poké Ball Holo': 'Poké Ball', 'Master Ball Holo': 'Master Ball' };
 function colTile(col, c) {
   const q = slotQty(col, c), p = slotQty(col, c, data.pers), any = c.v ? slotQty({ lang: '' }, c) : cardQty(c.sid, c.num);
@@ -4358,6 +4437,7 @@ function colTile(col, c) {
     <div class="acts">${q ? (p ? `<button class="lock on" data-cunlock="${esc(c.slot)}" title="Es de tu colección personal. Toca para pasarla a venta">🔒 Personal</button>`
       : `<button class="lock" data-clock="${esc(c.slot)}" title="La tienes, pero está para vender. Toca para guardarla en tu colección">🏷️ → 🔒</button>`) : ''}
       <button data-cadd="${esc(c.slot)}" title="Agregar una copia a tu colección personal">＋1</button>
+      <button data-cvar="${esc(c.card_id)}" title="Ver las variantes de esta carta${ME && ME.owner ? ' y editarlas' : ''}">Variantes</button>
       <button data-crole="${esc(c.card_id)}" title="${c.role === 'cameo' ? 'Contarla como carta principal' : 'Es un cameo: el Pokémon sale en el arte pero no es el protagonista'}">${c.role === 'cameo' ? '→ Principal' : '→ Cameo'}</button>
       <button data-chide="${esc(c.card_id)}" title="${c.hidden ? 'Volver a incluirla en la colección' : 'No contarla en esta colección'}">${c.hidden ? 'Incluir' : 'Ocultar'}</button></div></div>`;
 }
@@ -4541,6 +4621,7 @@ $('colView').addEventListener('click', async e => {
   if (t.closest('#colShow')) { colShow = t.dataset.s; return renderColView(); }
   if (t.closest('#colOrder')) { data.colOrder = t.dataset.o; save(); return renderColView(); }
   if (t.id === 'colHid') { colHidden = t.checked; return renderColView(); }
+  if (t.dataset.cvar) return openVariants(t.dataset.cvar);
   if (t.dataset.cadd) {
     const c = colSlot(t.dataset.cadd), m = meta(c.sid, c.num);
     const lang = c.set_lang || col.lang || data.lang, v = c.v ? c.v.slug : autoVariant(m);

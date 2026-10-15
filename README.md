@@ -266,6 +266,16 @@ Dentro, el encabezado fijo tiene las pestañas **Cartas** / **Cameos** y el men�
 buscar japonesas, borrar). En Cartas: Todas / Tengo / Me faltan, Por año / Por región y, en **Filtros**,
 orden, rareza, precio y ocultas.
 
+### Variantes de cada carta
+
+Cada carta tiene una **lista de variantes compartida** (la misma para todas las cuentas, [ADR 0020](docs/adr/0020-variantes-compartidas.md)), y cada variante es un **espacio** de la colección: en color si tienes una copia de esa variante, en gris si no. El avance cuenta variantes y cartas.
+
+- Cada variante es un acabado (normal, holo, reverse, holo cosmos, reverse cosmos, Poké Ball, Master Ball), más un sello o producto opcional (1st Edition, prerelease, staff, Pokémon Center, Play! Pokémon, liga, **Battle Academy** con su mazo y número, u otro) y una nota (por ejemplo, el color del número extra).
+- Mientras el dueño no revisa una carta, la lista sale de las **sugerencias de las fuentes**: TCGdex (`variants_detailed`: acabado, foil, sellos y tamaño) y las variantes de TCGplayer de sus precios. Cada variante muestra de qué fuente viene, y una misma impresión que las fuentes nombran distinto (el holo de una promo que TCGdex llama holo cosmos) cuenta una vez. Las sugerencias se calculan solas en segundo plano al abrir la colección.
+- Botón **Variantes** en cada carta de la grilla: muestra la lista. Solo el dueño (la primera cuenta) puede quitar o agregar; las demás cuentas la ven sin poder editarla (la API responde 403). Cuando el dueño edita una carta, queda **revisada** y las sugerencias ya no la cambian. Quitar una variante no borra las copias de nadie.
+- Las copias de una variante con sello o de Battle Academy se suman con **＋1** desde su espacio y quedan en el inventario con su propio identificador (`normal~prerelease`, `normal~ba-charizard-12`).
+- Tablas `card_variants_list` y `card_variants_reviewed` (sin `user_id`); rutas `GET/POST /api/cards/:id/variants`, `DELETE /api/cards/:id/variants/:slug` y `POST/GET /api/collections/:id/variants` (trabajo de sugerencias).
+
 ### Cameos
 
 **Cameos** = cartas donde el Pokémon aparece sin ser el protagonista (el Eevee en el Snorlax de Wizards Promos #49).
@@ -282,7 +292,7 @@ Vienen de la **[Cameo Pokémon Card Database de RotomAmiti](https://docs.google.
 - **¿En qué cartas aparece…?** muestra los cameos de cualquier Pokémon, aunque no tengas su colección, con un botón para crearla.
 
 La variante del inventario es `normal`, `holo`, `reverse` o una especial
-(`firstedition`, `pokeballholo`, `masterballholo`, `pokemoncardgym`…; nombres en `variant_labels`).
+(`firstedition`, `pokeballholo`, `masterballholo`, `pokemoncardgym`…) o una de la lista compartida (`normal~ba-charizard-12`); los nombres están en `variant_labels`.
 En Cargar: `25e` 1st Edition, `25p` Poké Ball, `25m` Master Ball; las demás se agregan con ＋1 desde la colección.
 
 ## Consultas útiles
