@@ -4,6 +4,7 @@ import type { Copy, FactValue, Permission, Printing, Source } from './api.ts';
 
 export const LANG_NAME: Record<string, string> = {
   EN: 'Inglés',
+  NL: 'Neerlandés',
   ES: 'Español',
   'ES-MX': 'Español (Latam)',
   FR: 'Francés',
@@ -18,7 +19,7 @@ export const LANG_NAME: Record<string, string> = {
   TH: 'Tailandés',
   ID: 'Indonesio',
 };
-const LANG_ORDER = ['EN', 'ES', 'ES-MX', 'FR', 'DE', 'IT', 'PT', 'PT-BR', 'JA', 'ZH-TW', 'ZH-CN', 'KO', 'TH', 'ID'];
+const LANG_ORDER = ['EN', 'NL', 'ES', 'ES-MX', 'FR', 'DE', 'IT', 'PT', 'PT-BR', 'JA', 'ZH-TW', 'ZH-CN', 'KO', 'TH', 'ID'];
 const FINISH_ORDER = ['normal', 'holo', 'cosmos', 'reverse', 'reversecosmos', 'pokeball', 'masterball'];
 
 export const RULES: { id: RuleId; label: string; hint: string }[] = [
@@ -168,7 +169,7 @@ export const copiesByCode = (copies: Copy[]) => {
 
 // ---------- by expansion (vitrina-por-expansion) ----------
 export type Order = 'design' | 'set';
-const WEST = new Set(['EN', 'ES', 'ES-MX', 'FR', 'DE', 'IT', 'PT', 'PT-BR']);
+const WEST = new Set(['EN', 'NL', 'ES', 'ES-MX', 'FR', 'DE', 'IT', 'PT', 'PT-BR']);
 export const REGION: Record<string, string> = {
   JA: 'Japón',
   'ZH-CN': 'China simplificado',

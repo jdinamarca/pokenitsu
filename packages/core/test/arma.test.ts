@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import languagesPage from './fixtures/bulbapedia-languages.json' with { type: 'json' };
 import {
   applyRules,
   auditPrintings,
@@ -7,6 +8,8 @@ import {
   catalogCode,
   FULL_RULES,
   mergeClaims,
+  parseLanguageSentence,
+  parseLanguageTables,
   misfiled,
   photoShows,
   printingKey,
@@ -296,6 +299,14 @@ describe('photoShows', () => {
   });
 });
 
+describe('tamaño de TCGdex traducido', () => {
+  it('"Standard", "estándar" y "Padrão" son el tamaño normal, no un sello; jumbo sí es una variante', () => {
+    for (const size of ['standard', 'Standard', 'estándar', 'Padrão'])
+      expect(variantFromTcgdex({ type: 'normal', size })).toEqual({ finish: 'normal', stamp: null });
+    expect(variantFromTcgdex({ type: 'holo', size: 'jumbo' })!.stamp).toBe('jumbo');
+  });
+});
+
 describe('cartas en otros idiomas', () => {
   it('acabado base: normal si existe; si no, su holo; nunca un sello ni un reverse', () => {
     expect(
@@ -317,11 +328,69 @@ describe('cartas en otros idiomas', () => {
     const base = { set_key: 'dp5', number: '62', finish: 'normal' as const, stamp: null, labels: [] };
     const r = auditPrintings([
       { ...base, code: 'it', lang: 'IT', sources: ['tcgdex-expansiones'], inferred: { setName: 'Alba Suprema', language: 'italiano' } },
-      { ...base, code: 'es', set_key: 'base5', number: '55', lang: 'ES', sources: ['tcgdex'], notReleased: 'Team Rocket' },
+      {
+        ...base,
+        code: 'es',
+        set_key: 'base5',
+        number: '55',
+        lang: 'ES',
+        sources: ['tcgdex'],
+        notReleased: { name: 'Team Rocket', language: 'español', source: 'WikiDex' },
+      },
     ]);
     expect(r.get('it')!.map(x => x.text)).toEqual([
       'Deducida: TCGdex lista Alba Suprema en italiano, pero ninguna fuente lista esta carta',
     ]);
-    expect(r.get('es')!.map(x => x.text)).toEqual(['WikiDex dice que Team Rocket no se distribuyó en español']);
+    expect(r.get('es')!.map(x => x.text)).toEqual(['WikiDex dice que Team Rocket no salió en español']);
+  });
+});
+
+describe('idiomas desde Bulbapedia', () => {
+  const tables = parseLanguageTables(languagesPage.wikitext);
+  it('tablas: nombre por idioma, colspan repetido y "—" como no salió', () => {
+    expect(tables.get('Jungle')).toEqual({ NL: 'Jungle', FR: 'Jungle', DE: 'Dschungel', IT: 'Jungle', PT: 'Selva', ES: 'Jungla' });
+    expect(tables.get('Team Rocket')).toEqual({ NL: null, FR: 'Team Rocket', DE: 'Team Rocket', IT: 'Team Rocket', PT: null, ES: null });
+    expect(tables.get('Gym Challenge')!.ES).toBeNull();
+  });
+  it('tablas: una serie sin columna de neerlandés ni portugués no dice nada de ellos', () => {
+    expect(tables.get('Neo Discovery')).toEqual({ FR: 'Neo Discovery', DE: 'Neo Entdeckung', IT: 'Neo Discovery', ES: null });
+  });
+  it('frase: 1st Edition y reverse por idioma', () => {
+    expect(
+      parseLanguageSentence(
+        'The Pokémon Jungle set is released in Japanese. The Jungle set is released in English, Dutch, German, French, Italian, Spanish, and Portuguese in both 1st and unlimited edition. All the English…',
+        'Jungle',
+      ),
+    ).toEqual({
+      languages: ['EN', 'NL', 'DE', 'FR', 'IT', 'ES', 'PT'],
+      firstEdition: ['EN', 'NL', 'DE', 'FR', 'IT', 'ES', 'PT'],
+      reverse: [],
+    });
+    expect(
+      parseLanguageSentence(
+        'The Team Rocket set is released in English, German, French, and Italian, in both 1st and unlimited edition.',
+        'Team Rocket',
+      ).firstEdition,
+    ).toEqual(['EN', 'DE', 'FR', 'IT']);
+    expect(
+      parseLanguageSentence(
+        'The Golden Sky, Silvery Ocean set is only released in Japanese, in both 1st and unlimited edition. The EX Unseen Forces set is released in English, German, French, Italian, Spanish, and Portuguese with cards also available as Reverse Holofoils.',
+        'EX Unseen Forces',
+      ),
+    ).toEqual({ languages: ['EN', 'DE', 'FR', 'IT', 'ES', 'PT'], firstEdition: [], reverse: ['EN', 'DE', 'FR', 'IT', 'ES', 'PT'] });
+    expect(
+      parseLanguageSentence(
+        'The Majestic Dawn set is released in English, German, French, and Italian, which all also had Reverse Holos available.',
+        'Majestic Dawn',
+      ).reverse,
+    ).toEqual(['EN', 'DE', 'FR', 'IT']);
+    expect(parseLanguageSentence('Nothing about languages here.', 'Gym Challenge').languages).toEqual([]);
+    // a whole page: a <br> and templates before the sentence, the 1st Edition as a template
+    expect(
+      parseLanguageSentence(
+        '{{SetInfobox|cards=64<br>48}}\n==Trivia==\n* The Jungle set is released in English, Dutch and Spanish in both {{TCG|1st Edition}} and unlimited edition.',
+        'Jungle',
+      ).languages,
+    ).toEqual(['EN', 'NL', 'ES']);
   });
 });

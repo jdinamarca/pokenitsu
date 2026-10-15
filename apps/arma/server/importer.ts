@@ -11,7 +11,8 @@ import {
   type MergedPrinting,
 } from '@pokenitsu/core';
 import { pool, tx } from './db.ts';
-import { deducedClaims, spanishClaims } from './languages.ts';
+import { confirmedClaims, deducedClaims, spanishClaims } from './languages.ts';
+import { bulbapediaLanguages } from './sources/bulbapedia-idiomas.ts';
 import { wikidexSpanish } from './sources/wikidex.ts';
 import { cardIdOf, catalogClaims, loadCatalog } from './sources/catalog.ts';
 import { stats } from './sources/http.ts';
@@ -84,19 +85,28 @@ async function run(dex: number): Promise<ImportSummary> {
     links = r.links;
     return { links: r.links.length, designs: r.designs, unmatched: r.unmatched };
   });
-  // other languages, from what the sources above brought (cartas-en-otros-idiomas): Spanish confirmed by WikiDex,
-  // then Italian and Portuguese deduced from TCGdex's set lists
+  // other languages, from what the sources above brought: by set from Bulbapedia (idiomas-desde-bulbapedia), Spanish card
+  // by card from WikiDex (cartas-en-otros-idiomas), and Italian and Portuguese deduced from TCGdex only where Bulbapedia
+  // lists nothing
+  let listed = new Set<string>();
+  await attempt(['bulbapedia-idiomas'], async () => {
+    const sets = [...new Set(claims.filter(c => !/^(ja-|pc:|td)/.test(c.setKey)).map(c => c.setKey))];
+    const r = await bulbapediaLanguages(cat, sets);
+    listed = new Set(r.bySet.keys());
+    const c = confirmedClaims(r.bySet, claims);
+    return { claims: c.claims, sets: r.bySet.size, notReleased: c.notReleased, unmatched: r.unmatched };
+  });
   await attempt(['wikidex'], async () => {
     const r = await wikidexSpanish(cat, en);
     return {
       claims: spanishClaims(r.cards, claims),
       pages: r.pages,
-      notReleased: r.notReleased,
+      notReleased: r.notReleased.map(n => ({ ...n, lang: 'ES', source: 'WikiDex' })),
       unknown: r.unknown,
       unmatched: r.unmatched,
     };
   });
-  await attempt(['tcgdex-expansiones'], () => deducedClaims(cat, claims));
+  await attempt(['tcgdex-expansiones'], () => deducedClaims(cat, claims, listed));
 
   // Bulbapedia down: its links are rebuilt from the equivalences it backed in the last import, so none is lost
   if (!sources.bulbapedia?.ok) {

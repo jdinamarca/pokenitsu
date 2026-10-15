@@ -87,6 +87,7 @@ export interface TcgdexVariantDetail {
   stamp?: readonly string[] | null;
   size?: string | null;
 }
+const STANDARD_SIZE = ['standard', 'estandar', 'padrao', 'standaard'];
 export function variantFromTcgdex(v: TcgdexVariantDetail): ArmaVariant | null {
   const t = v.type === 'holo' || v.type === 'reverse' || v.type === 'normal' ? v.type : null;
   if (!t) return null;
@@ -95,7 +96,8 @@ export function variantFromTcgdex(v: TcgdexVariantDetail): ArmaVariant | null {
   else if (v.foil === 'masterball') finish = 'masterball';
   else if (v.foil === 'cosmos') finish = t === 'reverse' ? 'reversecosmos' : 'cosmos';
   const stamps = [...(v.stamp || [])].map(stampKey).filter((x): x is string => !!x);
-  if (v.size && v.size !== 'standard') stamps.push(stampKey(v.size)!);
+  // TCGdex translates the size ("Standard", "estándar", "Padrão"): only a size that is not the standard one is a variant
+  if (v.size && !STANDARD_SIZE.includes(stampKey(v.size)!)) stamps.push(stampKey(v.size)!);
   return { finish, stamp: stamps.join('+') || null };
 }
 /** TCGplayer price keys from pokemontcg.io */
@@ -409,8 +411,8 @@ export interface AuditPrinting {
   labels: string[];
   /** deduced, not listed (cartas-en-otros-idiomas): the set's name in that language and the language */
   inferred?: { setName: string; language: string };
-  /** a source says this set was never released in this language: the set's name */
-  notReleased?: string;
+  /** a source says this set never came out in this language: the set, the language and who says it */
+  notReleased?: { name: string; language: string; source: string };
 }
 export type AuditKind = 'region' | 'finish' | 'oneSource' | 'unnamed' | 'inferred' | 'notReleased';
 export interface AuditReason {
@@ -468,7 +470,11 @@ export function auditPrintings(
           kind: 'inferred',
           text: `Deducida: TCGdex lista ${p.inferred.setName} en ${p.inferred.language}, pero ninguna fuente lista esta carta`,
         });
-      if (p.notReleased) add(p.code, { kind: 'notReleased', text: `WikiDex dice que ${p.notReleased} no se distribuyó en español` });
+      if (p.notReleased)
+        add(p.code, {
+          kind: 'notReleased',
+          text: `${p.notReleased.source} dice que ${p.notReleased.name} no salió en ${p.notReleased.language}`,
+        });
       if (p.labels.some(l => /^[A-Z0-9]{3}-[A-Z0-9]{3}-[A-Z0-9]{3}$/.test(l)))
         add(p.code, { kind: 'unnamed', text: 'La fuente registra esta variante solo con un código, sin decir qué la distingue' });
     }
@@ -501,4 +507,92 @@ export function photoShows(holder: PhotoHolder, holders: readonly PhotoHolder[],
 export function baseFinish(printings: readonly { finish: ArmaFinish; stamp: string | null }[]): ArmaFinish {
   const plain = printings.filter(p => !p.stamp).map(p => p.finish);
   return (['normal', 'holo', 'cosmos'] as const).find(f => plain.includes(f)) ?? plain[0] ?? 'normal';
+}
+
+// ---------- languages of each set, from Bulbapedia (idiomas-desde-bulbapedia) ----------
+const LANGUAGE_NAMES: Record<string, string> = {
+  english: 'EN',
+  dutch: 'NL',
+  french: 'FR',
+  german: 'DE',
+  italian: 'IT',
+  'brazilian portuguese': 'PT',
+  portuguese: 'PT',
+  spanish: 'ES',
+};
+// "{{TCG|Jungle}}", "[[Jungla]]", "Neo Génesis<br>…" → the visible text
+const wikiText = (s: string) =>
+  s
+    .replace(/\{\{TCG\|([^|}]+)(?:\|[^}]*)?\}\}/g, '$1')
+    .replace(/\[\[(?:[^\]|]*\|)?([^\]]*)\]\]/g, '$1')
+    .replace(/\{\{[^}]*\}\}/g, '')
+    .replace(/<br\s*\/?>.*$/i, '')
+    .replace(/'{2,}/g, '')
+    .trim();
+
+/**
+ * Bulbapedia's "List of Pokémon Trading Card Game expansions in other languages": for each set by its English name, its
+ * name in each language, null where it never came out ("—"); a language the table has no column for is left out.
+ */
+export function parseLanguageTables(wikitext: string): Map<string, Record<string, string | null>> {
+  const out = new Map<string, Record<string, string | null>>();
+  for (const table of wikitext
+    .split('{|')
+    .slice(1)
+    .map(t => t.split('\n|}')[0]!)) {
+    const lines = table.split('\n');
+    const headers = lines.filter(l => l.startsWith('!')).map(l => wikiText(l.split('|').pop()!).toLowerCase());
+    const english = headers.indexOf('english');
+    if (english < 0) continue;
+    for (const row of table.split('\n|-').slice(1)) {
+      const cells: string[] = [];
+      for (const line of row.split('\n').slice(1)) {
+        if (!line.startsWith('|') || line.startsWith('|}')) continue;
+        const m = line.match(/^\|\s*(?:colspan="?(\d+)"?\s*\|)?\s*(.*)$/)!;
+        for (let i = 0; i < Number(m[1] || 1); i++) cells.push(m[2]!);
+      }
+      const name = cells[english] && wikiText(cells[english]);
+      if (!name) continue;
+      const langs: Record<string, string | null> = {};
+      headers.forEach((h, i) => {
+        const lang = LANGUAGE_NAMES[h];
+        if (!lang || lang === 'EN' || cells[i] === undefined) return;
+        const v = wikiText(cells[i]!);
+        langs[lang] = !v || /^[—–-]+$/.test(v) ? null : v;
+      });
+      out.set(name, langs);
+    }
+  }
+  return out;
+}
+
+/**
+ * The sentence on a set's page that says where it came out and how: "The Jungle set is released in English, Dutch, …,
+ * and Portuguese in both 1st and unlimited edition", "… with cards also available as Reverse Holofoils".
+ */
+export function parseLanguageSentence(
+  wikitext: string,
+  englishSet: string,
+): { languages: string[]; firstEdition: string[]; reverse: string[] } {
+  const none = { languages: [], firstEdition: [], reverse: [] };
+  // the whole page on one line, links and templates as text (not wikiText: it keeps only what comes before a <br>)
+  const plain = wikitext
+    .replace(/\n/g, ' ')
+    .replace(/\{\{TCG\|([^|}]+)(?:\|[^}]*)?\}\}/g, '$1')
+    .replace(/\[\[(?:[^\]|]*\|)?([^\]]*)\]\]/g, '$1')
+    .replace(/'{2,}/g, '');
+  const escaped = englishSet.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const m = plain.match(new RegExp(`The ${escaped} set is (?:only )?released in ([^.]*)\\.`, 'i'));
+  if (!m) return none;
+  const body = m[1]!;
+  const list = body.split(/\s+(?:in both|with|which)\b|,\s+in both\b/)[0]!;
+  const languages = list
+    .split(/,|\band\b/)
+    .map(x => LANGUAGE_NAMES[x.trim().toLowerCase()])
+    .filter((x): x is string => !!x);
+  return {
+    languages,
+    firstEdition: /in both 1st and unlimited edition/i.test(body) ? languages : [],
+    reverse: /Reverse Holo/i.test(body) ? languages : [],
+  };
 }

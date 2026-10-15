@@ -64,6 +64,12 @@ export async function loadCatalog(): Promise<Catalog> {
 /** an international set by its name, also without the "EX " prefix Bulbapedia uses for the EX era */
 export const intlSetByName = (cat: Catalog, name: unknown) =>
   cat.intlByName.get(nameKey(name)) ?? cat.intlByName.get(nameKey(String(name ?? '').replace(/^EX /, '')));
+// "Undaunted" is our "HS—Undaunted": the only set whose name ends with it after a series prefix
+export function bySeriesSuffix(cat: Catalog, english: string): string | undefined {
+  const k = nameKey(english);
+  const hits = [...cat.intlByName].filter(([name]) => name.endsWith(k) && name !== k);
+  return hits.length === 1 ? hits[0]![1] : undefined;
+}
 export const cardIdOf = (cat: Catalog, setKey: string, number: string) => cat.cardIds.get(`${setKey}|${normNumber(number)}`);
 
 // standard variants the catalog knows for a card (cards.variants, from TCGdex) when it has no TCGplayer prices

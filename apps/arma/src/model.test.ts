@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Printing, Source } from './api.ts';
-import { cardOf, expansionOf, shelvesBySet, withPhotoShows } from './model.ts';
+import { cardOf, expansionOf, LANG_NAME, regionOf, shelvesBySet, withPhotoShows } from './model.ts';
 
 let n = 0;
 const pr = (o: Partial<Printing> & Pick<Printing, 'set_key' | 'number' | 'lang'>): Printing => ({
@@ -94,5 +94,18 @@ describe('la misma carta con números distintos', () => {
     expect(cardOf(a)).toBe(cardOf(b));
     const [wa] = withPhotoShows([a, b], {});
     expect(wa!.facts.image![0]!.shows).toBe('1st-edition');
+  });
+});
+
+describe('neerlandés', () => {
+  it('es un idioma internacional, y va justo después del inglés en la repisa', () => {
+    expect(LANG_NAME.NL).toBe('Neerlandés');
+    expect(regionOf('NL')).toBe('Internacional');
+    const j = { set_key: 'base2', set_name: 'Jungle', release: '1999-06-16' };
+    const [shelf] = shelvesBySet(
+      [pr({ ...j, number: '51', lang: 'FR' }), pr({ ...j, number: '51', lang: 'NL' }), pr({ ...j, number: '51', lang: 'EN' })],
+      sources,
+    );
+    expect(shelf!.printings.map(p => p.lang)).toEqual(['EN', 'NL', 'FR']);
   });
 });

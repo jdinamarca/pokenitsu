@@ -1,7 +1,7 @@
 // WikiDex (https://www.wikidex.net, the Spanish Pokémon wiki, CC BY-SA 3.0): which cards of a Pokémon came out in
 // Spanish, in what set and number, and which sets were never released in Spain. Text only: its card scans are Nintendo's.
 import { normNumber } from '@pokenitsu/core';
-import { intlSetByName, nameKey, type Catalog } from './catalog.ts';
+import { bySeriesSuffix, intlSetByName, type Catalog } from './catalog.ts';
 import { fetchJson } from './http.ts';
 
 const API = process.env.ARMA_WIKIDEX_API || 'https://www.wikidex.net/api.php';
@@ -81,13 +81,6 @@ export interface WikidexResult {
   unknown: string[];
   /** set names that match none of ours */
   unmatched: string[];
-}
-
-// "Undaunted" is our "HS—Undaunted": the only set whose name ends with it after a series prefix
-function bySeriesSuffix(cat: Catalog, english: string): string | undefined {
-  const k = nameKey(english);
-  const hits = [...cat.intlByName].filter(([name]) => name.endsWith(k) && name !== k);
-  return hits.length === 1 ? hits[0]![1] : undefined;
 }
 
 export async function wikidexSpanish(cat: Catalog, species: string): Promise<WikidexResult> {
