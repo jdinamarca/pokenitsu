@@ -702,7 +702,7 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
 .profile summary{display:flex;align-items:center;gap:8px;padding:4px 12px 4px 4px}
 .profile .mename{font-weight:700}
 @media (max-width:640px){.profile .mename{display:none}.profile summary{padding:4px}}
-.profilepop{width:min(420px,calc(100vw - 24px));padding:18px;gap:14px}
+.profilepop{width:min(420px,calc(100vw - 24px));padding:18px;gap:14px;max-height:calc(100dvh - 80px);overflow-y:auto;overscroll-behavior:contain}
 .profilepop .ph{display:flex;align-items:center;gap:14px}
 .profilepop .ph b{font-size:18px}
 .profilepop .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
@@ -733,7 +733,17 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
 .avpick button{border:2px solid transparent;background:none;padding:2px;border-radius:50%;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:700;color:var(--muted)}
 .avpick button.on{border-color:var(--gold)}
 .avpick .avatar{width:56px;height:56px}
-.profilepop .out{border-color:var(--err);color:var(--err);background:transparent;padding:10px}
+.profilepop .out{flex:none;align-self:flex-start;display:flex;align-items:center;gap:6px;border-color:var(--err);color:var(--err);background:transparent;padding:7px 11px;font-size:13px;font-weight:800}
+.profilepop .out:hover{background:color-mix(in srgb,var(--err) 12%,transparent)}
+@media (max-width:380px){.profilepop .out .lbl{display:none}}
+.ptabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:0 -18px;padding:0 12px}
+.ptabs button{flex:1;border:0;border-radius:0;background:none;padding:10px 4px;font-weight:800;font-size:13.5px;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-1px}
+.ptabs button[aria-selected=true]{color:var(--ink);border-bottom-color:var(--red)}
+.ptabs button:hover{color:var(--ink)}
+.ppanel{display:flex;flex-direction:column;gap:12px}
+.ppanel.fade{animation:fadeonly .15s var(--ease-out)}
+.ppanel .msg{margin:0;min-height:0}
+.profilepop .prow.first{border-top:0}
 .profilepop .avpick button:hover{background:var(--chip)}
 .authgate{position:fixed;inset:0;z-index:100;background:radial-gradient(900px 600px at 50% 45%,rgba(167,123,255,.16),transparent 70%),radial-gradient(600px 400px at 80% 90%,rgba(255,90,60,.10),transparent 70%),var(--bg);display:grid;place-items:center;padding:24px 16px;overflow:auto}
 .authlogo{align-self:flex-start;display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink)}
@@ -864,6 +874,7 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
   .pocket img,.authgate[data-shake] .authcard{animation:none}
   .pocket:hover img{transform:none}
   .artcard.sig .artpeek img,.artcard.sig:hover .artpeek img{transform:scale(1.3) !important;transition:none !important}
+  .ppanel.fade{animation:none}
   .profilepop .golink .ball svg{animation:none !important}
   .profilepop .golink,.profilepop .golink:hover,.profilepop .golink .ball{transform:none !important}
   .lb{animation-name:fadeonly}
@@ -1582,35 +1593,46 @@ function deviceOf(ua = '') {
   return `${os} · ${br}`;
 }
 const dateCL = d => new Date(d).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' });
+// the profile panel: fetch once, then draw only the open tab (switching tabs doesn't refetch)
+let profData = null, profileTab = lsGet('nitsu.profileTab', 'col'), profFade = false;
 async function renderProfile() {
   const pop = $('profilePop');
   if (!pop.innerHTML) pop.innerHTML = '<div class="muted">Cargando…</div>';
   const [me, sessions, cl, ap] = await Promise.all([api('GET', '/me'), fetch('/api/auth/list-sessions').then(r => r.ok ? r.json() : []).catch(() => []),
     colls ? Promise.resolve(colls) : api('GET', '/collections').catch(() => []), api('GET', '/photo-submissions/mine').catch(() => null)]);
   ME = me; renderMe();
-  let copies = 0; const langs = new Set();
-  for (const k in data.inv) { copies += data.inv[k]; const l = splitKey(k).lang; if (l) langs.add(l); }
-  // connected art: the same groups for everyone; what counts is how many of them this account has complete or started
-  let artDone = 0, artStarted = 0;
-  for (const g of data.groups) {
-    const have = g.cards.filter(c => cardQty(c.sid, c.num) > 0).length;
-    if (have && have === g.cards.length) artDone++; else if (have) artStarted++;
-  }
-  const val = invValue(), lastAdd = Math.max(0, ...Object.values(data.added || {}).map(Number).filter(Boolean));
-  const cur = sessions.find(x => x.id === mySessionId), others = sessions.filter(x => x.id !== mySessionId).length;
+  profData = { me, sessions, cl, ap };
+  drawProfile();
+}
+function drawProfile() {
+  const pop = $('profilePop'), { me, sessions, cl, ap } = profData;
+  const tabs = [['col', 'Colección'], ...(ap ? [['ap', 'Aportes']] : []), ['acc', 'Cuenta']];
+  // a remembered tab that isn't there now (no aportes) falls back to Colección without forgetting it
+  const tab = tabs.some(t => t[0] === profileTab) ? profileTab : 'col';
   const stat = (n, label, cls = '') => `<div class="stat"><b class="${cls}">${n}</b><span>${label}</span></div>`;
-  // a stat that opens its section; a different ball peeks out of each one on hover
-  const go = (tab, ball, n, label, what, sort = '', cls = '') => `<button type="button" class="stat golink" data-go="${tab}"${sort ? ` data-sort="${sort}"` : ''} title="Ir a ${what}"><b class="${cls}">${n}</b><span>${label}</span><span class="ball" aria-hidden="true">${ballSvg(ball)}</span></button>`;
-  pop.innerHTML = `<div class="ph">${avatarHtml(me, 56)}<div style="flex:1;min-width:0"><b>${esc(me.name)}</b><div class="muted" style="font-size:13px;overflow-wrap:anywhere">${esc(me.email)}</div>
-      <div class="tags">${me.owner ? '<span class="tag gold">Dueño</span>' : ''}<span class="tag">Alfa</span>${me.emailVerified ? '' : '<span class="tag warn">Email sin verificar</span>'}</div></div></div>
-    <div class="muted" style="font-size:13px">Coleccionista desde el ${dateCL(me.createdAt)}${lastAdd ? ` · última carga el ${dateCL(lastAdd)}` : ''}</div>
-    <div><h3>Tu colección</h3><div class="stats">${go('inventario', 'premier', fmt(copies), 'cartas', 'Mi colección')}${go('inventario', 'luxury', $('sUnique').textContent, 'distintas', 'Mi colección')}${go('inventario', 'master', val.priced ? clp(val.sale + val.pers) : '—', 'valor estimado', 'Mi colección, de mayor a menor valor', 'total', 'ok')}
+  let body = '';
+  if (tab === 'col') {
+    let copies = 0; const langs = new Set();
+    for (const k in data.inv) { copies += data.inv[k]; const l = splitKey(k).lang; if (l) langs.add(l); }
+    // connected art: the same groups for everyone; what counts is how many of them this account has complete or started
+    let artDone = 0, artStarted = 0;
+    for (const g of data.groups) {
+      const have = g.cards.filter(c => cardQty(c.sid, c.num) > 0).length;
+      if (have && have === g.cards.length) artDone++; else if (have) artStarted++;
+    }
+    const val = invValue(), lastAdd = Math.max(0, ...Object.values(data.added || {}).map(Number).filter(Boolean));
+    // a stat that opens its section; a different ball peeks out of each one on hover
+    const go = (t, ball, n, label, what, sort = '', cls = '') => `<button type="button" class="stat golink" data-go="${t}"${sort ? ` data-sort="${sort}"` : ''} title="Ir a ${what}"><b class="${cls}">${n}</b><span>${label}</span><span class="ball" aria-hidden="true">${ballSvg(ball)}</span></button>`;
+    body = `<div class="stats">${go('inventario', 'premier', fmt(copies), 'cartas', 'Mi colección')}${go('inventario', 'luxury', $('sUnique').textContent, 'distintas', 'Mi colección')}${go('inventario', 'master', val.priced ? clp(val.sale + val.pers) : '—', 'valor estimado', 'Mi colección, de mayor a menor valor', 'total', 'ok')}
       ${go('colecciones', 'poke', fmt((cl || []).length), (cl || []).length === 1 ? 'colección' : 'colecciones', 'Mis colecciones')}${go('grupos', 'great', `${fmt(artDone)} <span class="muted" style="font-size:14px">/ ${fmt(data.groups.length)}</span>`, `artes conectados completos${artStarted ? ` · ${fmt(artStarted)} empezados` : ''}`, 'Artes conectados')}${go('ubicaciones', 'ultra', fmt(LOCS.length), 'ubicaciones', 'Ubicaciones')}</div>
-      <div class="muted" style="font-size:12.5px;margin-top:8px">Idiomas: ${[...langs].map(l => LNAME[l] || l).join(' · ') || '—'} · ${fmt(LOTS.lots.filter(l => l.status !== 'done').length)} lotes abiertos</div></div>
-    ${ap ? `<div><h3>Mis aportes ${ap.approved ? '<span class="tag gold" style="text-transform:none;letter-spacing:0">📸 Fotógrafo/a Nitsu</span>' : ''}</h3>
+      <div class="muted" style="font-size:12.5px">Coleccionista desde el ${dateCL(me.createdAt)}${lastAdd ? ` · última carga el ${dateCL(lastAdd)}` : ''}<br>Idiomas: ${[...langs].map(l => LNAME[l] || l).join(' · ') || '—'} · ${fmt(LOTS.lots.filter(l => l.status !== 'done').length)} lotes abiertos</div>`;
+  } else if (tab === 'ap') {
+    body = `${ap.approved ? '<div><span class="tag gold">📸 Fotógrafo/a Nitsu</span></div>' : ''}
       <div class="stats">${stat(fmt(ap.approved), 'fotos aprobadas', 'ok')}${stat(fmt(ap.pending), 'en revisión')}${stat(fmt(ap.rejected), 'rechazadas')}</div>
-      <div class="prow" style="margin-top:6px"><span>Fotos de cartas que no tienen foto en Nitsu</span><button type="button" class="link" data-act="aportes">Mis aportes y Se buscan</button></div></div>` : ''}
-    <div><h3>Cuenta</h3>
+      <div class="prow"><span>Fotos de cartas que no tienen foto en Nitsu</span><button type="button" class="link" data-act="aportes">Mis aportes y Se buscan</button></div>`;
+  } else {
+    const cur = sessions.find(x => x.id === mySessionId), others = sessions.filter(x => x.id !== mySessionId).length;
+    body = `<div class="prow first"><span>Email<small>${esc(me.email)}</small></span></div>
       <div class="prow"><span>Avatar</span><button type="button" class="link" data-act="avatar">${profileView === 'avatar' ? 'Listo' : 'Elegir entrenador'}</button></div>
       ${profileView === 'avatar' ? `<div class="avpick">${AVATARS.map(a => `<button type="button" data-av="${a[0]}" class="${me.image === 'trainer:' + a[0] ? 'on' : ''}" title="${esc(a[1])}">${avatarHtml({ image: 'trainer:' + a[0] }, 56)}${esc(a[1])}</button>`).join('')}
         <button type="button" data-av="" class="${me.image ? '' : 'on'}" title="Tus iniciales">${avatarHtml({ name: me.name }, 56)}Iniciales</button></div>` : ''}
@@ -1622,9 +1644,20 @@ async function renderProfile() {
         <input type="password" name="rep" autocomplete="new-password" minlength="10" placeholder="Repite la nueva" aria-label="Repite la nueva contraseña" required>
         <div class="row"><button type="button" data-act="cancel">Cancelar</button><button class="primary">Cambiar</button></div></form>` : ''}
       <div class="prow"><span>Esta sesión<small>${cur ? `${esc(deviceOf(cur.userAgent))} · desde ${dateCL(cur.createdAt)} · vence ${dateCL(cur.expiresAt)}` : '—'}</small></span>
-        ${others ? `<button type="button" class="link" data-act="others">Cerrar ${others} en otros dispositivos</button>` : '<span class="muted" style="font-size:13px">Sin otras sesiones</span>'}</div>
-      <p class="msg" id="profileMsg" role="status"></p></div>
-    <button type="button" class="out" data-act="logout">🚪 Cerrar sesión</button>`;
+        ${others ? `<button type="button" class="link" data-act="others">Cerrar ${others} en otros dispositivos</button>` : '<span class="muted" style="font-size:13px">Sin otras sesiones</span>'}</div>`;
+  }
+  pop.innerHTML = `<div class="ph">${avatarHtml(me, 48)}<div style="flex:1;min-width:0"><b>${esc(me.name)}</b>
+      <div class="tags">${me.owner ? '<span class="tag gold">Dueño</span>' : ''}<span class="tag">Alfa</span>${me.emailVerified ? '' : '<span class="tag warn">Email sin verificar</span>'}</div></div>
+      <button type="button" class="out" data-act="logout" aria-label="Cerrar sesión"><span aria-hidden="true">🚪</span><span class="lbl">Cerrar sesión</span></button></div>
+    <div class="ptabs" role="tablist" aria-label="Mi perfil">${tabs.map(([id, label]) => `<button type="button" role="tab" id="ptab-${id}" data-ptab="${id}" aria-controls="ppanel" aria-selected="${id === tab}" tabindex="${id === tab ? 0 : -1}">${label}</button>`).join('')}</div>
+    <div class="ppanel${profFade ? ' fade' : ''}" id="ppanel" role="tabpanel" aria-labelledby="ptab-${tab}">${body}<p class="msg" id="profileMsg" role="status"></p></div>`;
+  profFade = false;
+}
+// switch tab from a click or the arrow keys; only the panel is redrawn
+function setProfileTab(id, focus) {
+  if (id !== profileTab) { profileTab = id; lsSet('nitsu.profileTab', id); profFade = true; }
+  profileView = ''; drawProfile();
+  if (focus) $('ptab-' + id)?.focus();
 }
 function profileMsg(t, cls = '') { const m = $('profileMsg'); if (m) { m.textContent = t; m.className = 'msg ' + cls; } }
 async function authPost(path, body) {
@@ -1641,6 +1674,7 @@ async function onProfileClick(e) {
     if (b.dataset.sort) { data.invSort = b.dataset.sort; $('invSort').value = b.dataset.sort; save(); invLimit = 120; }
     showTab(b.dataset.go); window.scrollTo(0, 0); return;
   }
+  if (b.dataset.ptab) return setProfileTab(b.dataset.ptab, true);
   const act = b.dataset.act;
   try {
     if (b.dataset.av !== undefined) {
@@ -3898,7 +3932,7 @@ renderLangs(); renderConds(); renderLocPick(); renderPersMode(); renderCur(); re
 document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => showTab(b.dataset.tab));
 document.addEventListener('click', e => {
   const m = $('dataMenu'); if (m.open && !m.contains(e.target)) m.open = false;
-  const pm = $('profileMenu'); if (pm.open && !pm.contains(e.target)) pm.open = false;
+  const pm = $('profileMenu'); if (pm.open && e.target.isConnected && !pm.contains(e.target)) pm.open = false;   // a profile tab redraws the panel mid-click: its button is gone, not outside
   for (const d of document.querySelectorAll('details.pick[open]')) if (!d.contains(e.target)) d.open = false;
   const a = e.target.closest('[data-artist]'); if (a) { e.preventDefault(); openArtist(a.dataset.artist); }
 });
@@ -4651,6 +4685,13 @@ $('authGoogle').addEventListener('click', googleLogin);
 $('authForm').addEventListener('submit', submitAuth);
 $('profilePop').addEventListener('click', onProfileClick);
 $('profilePop').addEventListener('submit', onProfileSubmit);
+$('profilePop').addEventListener('keydown', e => {
+  const t = e.target.closest('[role=tab]'); if (!t) return;
+  const ids = [...$('profilePop').querySelectorAll('[role=tab]')].map(x => x.dataset.ptab), i = ids.indexOf(t.dataset.ptab);
+  const j = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: ids.length - 1 }[e.key];
+  if (j === undefined) return;
+  e.preventDefault(); setProfileTab(ids[(j + ids.length) % ids.length], true);
+});
 $('profileMenu').addEventListener('toggle', () => { if ($('profileMenu').open) { profileView = ''; renderProfile().catch(e => profileMsg(e.message, 'err')); } });
 currentSession().then(s => {
   if (s && s.open) return boot();
