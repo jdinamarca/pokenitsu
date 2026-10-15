@@ -229,6 +229,28 @@ Si la carta no tiene foto, la vista previa de Cargar muestra **📷 Tomar o subi
 
 **Sin PokeCottage.** Antes la app podía tomar de PokeCottage las fotos de cartas japonesas y sus checklists de master sets. PokeCottage no autorizó usar sus datos en otras herramientas, ni siquiera privadas, así que esa integración se quitó: la migración `030` borra lo que había (links a sus fotos, colecciones que seguían una checklist y las cartas `pc-*` que nada usa). Las cartas japonesas sin foto muestran una imagen de referencia del mismo Pokémon hasta tener una foto propia.
 
+## Fotos aportadas por la comunidad
+
+Para las cartas que no tienen foto en ninguna fuente, sobre todo ~3.500 japonesas, cualquier cuenta puede **compartir la foto de su propia carta**:
+
+- **Compartir:** en el diálogo **📷**, si la carta no tiene foto, aparece el interruptor **"Compartir con la comunidad"**.
+  - Hay que aceptar los [Términos para aportar fotos](apps/web/public/terminos-fotos.html) (`/terminos-fotos`): la foto la sacaste tú, no la copiaste de otro sitio, y Nitsu puede mostrarla con tu nombre. Se guarda la versión aceptada y la fecha. Si los términos cambian, se piden de nuevo.
+  - Antes de enviarla, la foto se encuadra en un marco con la forma de la carta (arrastrar y zoom).
+  - La foto queda además como tu foto privada de esa variante.
+- **Revisión:** el dueño (la primera cuenta) tiene la pestaña **📸 Fotos por revisar**, con un contador.
+  - Ve la foto, cómo quedará y quién la mandó.
+  - Para aprobar marca 3 comprobaciones: carta correcta, nítida y entera, y que no parece sacada de otro sitio. También puede girar la foto.
+  - Puede rechazarla con un motivo: borrosa, carta equivocada, con sleeve o reflejo, o no parece suya.
+- **Al aprobarla,** se generan los WebP de 245 y 600 px en `IMAGE_DIR` (`card_images` con `source = 'aporte'`) y la carta muestra **"📸 Foto de <nombre>"** para todos. Las demás fotos pendientes de esa carta se rechazan con el motivo "Ya tiene foto".
+- **Reportar esta foto:** aparece junto al crédito. También se puede reportar sin cuenta desde `/terminos-fotos#reportar`, con un máximo de 5 por hora y dirección.
+  - Desde un reporte, el dueño puede **quitar la foto**: la carta vuelve a quedar sin foto.
+  - O puede **quitarla y bloquear los aportes** de esa cuenta, que sigue usando la app pero ya no puede compartir fotos.
+- **Mi perfil → Mis aportes:** muestra las fotos aprobadas, en revisión y rechazadas (con su motivo y un botón para reintentar). También incluye **Se buscan**: las cartas sin foto que más cuentas tienen, sin decir cuáles, y el % del catálogo con foto.
+- **Datos:**
+  - Tablas `photo_submissions` (con RLS: cada cuenta ve las suyas), `photo_reports` y `photo_contributor_blocks` (migración `032`).
+  - Las fotos enviadas quedan en `IMAGE_DIR/aportes/`, fuera de `public/`. Solo las pueden ver su autor y el dueño.
+  - Las rechazadas o retiradas se borran del disco a los 30 días.
+
 ## Mis colecciones (ej. todos los Eevee)
 
 Una carta = una expansión + número. Las internacionales (pokemontcg.io) son la misma carta en inglés,

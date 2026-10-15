@@ -8,6 +8,7 @@ import { fromNodeHeaders } from 'better-auth/node';
 import { pool, tx, migrate, runAsUser, endUser } from './db.js';
 import { createAuth, googleEnabled } from './auth.js';
 import { IMAGE_DIR } from './imagenes.js';
+import { aportesRoutes } from './aportes.js';
 import { norm, ensureSets, syncSets, ensureSetCards, syncAllCards, syncJaDex, applyJaNames } from './catalog.js';
 import { syncCameos, cameosJob, CAMEO_SOURCE } from './cameos.js';
 import { fillDetails, startDetailsJob, detailsJob, startVariantsJob, variantsJob, startVariantsForMySets } from './details.js';
@@ -111,7 +112,8 @@ app.route({
   },
 });
 // the landing's sign-up form, the login itself and which ways to log in exist are the only API calls without a session
-const PUBLIC_API = [/^\/api\/auth\//, /^\/api\/auth-options$/, /^\/api\/alpha$/];
+// (and "Reportar esta foto": whoever's photo it is may have no account)
+const PUBLIC_API = [/^\/api\/auth\//, /^\/api\/auth-options$/, /^\/api\/alpha$/, /^\/api\/photo-reports$/];
 // which ways to log in this server offers (the login screen shows the Google button only when it works)
 app.get('/api/auth-options', async () => ({ google: googleEnabled() }));
 // callback style on purpose: the rest of the request runs inside runAsUser, so every query sees only this user's rows
@@ -127,8 +129,8 @@ app.addHook('onRequest', (req, reply, done) => {
 app.addHook('onResponse', async req => endUser(req.dataStore));
 // the owner: the first account (it got the data from before accounts and curates what is shared, like connected art)
 async function isOwner(req) { const { rows: [first] } = await pool.query('SELECT id FROM "user" ORDER BY "createdAt" LIMIT 1'); return !!req.user && first?.id === req.user.id; }
-async function ownerOnly(req) {
-  if (!(await isOwner(req))) throw Object.assign(new Error('Solo el administrador puede editar los artes conectados: son los mismos para todos.'), { statusCode: 403 });
+async function ownerOnly(req, msg = 'Solo el administrador puede editar los artes conectados: son los mismos para todos.') {
+  if (!(await isOwner(req))) throw Object.assign(new Error(msg), { statusCode: 403 });
 }
 // the profile: the account, when it was created and whether it is the owner's
 app.get('/api/me', async req => {
@@ -137,9 +139,13 @@ app.get('/api/me', async req => {
 });
 app.addHook('onRequestAbort', async req => endUser(req.dataStore));
 app.addContentTypeParser(/^image\//, { parseAs: 'buffer', bodyLimit: 15 * 1024 * 1024 }, (req, body, done) => done(null, body));
+// photos the community shares for cards with no picture, and the owner's review (aportes.js)
+aportesRoutes(app, { isOwner, ownerOnly, resolveCard });
 
 // ---------- landing (/alfa) and its alpha sign-ups ----------
 app.get('/alfa', (req, reply) => reply.sendFile('landing.html'));
+// the terms for sharing photos (linked from the photo dialog; anyone can read them and report a photo there)
+app.get('/terminos-fotos', (req, reply) => reply.sendFile('terminos-fotos.html'));
 // home: the app with a session; without one, the landing (which links to the login at /entrar)
 app.get('/', async (req, reply) => {
   const session = auth && await auth.api.getSession({ headers: fromNodeHeaders(req.headers) }).catch(() => null);

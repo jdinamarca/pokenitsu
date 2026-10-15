@@ -788,6 +788,65 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
 @media (hover:none) and (pointer:coarse){.filebtn.cam{display:inline-block}}
 .filebtn{border:1px dashed var(--muted);border-radius:10px;padding:7px 14px;cursor:pointer;font-size:14px;font-weight:700}
 
+/* ---------- photos shared with the community (fotos-aportadas) ---------- */
+.sharebox{border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;margin:10px 0;display:flex;flex-direction:column;gap:8px;transition:border-color .2s,background .2s}
+.sharebox:has(#shareOn:checked){border-color:var(--gold);background:color-mix(in srgb,var(--gold) 6%,transparent)}
+.sharebox .sw{display:flex;align-items:center;gap:10px;font-size:15px;cursor:pointer}
+.sharebox .sw input{appearance:none;width:40px;height:24px;border-radius:999px;background:var(--track);position:relative;margin:0;padding:0;flex:none;cursor:pointer;transition:background .2s}
+.sharebox .sw input::after{content:"";position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:var(--panel);box-shadow:var(--shadow);transition:transform .25s var(--ease-out)}
+.sharebox .sw input:checked{background:var(--gold)}.sharebox .sw input:checked::after{transform:translateX(16px)}
+.sharebox .sw .tag{margin-left:auto}
+.sharebox p{margin:0;font-size:13.5px}
+.sharebox .terms{display:flex;gap:8px;align-items:flex-start;font-size:13.5px;font-weight:700;cursor:pointer}
+.sharebox .terms input{width:18px;height:18px;accent-color:var(--gold);margin:1px 0 0;flex:none}
+.sharebox .tips{font-size:12.5px;color:var(--muted);font-weight:700}
+.sharebox a{color:var(--blue)}
+.fdet [data-fapprove]:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+.sharebox:not(:has(#shareOn:checked)) .terms,.sharebox:not(:has(#shareOn:checked)) .tips{display:none}
+#imgDlg:has(#shareOn:checked) .urlrow,#imgDlg:has(#shareOn:checked) #imgReset,#imgDlg:has(#cropBox:not([hidden])) .filerow{display:none}
+.cropbox{display:flex;flex-direction:column;align-items:center;gap:10px;margin:8px 0}
+.cropstage{position:relative;width:220px;aspect-ratio:63/88;border-radius:12px;overflow:hidden;background:#000;touch-action:none;cursor:grab;box-shadow:0 0 0 3px var(--gold)}
+.cropstage:active{cursor:grabbing}
+.cropstage img{position:absolute;left:0;top:0;max-width:none;transform-origin:0 0;user-select:none;-webkit-user-drag:none;pointer-events:none}
+.cropzoom{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;color:var(--muted);width:220px}.cropzoom input{flex:1}
+.credit{font-size:13px;color:var(--muted);font-weight:700;margin:4px 0 0}
+.credit .link{border:0;background:none;padding:0;color:var(--blue);font-weight:700;font-size:13px;cursor:pointer}
+.repform{display:grid;gap:10px}.repform label{display:grid;gap:4px;font-size:13px;font-weight:700;color:var(--muted)}
+.tabs .cnt:not(:empty){margin-left:6px;background:var(--err);color:#fff;border-radius:999px;font-size:11px;font-weight:800;padding:1px 7px}
+/* the owner's review */
+.fotos{display:grid;grid-template-columns:260px minmax(0,1fr);gap:20px;align-items:start}
+.fq{display:flex;flex-direction:column;gap:6px}
+.fq .it{display:flex;gap:10px;align-items:center;padding:8px;border-radius:12px;border:1px solid transparent;background:none;text-align:left;cursor:pointer;color:var(--ink);font-weight:700}
+.fq .it:hover{background:var(--chip)}.fq .it.on{background:var(--chip);border-color:var(--line);box-shadow:inset 3px 0 0 var(--red)}
+.fq .it img{width:42px;height:58px;object-fit:cover;border-radius:6px;flex:none}
+.fq .it small{display:block;color:var(--muted);font-weight:700;font-size:12px}
+.fdet{display:grid;grid-template-columns:minmax(0,300px) 200px minmax(0,1fr);gap:20px;align-items:start}
+.fdet .shot{border-radius:12px;overflow:hidden;background:var(--chip);aspect-ratio:3/4;display:grid;place-items:center}
+.fdet .shot img{max-width:100%;max-height:100%;transition:transform .3s var(--ease-out)}
+.fdet .res{border-radius:10px;overflow:hidden;aspect-ratio:63/88;background:var(--chip)}
+.fdet .res img{width:100%;height:100%;object-fit:cover;transition:transform .3s var(--ease-out)}
+.fh{margin:18px 0 8px;font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.fchk{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.fchk label{display:flex;gap:10px;align-items:center;font-weight:700;font-size:14px;padding:8px 10px;border-radius:10px;border:1px solid var(--line);cursor:pointer}
+.fchk input{width:18px;height:18px;accent-color:var(--ok);margin:0;flex:none}
+.frej{display:flex;flex-wrap:wrap;gap:6px}
+.frej button{border-radius:999px;font-size:13px;padding:5px 12px;color:var(--err)}
+.frep{display:flex;gap:12px;align-items:flex-start;padding:12px;border:1px solid var(--line);border-radius:12px;margin-bottom:8px}
+.frep img{width:44px;height:60px;object-fit:cover;border-radius:6px;flex:none}
+@media (max-width:900px){.fotos{grid-template-columns:minmax(0,1fr)}.fdet{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.fdet>div:last-child{grid-column:1/-1}}
+/* my shared photos and "Se buscan" */
+.ap-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0}
+.ap-stats div{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:8px 12px}
+.ap-stats b{display:block;font-size:22px}.ap-stats span{font-size:12.5px;color:var(--muted);font-weight:700}
+.ap-list{display:flex;flex-direction:column;gap:6px;max-height:220px;overflow:auto}
+.ap-row{display:flex;gap:10px;align-items:center;font-size:14px}
+.ap-row .tag.ok{color:var(--ok)}.ap-row .tag.err{color:var(--err)}
+.ap-bar{height:8px;border-radius:999px;background:var(--track);overflow:hidden;margin:8px 0 4px}.ap-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--ok),var(--gold))}
+.wanted{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+.wanted button{aspect-ratio:63/88;border-radius:10px;border:2px dashed var(--line);background:var(--panel2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11.5px;font-weight:800;color:var(--muted);padding:6px;text-align:center;transition:border-color .2s}
+.wanted button b{color:var(--ink);font-size:12.5px}.wanted button em{font-style:normal;color:var(--warn)}
+@media (hover:hover) and (pointer:fine){.wanted button:hover{border-color:var(--gold)}}
+
 /* ---------- toast ---------- */
 .toasts{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;z-index:50;pointer-events:none;width:min(92vw,440px)}
 .toast{background:var(--ink);color:var(--panel);border-radius:12px;padding:11px 16px;font-weight:700;font-size:14px;box-shadow:var(--shadow-lg);transition:opacity .4s ease,transform .4s ease}
@@ -882,6 +941,7 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
     <button data-tab="colecciones"><span class="ico">⭐</span>Mis colecciones</button>
     <button data-tab="lotes"><span class="ico">📦</span>Lotes</button>
     <button data-tab="ubicaciones"><span class="ico">📍</span>Ubicaciones</button>
+    <button data-tab="fotos" id="fotosTab" hidden><span class="ico">📸</span>Fotos por revisar<span class="cnt" id="fotosCnt"></span></button>
   </nav>
 </header>
 
@@ -1177,6 +1237,12 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
       <div class="msg" id="colMsg"></div>
     </div>
   </dialog>
+  <!-- FOTOS POR REVISAR (solo el dueño) -->
+  <section class="tab" id="tab-fotos">
+    <h2 style="margin:0 0 4px">📸 Fotos por revisar</h2>
+    <p class="muted" style="margin:0 0 16px">Fotos que la comunidad comparte para cartas sin foto. Al aprobarlas se publican para todos, con el crédito de quien la sacó.</p>
+    <div id="fotosView"></div>
+  </section>
 </main>
 <div class="toasts" id="toasts"></div>
 <dialog class="dlg" id="cardDlg" style="width:min(94vw,600px)">
@@ -1185,6 +1251,7 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
     <div>
       <h3 id="ceName"></h3>
       <div class="muted" id="ceSet" style="font-size:13px"></div>
+      <p class="credit" id="ceCredit" hidden></p>
       <div id="cePrice" style="margin:6px 0 10px"></div>
       <div class="fields">
         <label>Variante <select id="ceVar"></select></label>
@@ -1202,10 +1269,40 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
   <p class="muted" id="imgTitle"></p>
   <div id="imgCur" style="width:180px;margin:8px auto;border-radius:10px;overflow:hidden;aspect-ratio:63/88;background:var(--chip)"></div>
   <p class="muted">Si la foto no corresponde (por ejemplo, sale con el símbolo de 1st Edition y la tuya es Unlimited), pega el link de otra imagen o sube una foto de tu carta. Solo cambia para esta variante.</p>
-  <div class="row"><input id="imgUrl" placeholder="https://… link de la imagen" style="flex:1;min-width:200px" spellcheck="false"><button class="primary" id="imgSaveUrl">Usar link</button></div>
-  <div class="row"><label class="filebtn cam">📸 Tomar foto<input type="file" id="imgCam" accept="image/*" capture="environment" hidden></label><label class="filebtn">📁 Subir foto de mi carta<input type="file" id="imgFile" accept="image/jpeg,image/png,image/webp,image/gif" hidden></label>
+  <p class="credit" id="imgCredit" hidden></p>
+  <p class="muted" id="shareNote" hidden></p>
+  <div class="sharebox" id="shareBox" hidden>
+    <label class="sw"><input type="checkbox" id="shareOn"><b>Compartir con la comunidad</b><span class="tag">🌍 Falta en Nitsu</span></label>
+    <p class="muted">Esta carta no tiene foto. Si compartes la tuya y la aprobamos, todos la verán con tu nombre como crédito.</p>
+    <label class="terms"><input type="checkbox" id="shareTerms"><span>Acepto los <a href="/terminos-fotos" target="_blank" rel="noopener">Términos para aportar fotos</a>: la foto la saqué yo y no la copié de otro sitio.</span></label>
+    <div class="tips">✓ Buena luz, sin flash · ✓ La carta entera · ✓ Sin sleeve ni toploader · ✓ Sin marcas de agua</div>
+  </div>
+  <div class="cropbox" id="cropBox" hidden>
+    <div class="cropstage" id="cropStage"><img id="cropImg" alt="Tu foto"></div>
+    <label class="cropzoom">Zoom <input type="range" id="cropZoom" min="1" max="3" step="0.01" value="1"></label>
+    <p class="muted" style="margin:0;font-size:13px">Arrastra la foto para que la carta calce en el marco.</p>
+    <div class="row"><button type="button" id="cropCancel">Elegir otra</button><button type="button" class="primary" id="cropGo">Guardar y compartir</button></div>
+  </div>
+  <div class="row urlrow"><input id="imgUrl" placeholder="https://… link de la imagen" style="flex:1;min-width:200px" spellcheck="false"><button class="primary" id="imgSaveUrl">Usar link</button></div>
+  <div class="row filerow"><label class="filebtn cam">📸 Tomar foto<input type="file" id="imgCam" accept="image/*" capture="environment" hidden></label><label class="filebtn">📁 Subir foto de mi carta<input type="file" id="imgFile" accept="image/jpeg,image/png,image/webp,image/gif" hidden></label>
     <button id="imgReset" class="danger">Volver a la foto del catálogo</button><button id="imgClose">Cerrar</button></div>
   <p class="msg" id="imgMsg"></p>
+</dialog>
+<dialog class="dlg" id="reportDlg">
+  <h2>🚩 Reportar esta foto</h2>
+  <p class="muted" id="repTitle"></p>
+  <form class="repform" id="repForm">
+    <label>Motivo <select name="reason"><option value="mine">Es mi foto y no autoricé su uso</option><option value="wrong">No corresponde a la carta</option><option value="other">Otro</option></select></label>
+    <label>Tu correo o contacto <input name="contact" required></label>
+    <label>Detalles (opcional) <textarea name="message" rows="3" placeholder="Por ejemplo: el link donde publicaste la foto original"></textarea></label>
+    <div class="row"><button type="button" id="repClose">Cancelar</button><button class="primary">Enviar reporte</button></div>
+    <p class="msg" id="repMsg"></p>
+  </form>
+</dialog>
+<dialog class="dlg" id="aportesDlg" style="width:min(94vw,640px)">
+  <h2>📸 Mis aportes</h2>
+  <div id="aportesView"></div>
+  <div class="row" style="margin-top:12px"><button id="aportesClose">Cerrar</button></div>
 </dialog>
 <dialog class="dlg" id="priceDlg">
   <h2>💰 Precios</h2>
@@ -1471,6 +1568,11 @@ function renderMe() {
   $('gNew').hidden = !canEditArt();
   if (!ME) return;
   $('profileMenu').hidden = false;
+  // the owner reviews the photos the community shares: their tab and how many wait
+  $('fotosTab').hidden = !ME.owner;
+  // the tab is remembered per browser: another account on it lands on Cargar instead
+  if ('owner' in ME && !ME.owner && $('tab-fotos').classList.contains('on')) showTab('cargar');
+  if (ME.owner && !FOTOS) api('GET', '/review/photos').then(F => { FOTOS = F; setFotosCount(F.pending.length + F.reports.length); }).catch(() => {});
   $('meAvatar').innerHTML = avatarHtml(ME, 28); $('meName').textContent = String(ME.name || ME.email).split(' ')[0];
 }
 // "Mac · Chrome" from a user agent
@@ -1483,8 +1585,8 @@ const dateCL = d => new Date(d).toLocaleDateString('es-CL', { day: 'numeric', mo
 async function renderProfile() {
   const pop = $('profilePop');
   if (!pop.innerHTML) pop.innerHTML = '<div class="muted">Cargando…</div>';
-  const [me, sessions, cl] = await Promise.all([api('GET', '/me'), fetch('/api/auth/list-sessions').then(r => r.ok ? r.json() : []).catch(() => []),
-    colls ? Promise.resolve(colls) : api('GET', '/collections').catch(() => [])]);
+  const [me, sessions, cl, ap] = await Promise.all([api('GET', '/me'), fetch('/api/auth/list-sessions').then(r => r.ok ? r.json() : []).catch(() => []),
+    colls ? Promise.resolve(colls) : api('GET', '/collections').catch(() => []), api('GET', '/photo-submissions/mine').catch(() => null)]);
   ME = me; renderMe();
   let copies = 0; const langs = new Set();
   for (const k in data.inv) { copies += data.inv[k]; const l = splitKey(k).lang; if (l) langs.add(l); }
@@ -1505,6 +1607,9 @@ async function renderProfile() {
     <div><h3>Tu colección</h3><div class="stats">${go('inventario', 'premier', fmt(copies), 'cartas', 'Mi colección')}${go('inventario', 'luxury', $('sUnique').textContent, 'distintas', 'Mi colección')}${go('inventario', 'master', val.priced ? clp(val.sale + val.pers) : '—', 'valor estimado', 'Mi colección, de mayor a menor valor', 'total', 'ok')}
       ${go('colecciones', 'poke', fmt((cl || []).length), (cl || []).length === 1 ? 'colección' : 'colecciones', 'Mis colecciones')}${go('grupos', 'great', `${fmt(artDone)} <span class="muted" style="font-size:14px">/ ${fmt(data.groups.length)}</span>`, `artes conectados completos${artStarted ? ` · ${fmt(artStarted)} empezados` : ''}`, 'Artes conectados')}${go('ubicaciones', 'ultra', fmt(LOCS.length), 'ubicaciones', 'Ubicaciones')}</div>
       <div class="muted" style="font-size:12.5px;margin-top:8px">Idiomas: ${[...langs].map(l => LNAME[l] || l).join(' · ') || '—'} · ${fmt(LOTS.lots.filter(l => l.status !== 'done').length)} lotes abiertos</div></div>
+    ${ap ? `<div><h3>Mis aportes ${ap.approved ? '<span class="tag gold" style="text-transform:none;letter-spacing:0">📸 Fotógrafo/a Nitsu</span>' : ''}</h3>
+      <div class="stats">${stat(fmt(ap.approved), 'fotos aprobadas', 'ok')}${stat(fmt(ap.pending), 'en revisión')}${stat(fmt(ap.rejected), 'rechazadas')}</div>
+      <div class="prow" style="margin-top:6px"><span>Fotos de cartas que no tienen foto en Nitsu</span><button type="button" class="link" data-act="aportes">Mis aportes y Se buscan</button></div></div>` : ''}
     <div><h3>Cuenta</h3>
       <div class="prow"><span>Avatar</span><button type="button" class="link" data-act="avatar">${profileView === 'avatar' ? 'Listo' : 'Elegir entrenador'}</button></div>
       ${profileView === 'avatar' ? `<div class="avpick">${AVATARS.map(a => `<button type="button" data-av="${a[0]}" class="${me.image === 'trainer:' + a[0] ? 'on' : ''}" title="${esc(a[1])}">${avatarHtml({ image: 'trainer:' + a[0] }, 56)}${esc(a[1])}</button>`).join('')}
@@ -1545,6 +1650,7 @@ async function onProfileClick(e) {
     else if (act === 'cancel') profileView = '';
     else if (act === 'others') { await authPost('revoke-other-sessions'); toast('Cerraste las sesiones de otros dispositivos'); }
     else if (act === 'logout') { await authPost('sign-out'); return location.reload(); }
+    else if (act === 'aportes') { $('profileMenu').open = false; return openAportes(); }
     else return;
     await renderProfile();
     $('profilePop').querySelector('form input')?.focus();
@@ -1754,6 +1860,7 @@ function openCardDlg(k) {
   $('ceLoc').innerHTML = locOptions(x.loc);
   $('ceN').value = q; $('ceN').max = q; $('ceNOf').textContent = `de ${q} copia${q > 1 ? 's' : ''}`; $('ceNWrap').style.display = q > 1 ? '' : 'none';
   $('ceMsg').textContent = '';
+  fillCredit($('ceCredit'), x.sid, x.num);
   if (!$('cardDlg').open) $('cardDlg').showModal();
 }
 function saveCardDlg() {
@@ -1781,6 +1888,7 @@ function openImgDlg(sid, num, v) {
   $('imgUrl').value = ''; $('imgFile').value = ''; $('imgCam').value = ''; $('imgMsg').textContent = '';
   $('imgReset').hidden = !hasOwnImg(sid, num, v);
   $('imgDlg').showModal();
+  shareInit(sid, num);
 }
 // phone photos are huge: anything over 1200 px is scaled down to a JPEG before uploading (GIFs keep their animation)
 async function shrinkImage(f, max = 1200) {
@@ -1808,6 +1916,215 @@ async function saveImg(kind) {
     toast(kind === 'reset' ? 'Volvió la foto del catálogo' : '📷 Foto guardada para esta variante');
   } catch (e) { $('imgMsg').textContent = e.message; $('imgMsg').className = 'msg err'; }
 }
+
+// ---------- photos shared with the community (fotos-aportadas; the API is aportes.js) ----------
+let shareSt = null, crop = null, reportSpec = null, FOTOS = null, fotosSel = 0;
+const fotosRot = {}, REP_REASON = { mine: 'Dice que es su foto', wrong: 'No corresponde a la carta', other: 'Otro' };
+const agoT = d => { const m = Math.round((Date.now() - new Date(d)) / 60000); return m < 60 ? `hace ${Math.max(1, m)} min` : m < 1440 ? `hace ${Math.round(m / 60)} h` : dateCL(d); };
+const cardQ = (sid, num) => `sid=${encodeURIComponent(sid)}&num=${encodeURIComponent(num)}`;
+const imgMsg = (t, cls = '') => { $('imgMsg').textContent = t; $('imgMsg').className = 'msg ' + cls; };
+// "📸 Foto de María · Reportar esta foto" under a picture someone shared
+async function fillCredit(el, sid, num) {
+  el.hidden = true;
+  const r = await api('GET', '/card-credit?' + cardQ(sid, num)).catch(() => null);
+  if (!r || !r.shared) return;
+  el.innerHTML = `📸 Foto de <b>${esc(r.credit || 'un coleccionista')}</b> · <button type="button" class="link" data-report="${esc(sid)}|${esc(num)}">Reportar esta foto</button>`;
+  el.hidden = false;
+}
+// what the photo dialog offers: sharing only for cards with no picture, if the account may share
+async function shareInit(sid, num) {
+  shareSt = null; endCrop();
+  $('shareBox').hidden = true; $('shareNote').hidden = true; $('shareOn').checked = false; $('shareTerms').checked = false;
+  fillCredit($('imgCredit'), sid, num);
+  const st = await api('GET', '/photo-status?' + cardQ(sid, num)).catch(() => null);
+  if (!st || !imgSpec || imgSpec.sid !== sid || imgSpec.num !== num) return;
+  shareSt = st;
+  const note = t => { $('shareNote').textContent = t; $('shareNote').hidden = false; };
+  if (!st.canShare) return;
+  if (st.blocked) note('🌍 Esta carta no tiene foto en Nitsu, pero tu cuenta no puede aportar fotos a la comunidad.');
+  else if (st.pending) note('🌍 Ya enviaste una foto de esta carta para la comunidad: está en revisión.');
+  else $('shareBox').hidden = false;
+}
+// a chosen photo: shared ones are framed like a card first; the rest are saved for me as before
+function pickPhoto(kind) {
+  if (!$('shareOn').checked) return saveImg(kind);
+  const inp = $(kind === 'cam' ? 'imgCam' : 'imgFile'), f = inp.files[0]; if (!f) return;
+  inp.value = '';
+  if (!$('shareTerms').checked) return imgMsg('Acepta los Términos para aportar fotos para compartirla.', 'err');
+  imgMsg(''); startCrop(f);
+}
+async function startCrop(f) {
+  endCrop();
+  const url = URL.createObjectURL(f), img = $('cropImg');
+  img.src = url;
+  try { await img.decode(); } catch { URL.revokeObjectURL(url); return imgMsg('La foto no se pudo leer. Prueba con otra.', 'err'); }
+  $('cropBox').hidden = false;
+  crop = { url, iw: img.naturalWidth, ih: img.naturalHeight, z: 1, x: 0, y: 0, s: 1 };
+  $('cropZoom').value = 1; layoutCrop(true);
+}
+function endCrop() {
+  if (crop) URL.revokeObjectURL(crop.url);
+  crop = null; $('cropBox').hidden = true; $('cropImg').removeAttribute('src');
+}
+// the photo covers the card frame at any zoom; x, y = where its top left corner sits inside the frame
+function layoutCrop(center) {
+  const st = $('cropStage'), W = st.clientWidth, H = st.clientHeight, s = Math.max(W / crop.iw, H / crop.ih) * crop.z;
+  const w = crop.iw * s, h = crop.ih * s;
+  if (center) { crop.x = (W - w) / 2; crop.y = (H - h) / 2; }
+  crop.x = Math.min(0, Math.max(W - w, crop.x)); crop.y = Math.min(0, Math.max(H - h, crop.y)); crop.s = s;
+  const im = $('cropImg'); im.style.width = crop.iw + 'px'; im.style.height = crop.ih + 'px';
+  im.style.transform = `translate(${crop.x}px,${crop.y}px) scale(${s})`;
+}
+function zoomCrop(z) {
+  const st = $('cropStage'), cx = st.clientWidth / 2, cy = st.clientHeight / 2, px = (cx - crop.x) / crop.s, py = (cy - crop.y) / crop.s;
+  crop.z = z; const s = Math.max(st.clientWidth / crop.iw, st.clientHeight / crop.ih) * z;
+  crop.x = cx - px * s; crop.y = cy - py * s; layoutCrop(false);
+}
+// what is inside the frame, as a JPEG up to 1200 px tall
+function cropBlob() {
+  const st = $('cropStage'), sw = st.clientWidth / crop.s, sh = st.clientHeight / crop.s;
+  const oh = Math.round(Math.min(1200, sh)), ow = Math.round(oh * 63 / 88), c = document.createElement('canvas');
+  c.width = ow; c.height = oh;
+  c.getContext('2d').drawImage($('cropImg'), -crop.x / crop.s, -crop.y / crop.s, sw, sh, 0, 0, ow, oh);
+  return new Promise((res, rej) => c.toBlob(b => b ? res(b) : rej(new Error('No se pudo preparar la foto')), 'image/jpeg', 0.9));
+}
+// saved as my photo (seen at once) and sent for review
+async function sendShare() {
+  if (!crop || !shareSt) return;
+  const b = $('cropGo'); b.disabled = true; imgMsg('Subiendo…');
+  try {
+    const blob = await cropBlob(), spec = { ...imgSpec };
+    let r = await fetch('/api/card-image/upload?' + new URLSearchParams(spec), { method: 'PUT', headers: { 'content-type': 'image/jpeg' }, body: blob });
+    let j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'HTTP ' + r.status); VIMG = j;
+    r = await fetch(`/api/photo-submissions?${cardQ(spec.sid, spec.num)}&terms=${encodeURIComponent(shareSt.terms)}`, { method: 'POST', headers: { 'content-type': 'image/jpeg' }, body: blob });
+    j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'HTTP ' + r.status);
+    endCrop(); $('imgDlg').close(); renderAll(); if ($('entry').value) renderEntryPreview(); else if (previewKey) renderPreview(previewKey); if (colSel) renderColView();
+    toast('📸 ¡Gracias! Tu foto quedó guardada y en revisión para la comunidad');
+  } catch (e) { imgMsg(e.message, 'err'); } finally { b.disabled = false; }
+}
+(() => {
+  const st = $('cropStage'); let drag = null;
+  st.addEventListener('pointerdown', e => { if (!crop) return; drag = { x: e.clientX - crop.x, y: e.clientY - crop.y }; st.setPointerCapture(e.pointerId); });
+  st.addEventListener('pointermove', e => { if (!drag || !crop) return; crop.x = e.clientX - drag.x; crop.y = e.clientY - drag.y; layoutCrop(false); });
+  st.addEventListener('pointerup', () => { drag = null; });
+  st.addEventListener('pointercancel', () => { drag = null; });
+  $('cropZoom').addEventListener('input', e => { if (crop) zoomCrop(+e.target.value); });
+  $('cropCancel').onclick = () => { endCrop(); imgMsg(''); };
+  $('cropGo').onclick = sendShare;
+  $('imgDlg').addEventListener('close', endCrop);
+})();
+
+// "Reportar esta foto"
+function openReport(sid, num) {
+  reportSpec = { sid, num };
+  const m = meta(sid, num), s = setById[sid];
+  $('repTitle').textContent = `${m ? m[0] : '?'} · ${s ? s.code || s.name : sid} #${num}`;
+  const f = $('repForm'); f.reset(); f.contact.value = (ME && ME.email) || ''; $('repMsg').textContent = '';
+  $('reportDlg').showModal();
+}
+$('repForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = e.target;
+  try {
+    await api('POST', '/photo-reports', { ...reportSpec, reason: f.reason.value, contact: f.contact.value, message: f.message.value });
+    $('reportDlg').close(); toast('🚩 Reporte enviado. Lo vamos a revisar.');
+  } catch (err) { $('repMsg').textContent = err.message; $('repMsg').className = 'msg err'; }
+});
+$('repClose').onclick = () => $('reportDlg').close();
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-report]'); if (!b) return;
+  const [sid, num] = b.dataset.report.split('|'); openReport(sid, num);
+});
+
+// my shared photos and "Se buscan" (from Mi perfil)
+async function openAportes() {
+  $('aportesView').innerHTML = '<p class="muted">Cargando…</p>';
+  if (!$('aportesDlg').open) $('aportesDlg').showModal();
+  try {
+    const [ap, w] = await Promise.all([api('GET', '/photo-submissions/mine'), api('GET', '/wanted-photos')]);
+    const ST = { approved: ['✓ Aprobada', 'ok'], pending: ['En revisión', ''], rejected: ['Rechazada', 'err'], withdrawn: ['Retirada', 'err'] };
+    const pct = w.total ? Math.floor(w.withPhoto / w.total * 1000) / 10 : 0;
+    for (const c of [...ap.list, ...w.list]) if (!meta(c.sid, c.num)) putMeta(c);
+    $('aportesView').innerHTML = `${ap.approved ? '<p style="margin:0"><span class="tag" style="background:var(--gold);color:#2b2000;font-weight:800">📸 Fotógrafo/a Nitsu</span></p>' : ''}
+      <div class="ap-stats"><div><b style="color:var(--ok)">${ap.approved}</b><span>aprobadas</span></div><div><b style="color:var(--blue)">${ap.pending}</b><span>en revisión</span></div><div><b style="color:var(--err)">${ap.rejected}</b><span>rechazadas</span></div></div>
+      ${ap.list.length ? `<div class="ap-list">${ap.list.map(r => `<div class="ap-row"><span class="tag ${ST[r.status][1]}">${ST[r.status][0]}</span><span style="flex:1;min-width:0">${esc(r.name)} · ${esc(r.code || r.set_name)} #${esc(r.num)}${r.reason ? ` — <b style="color:var(--err)">${esc(r.reason)}</b>` : ''}</span>${r.status === 'rejected' && r.reason !== 'Ya tiene foto' ? `<button type="button" data-retry="${esc(r.sid)}|${esc(r.num)}">📷 Reintentar</button>` : ''}</div>`).join('')}</div>`
+        : '<p class="muted">Todavía no compartes fotos. Cuando una carta no tiene foto, el diálogo 📷 te deja compartir la tuya con la comunidad.</p>'}
+      <h3 style="margin:18px 0 2px">Se buscan</h3>
+      <p class="muted" style="margin:0;font-size:13.5px">${fmt(w.missing)} cartas esperan su foto. Primero, las que más coleccionistas tienen.</p>
+      <div class="ap-bar"><i style="width:${pct}%"></i></div>
+      <p class="muted" style="margin:0 0 10px;font-size:13px;font-weight:700">${String(pct).replace('.', ',')}% del catálogo con foto</p>
+      ${w.list.length ? `<div class="wanted">${w.list.map(c => `<button type="button" data-retry="${esc(c.sid)}|${esc(c.num)}" title="Compartir la foto de esta carta"><span>📷</span><b>${esc(c.name)}</b>${esc(c.code || c.set_name)} #${esc(c.num)}<em>${c.owners} la tiene${c.owners > 1 ? 'n' : ''}</em></button>`).join('')}</div>` : ''}`;
+  } catch (e) { $('aportesView').innerHTML = `<p class="msg err">${esc(e.message)}</p>`; }
+}
+$('aportesView').addEventListener('click', e => {
+  const b = e.target.closest('[data-retry]'); if (!b) return;
+  const [sid, num] = b.dataset.retry.split('|'); $('aportesDlg').close(); openImgDlg(sid, num, 'normal');
+});
+$('aportesClose').onclick = () => $('aportesDlg').close();
+
+// the owner's review: the queue, the reports and the accounts that can't share
+function setFotosCount(n) { $('fotosCnt').textContent = n ? String(n) : ''; }
+async function renderFotos() {
+  const v = $('fotosView'); if (!FOTOS) v.innerHTML = '<p class="muted">Cargando…</p>';
+  try { FOTOS = await api('GET', '/review/photos'); } catch (e) { v.innerHTML = `<p class="msg err">${esc(e.message)}</p>`; return; }
+  setFotosCount(FOTOS.pending.length + FOTOS.reports.length);
+  drawFotos();
+}
+function drawFotos() {
+  const F = FOTOS, p = F.pending.find(x => x.id === fotosSel) || F.pending[0]; fotosSel = p ? p.id : 0;
+  const rot = p ? fotosRot[p.id] || 0 : 0, file = id => `/api/photo-submissions/${id}/file`, who = x => esc(x.user_name || 'Cuenta borrada');
+  const list = F.pending.map(x => `<button type="button" class="it ${x.id === fotosSel ? 'on' : ''}" data-fsel="${x.id}"><img src="${file(x.id)}" alt="" loading="lazy"><span>${esc(x.name)}<small>${esc(x.code || x.set_name)} #${esc(x.num)} · ${who(x)}<br>${agoT(x.created_at)}</small></span></button>`).join('');
+  const det = p ? `<div class="fdet">
+      <div><div class="fh" style="margin-top:0">Foto enviada</div><div class="shot"><img src="${file(p.id)}" alt="Foto enviada" data-rot style="transform:rotate(${rot}deg)"></div>
+        <div class="row" style="margin-top:8px"><button type="button" data-frot="${p.id}">↻ Girar</button></div></div>
+      <div><div class="fh" style="margin-top:0">Así quedará</div><div class="res"><img src="${file(p.id)}" alt="" data-rot style="transform:rotate(${rot}deg)"></div><p class="credit">📸 Foto de ${who(p)}</p></div>
+      <div><h3 style="margin:0;font-size:22px">${esc(p.name)}</h3>
+        <div class="muted" style="font-weight:700">${esc(p.set_name)} · ${esc(p.code || p.sid)} #${esc(p.num)}${p.rarity ? ' · ' + esc(p.rarity) : ''}</div>
+        <div style="margin:8px 0;display:flex;gap:6px;flex-wrap:wrap"><span class="tag">${who(p)} · ${p.approved} foto${p.approved === 1 ? '' : 's'} aprobada${p.approved === 1 ? '' : 's'}</span>${p.owners ? `<span class="tag">La tiene${p.owners > 1 ? 'n' : ''} ${p.owners} coleccionista${p.owners > 1 ? 's' : ''}</span>` : ''}</div>
+        <div class="fh">Antes de aprobar</div>
+        <div class="fchk"><label><input type="checkbox" data-fchk>Es la carta correcta (nombre, número y expansión)</label><label><input type="checkbox" data-fchk>Se ve nítida y entera</label><label><input type="checkbox" data-fchk>No parece sacada de otro sitio (marca de agua, fondo de tienda)</label></div>
+        <div class="row"><button type="button" class="primary" data-fapprove="${p.id}" disabled>✓ Aprobar y publicar</button>${F.pending.length > 1 ? `<button type="button" data-fskip="${p.id}">Saltar</button>` : ''}</div>
+        <div class="fh">Rechazar por…</div>
+        <div class="frej">${Object.entries(F.reasons).map(([k, t]) => `<button type="button" data-freject="${p.id}" data-reason="${k}">${esc(t)}</button>`).join('')}</div>
+        <p class="msg" id="fotosMsg"></p></div></div>`
+    : `<p class="muted">No hay fotos por revisar.${F.today.approved || F.today.rejected ? ` Hoy: ✓ ${F.today.approved} aprobada${F.today.approved === 1 ? '' : 's'} · ✕ ${F.today.rejected} rechazada${F.today.rejected === 1 ? '' : 's'}.` : ''}</p>`;
+  const reps = F.reports.map(r => `<div class="frep">${r.img ? `<img src="${esc(r.img)}" alt="">` : ''}<div style="flex:1;min-width:0"><b>${esc(r.name)}</b> · ${esc(r.code || r.set_name)} #${esc(r.num)} — ${esc(REP_REASON[r.reason] || r.reason)}
+      <div class="muted" style="font-size:13px;overflow-wrap:anywhere">${esc(r.contact)} · ${agoT(r.created_at)}${r.shared ? ` · foto de ${esc(r.user_name || 'cuenta borrada')}` : ' · la carta no tiene foto aportada'}</div>
+      ${r.message ? `<div style="font-size:14px;margin-top:4px;overflow-wrap:anywhere">${esc(r.message)}</div>` : ''}
+      <div class="row" style="margin-top:8px">${r.shared ? `<button type="button" data-fwithdraw="${esc(r.card_id)}">Quitar foto</button>${r.user_id ? `<button type="button" class="danger" data-fwithdraw="${esc(r.card_id)}" data-block="1">Quitar foto y bloquear aportes</button>` : ''}` : ''}<button type="button" data-fdismiss="${r.id}">Descartar reporte</button></div></div></div>`).join('');
+  const blocked = F.blocked.map(b => `<div class="frep"><div style="flex:1">${esc(b.name || 'Cuenta borrada')}<div class="muted" style="font-size:13px">${esc(b.reason || '')} · desde el ${dateCL(b.created_at)}</div></div><button type="button" data-funblock="${esc(b.user_id)}">Desbloquear</button></div>`).join('');
+  $('fotosView').innerHTML = `<div class="fotos"><div class="fq"><div class="fh" style="margin-top:0">Por revisar · ${F.pending.length}</div>${list || '<p class="muted" style="margin:0">Nada pendiente 🎉</p>'}</div><div>${det}</div></div>
+    ${reps ? `<div class="fh">🚩 Reportes · ${F.reports.length}</div>${reps}` : ''}
+    ${blocked ? `<div class="fh">Cuentas sin aportes</div>${blocked}` : ''}`;
+}
+$('fotosView').addEventListener('change', e => {
+  if (!e.target.matches('[data-fchk]')) return;
+  const all = [...$('fotosView').querySelectorAll('[data-fchk]')].every(c => c.checked);
+  const b = $('fotosView').querySelector('[data-fapprove]'); if (b) b.disabled = !all;
+});
+$('fotosView').addEventListener('click', async e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const d = b.dataset, msg = t => { const m = $('fotosMsg'); if (m) { m.textContent = t; m.className = 'msg err'; } else toast(t); };
+  try {
+    if (d.fsel) { fotosSel = +d.fsel; return drawFotos(); }
+    if (d.frot) {
+      const id = +d.frot; fotosRot[id] = ((fotosRot[id] || 0) + 90) % 360;
+      for (const im of $('fotosView').querySelectorAll('[data-rot]')) im.style.transform = `rotate(${fotosRot[id]}deg)`;
+      return;
+    }
+    if (d.fskip) { const i = FOTOS.pending.findIndex(x => x.id === +d.fskip); fotosSel = FOTOS.pending[(i + 1) % FOTOS.pending.length].id; return drawFotos(); }
+    b.disabled = true;
+    if (d.fapprove) { await api('POST', `/review/photos/${d.fapprove}/approve`, { rotation: fotosRot[+d.fapprove] || 0, checked: true }); toast('✓ Foto publicada para todos'); }
+    else if (d.freject) { await api('POST', `/review/photos/${d.freject}/reject`, { reason: d.reason }); toast(`Foto rechazada: ${FOTOS.reasons[d.reason]}`); }
+    else if (d.fwithdraw) {
+      if (!confirm(d.block ? '¿Quitar la foto y bloquear los aportes de esa cuenta?' : '¿Quitar la foto? La carta vuelve a quedar sin foto.')) { b.disabled = false; return; }
+      await api('POST', '/review/withdraw', { cardId: d.fwithdraw, block: !!d.block }); toast(d.block ? 'Foto quitada y aportes bloqueados' : 'Foto quitada');
+    } else if (d.fdismiss) { await api('POST', `/review/reports/${d.fdismiss}/dismiss`); toast('Reporte descartado'); }
+    else if (d.funblock) { await api('POST', '/review/blocks', { userId: d.funblock, block: false }); toast('La cuenta puede volver a aportar fotos'); }
+    else { b.disabled = false; return; }
+    await renderFotos();
+  } catch (err) { b.disabled = false; msg(err.message); }
+});
 
 // ---------- prices ----------
 // P.prices['sid|num'] = {usd, eur, url, at}; P.own['sid|num|variant'] = my CLP price (NM); P.ownUsd = the same typed in USD (follows the exchange rate)
@@ -3543,7 +3860,7 @@ async function resetInventory() {
 }
 
 // ---------- navigation ----------
-const TABS = ['cargar', 'inventario', 'kits', 'expansiones', 'artistas', 'grupos', 'colecciones', 'lotes', 'ubicaciones'];
+const TABS = ['cargar', 'inventario', 'kits', 'expansiones', 'artistas', 'grupos', 'colecciones', 'lotes', 'ubicaciones', 'fotos'];
 function showTab(name) {
   data.tab = name; save();
   if (location.hash !== '#' + name) history.replaceState(null, '', '#' + name);
@@ -3551,6 +3868,7 @@ function showTab(name) {
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.id === 'tab-' + name));
   if (name === 'cargar') $('entry').focus();
   if (name === 'colecciones' && colls) loadCollections();
+  if (name === 'fotos') renderFotos();
   renderAll();
 }
 function renderAll() {
@@ -3598,8 +3916,8 @@ $('ceSave').onclick = saveCardDlg;
 $('ceClose').onclick = () => $('cardDlg').close();
 $('ceImg').onclick = $('cePhoto').onclick = () => { const x = splitKey(editKey); $('cardDlg').close(); openImgDlg(x.sid, x.num, x.v); };
 $('imgSaveUrl').onclick = () => saveImg('url');
-$('imgFile').onchange = () => saveImg('file');
-$('imgCam').onchange = () => saveImg('cam');
+$('imgFile').onchange = () => pickPhoto('file');
+$('imgCam').onchange = () => pickPhoto('cam');
 $('imgReset').onclick = () => { if (confirm('¿Quitar tu foto y volver a la del catálogo?')) saveImg('reset'); };
 $('imgClose').onclick = () => $('imgDlg').close();
 $('btnPrices').onclick = () => { $('dataMenu').open = false; openPriceDlg(); };

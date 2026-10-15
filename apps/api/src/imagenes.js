@@ -69,7 +69,8 @@ async function download(url) {
   }
   throw last;
 }
-async function save(card, size, img) {
+// one size of a card's picture as WebP under IMAGE_DIR (also used for the photos the community shares, index.js)
+export async function save(card, size, img) {
   const { data, info } = await sharp(img).resize({ width: WIDTH[size], withoutEnlargement: true }).webp({ quality: 82, effort: 4 }).toBuffer({ resolveWithObject: true });
   const path = `cards/${safe(card.set_id)}/${safe(card.id)}-${size}.webp`, file = join(IMAGE_DIR, path);
   await mkdir(dirname(file), { recursive: true });
