@@ -168,7 +168,7 @@ Un mundo nocturno y cálido: fieltro, grafito, cartulina y una sola luz, con sti
 
 Una herramienta de escritorio en tres columnas fijas que ocupan toda la ventana: riel de reglas (284px), zona de trabajo fluida y ficha lateral (352px). Bajo 1360px, el riel baja a 264px y la ficha a 316px. Bajo 900px las tres zonas se apilan y la página hace scroll.
 
-La zona de trabajo tiene arriba el contador con su nota y la leyenda de stickers, y debajo la vitrina, que hace scroll por dentro con su borde de luz pegado arriba. La vitrina se ordena en repisas por diseño (una ilustración y todas sus impresiones), de la más antigua a la más nueva; dentro de una repisa, por idioma (inglés primero), luego expansión, acabado y sello.
+La zona de trabajo tiene arriba el contador con su nota y la leyenda de stickers, y debajo la vitrina, que hace scroll por dentro con su borde de luz pegado arriba. La vitrina se ordena en repisas por diseño (una ilustración y todas sus impresiones), de la más antigua a la más nueva; dentro de una repisa, por idioma (inglés primero), luego expansión, acabado y sello. Bajo la leyenda, "Ordenar: Por diseño · Por expansión" (dos botones como los chips de vista, en grafito; el elegido en cartulina) cambia a una repisa por expansión en una sola línea de tiempo que mezcla regiones (ロケット団, Japón 1997, antes que Team Rocket, 2000). Su subtítulo es "Región · AAAA-MM" o "Fecha por confirmar", y dentro va por número y luego idioma, acabado y sello.
 
 Ritmo: 6 / 10 / 16 / 22px. Las cartas van a 112px de ancho, con 14px entre columnas y 16px entre filas.
 
@@ -208,7 +208,7 @@ Chips de fieltro hondo con borde de fieltro; la elegida pasa a cartulina. "Full"
 
 ### Impresión en la vitrina (componente firma)
 
-La carta a 112px con su foto real y, debajo, una etiqueta de cartulina con idioma y variante en Archivo Narrow y el sticker de su mejor permiso. Si la foto es solo para uso local, lleva un sticker violeta de 10px en la esquina inferior izquierda de la foto, con un anillo de grafito para separarlo de la ilustración; en la ficha, la foto lleva la nota "Foto solo para uso local · fuente".
+La carta a 112px con su foto real y, debajo, una etiqueta de cartulina con idioma y variante en Archivo Narrow y el sticker de su mejor permiso. Si la foto es solo para uso local, lleva un sticker violeta de 10px en la esquina inferior izquierda de la foto, con un anillo de grafito para separarlo de la ilustración; en la ficha, la foto lleva la nota "Foto solo para uso local · fuente". Una foto de otra variante (la 1st Edition en una unlimited) se ve atenuada como las de referencia, con la nota "Foto de la 1st Edition · falta esta variante". Bajo la foto de la ficha van las herramientas de foto en grafito: "Esta foto muestra" (un select) y "Subir tu foto" / "Quitar tu foto" (botones como los chips de vista).
 
 - **Sin foto propia:** usa la foto de otra impresión del mismo diseño, un poco atenuada.
 - **Copias:** una pastilla de luz cálida (×2) en la esquina.

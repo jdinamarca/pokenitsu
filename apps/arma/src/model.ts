@@ -1,6 +1,6 @@
 // What the screen derives from the Full: labels, the permission sticker of each printing, shelves and pictures
-import { variantLabel, type ArmaRules, type RuleId } from '@pokenitsu/core';
-import type { Copy, Permission, Printing, Source } from './api.ts';
+import { normNumber, photoShows, STAMP_LABEL, variantLabel, type ArmaRules, type RuleId } from '@pokenitsu/core';
+import type { Copy, FactValue, Permission, Printing, Source } from './api.ts';
 
 export const LANG_NAME: Record<string, string> = {
   EN: 'Inglés',
@@ -52,22 +52,59 @@ export interface Picture {
   /** a photo for local use only (fotos-solo-local): shown with the violet mark */
   local: boolean;
   source: string;
-}
-/** a picture only from a source allowed to show it: our own copy first, then TCGdex;
- *  a photo for local use only just when there is none of those */
-export function pictureOf(p: Printing, sources: Map<string, Source>): Picture | null {
-  const imgs = (p.facts.image || []).filter(f => f.value && sources.get(f.source)?.images);
-  const allowed = imgs.filter(f => sources.get(f.source)?.permission !== 'local');
-  const f = allowed.find(f => f.value!.startsWith('/img/')) || allowed[0] || imgs[0];
-  return f
-    ? { src: f.value!, local: sources.get(f.source)?.permission === 'local', source: sources.get(f.source)?.name || f.source }
-    : null;
+  /** the photo shows another variant of the card (fotos-por-variante): "la 1st Edition", "la versión sin sello" */
+  other?: string;
 }
 
-// the design's picture: one allowed to be shown if any printing has it, a local-only one otherwise
+/** each photo of the Full with the variant it shows (photoShows: a mark by hand, or the automatic rule) */
+export function withPhotoShows(printings: Printing[], marks: Record<string, string>): Printing[] {
+  const card = (p: Printing) => `${p.set_key}|${p.number}|${p.lang}`;
+  const holders = new Map<string, Printing[]>();
+  for (const p of printings)
+    for (const src of new Set((p.facts.image || []).map(f => f.value).filter(Boolean)))
+      holders.set(`${card(p)}|${src}`, [...(holders.get(`${card(p)}|${src}`) || []), p]);
+  return printings.map(p =>
+    p.facts.image
+      ? {
+          ...p,
+          facts: {
+            ...p.facts,
+            image: p.facts.image.map(f =>
+              f.value ? { ...f, shows: photoShows(p, holders.get(`${card(p)}|${f.value}`) || [p], marks[f.value]) } : f,
+            ),
+          },
+        }
+      : p,
+  );
+}
+
+/** "la 1st Edition", "la versión sin sello", "la Pokémon Center": the variant a photo shows, for the sheet's note */
+export const showsLabel = (shows: string) => (shows ? `la ${STAMP_LABEL[shows] || shows}` : 'la versión sin sello');
+
+/** a picture that shows the printing's own variant: your upload first, then our copy, TCGdex and the other allowed
+ *  sources, and a photo for local use only after those; when none fits, another variant's photo of the same card
+ *  (marked with `other`, never shown as the printing's own) */
+export function pictureOf(p: Printing, sources: Map<string, Source>): Picture | null {
+  const imgs = (p.facts.image || []).filter(f => f.value && sources.get(f.source)?.images);
+  const perm = (f: FactValue) => sources.get(f.source)?.permission;
+  const rank = (f: FactValue) => (f.source === 'own' ? 0 : f.value!.startsWith('/img/') ? 1 : perm(f) !== 'local' ? 2 : 3);
+  const own = p.stamp || '';
+  const best = (fs: FactValue[]) => [...fs].sort((a, b) => rank(a) - rank(b))[0];
+  const f = best(imgs.filter(f => (f.shows ?? own) === own)) || best(imgs);
+  if (!f) return null;
+  const shows = f.shows ?? own;
+  return {
+    src: f.value!,
+    local: perm(f) === 'local',
+    source: sources.get(f.source)?.name || f.source,
+    ...(shows !== own ? { other: showsLabel(shows) } : {}),
+  };
+}
+
+// the design's picture: one that fits its printing and may be shown if any has it; a local-only one otherwise
 function designPicture(ps: Printing[], sources: Map<string, Source>): Picture | null {
   const pics = ps.map(p => pictureOf(p, sources)).filter((x): x is Picture => !!x);
-  return pics.find(x => !x.local) || pics[0] || null;
+  return pics.find(x => !x.local && !x.other) || pics.find(x => !x.other) || pics[0] || null;
 }
 
 export const variantName = (p: Printing): string => {
@@ -81,8 +118,8 @@ export interface Shelf {
   title: string;
   subtitle: string;
   printings: Printing[];
-  /** a picture of the design, to show the same artwork on printings with none of their own */
-  picture: Picture | null;
+  /** the picture of a printing's design, to show the same artwork on printings with none of their own */
+  fallback: (p: Printing) => Picture | null;
 }
 /** one shelf per design (an artwork and its printings in every language), oldest first */
 export function shelvesOf(printings: Printing[], sources: Map<string, Source>): Shelf[] {
@@ -111,7 +148,10 @@ export function shelvesOf(printings: Printing[], sources: Map<string, Source>): 
       title: `${lead.set_name || lead.set_key} · #${lead.number}`,
       subtitle: [lead.artist, date.slice(0, 4)].filter(Boolean).join(' · '),
       printings: ps,
-      picture: designPicture(ps, sources),
+      fallback: (
+        pic => () =>
+          pic
+      )(designPicture(ps, sources)),
     };
   });
   return shelves.sort((a, b) => (a.date || '9999').localeCompare(b.date || '9999') || a.title.localeCompare(b.title));
@@ -122,3 +162,75 @@ export const copiesByCode = (copies: Copy[]) => {
   for (const c of copies) m.set(c.code, [...(m.get(c.code) || []), c]);
   return m;
 };
+
+// ---------- by expansion (vitrina-por-expansion) ----------
+export type Order = 'design' | 'set';
+const WEST = new Set(['EN', 'ES', 'ES-MX', 'FR', 'DE', 'IT', 'PT', 'PT-BR']);
+export const REGION: Record<string, string> = {
+  JA: 'Japón',
+  'ZH-CN': 'China simplificado',
+  'ZH-TW': 'China tradicional',
+  KO: 'Corea',
+  TH: 'Tailandia',
+  ID: 'Indonesia',
+};
+export const regionOf = (lang: string) => (WEST.has(lang) ? 'Internacional' : REGION[lang] || lang);
+const REGION_ORDER = ['Japón', 'Internacional', 'China simplificado', 'China tradicional', 'Corea', 'Tailandia', 'Indonesia'];
+
+/** the expansion a printing belongs to: Western languages share the international set; the Chinese, Thai, Indonesian
+ *  or Korean printings of a Japanese set are an expansion of their own */
+export const expansionOf = (p: Pick<Printing, 'set_key' | 'lang'>) =>
+  p.set_key.startsWith('ja-') && p.lang !== 'JA' ? `${p.set_key}|${p.lang}` : p.set_key;
+
+const day = (d: string | null | undefined) => (d ? d.slice(0, 10) : null);
+const byNumber = (a: string, b: string) => a.localeCompare(b, 'en', { numeric: true });
+
+/** one shelf per expansion, on a single timeline of release dates across regions; undated ones last */
+export function shelvesBySet(printings: Printing[], sources: Map<string, Source>): Shelf[] {
+  const designPic = new Map<string, Picture | null>();
+  for (const s of shelvesOf(printings, sources)) for (const p of s.printings) designPic.set(p.code, s.fallback(p));
+  const by = new Map<string, Printing[]>();
+  for (const p of printings) by.set(expansionOf(p), [...(by.get(expansionOf(p)) || []), p]);
+  const own = (ps: Printing[]) =>
+    ps
+      .map(p => day(p.release))
+      .filter(Boolean)
+      .sort()[0] || null;
+  // the Japanese set's date, for the translated ones with none of their own
+  const japanese = new Map<string, string | null>();
+  for (const [k, ps] of by) if (ps[0]!.lang === 'JA') japanese.set(k, own(ps));
+  const shelves = [...by.entries()].map(([id, ps]) => {
+    const lead = ps[0]!;
+    const region = regionOf(lead.lang);
+    const date = own(ps) || (id.includes('|') ? japanese.get(lead.set_key) : null) || day(lead.set_release) || null;
+    const local = lead.set_name_local || lead.set_name || lead.set_key;
+    const title =
+      region === 'Internacional'
+        ? lead.set_name || local
+        : region === 'Japón' && lead.set_name && lead.set_name !== local
+          ? `${local} · ${lead.set_name}`
+          : local;
+    ps.sort(
+      (a, b) =>
+        byNumber(normNumber(a.number), normNumber(b.number)) ||
+        LANG_ORDER.indexOf(a.lang) - LANG_ORDER.indexOf(b.lang) ||
+        FINISH_ORDER.indexOf(a.finish) - FINISH_ORDER.indexOf(b.finish) ||
+        (a.stamp || '').localeCompare(b.stamp || ''),
+    );
+    return {
+      id,
+      date,
+      region,
+      title,
+      subtitle: `${region} · ${date ? date.slice(0, 7) : 'Fecha por confirmar'}`,
+      printings: ps,
+      fallback: (p: Printing) => designPic.get(p.code) ?? null,
+    };
+  });
+  return shelves.sort(
+    (a, b) =>
+      (a.date || '9999').localeCompare(b.date || '9999') ||
+      REGION_ORDER.indexOf(a.region) - REGION_ORDER.indexOf(b.region) ||
+      a.title.localeCompare(b.title),
+  );
+}

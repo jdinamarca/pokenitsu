@@ -7,6 +7,7 @@ import {
   FULL_RULES,
   mergeClaims,
   misfiled,
+  photoShows,
   printingKey,
   variantFromInventory,
   variantFromPokecottage,
@@ -274,5 +275,22 @@ describe('revisión de clasificación', () => {
     expect(kinds([pr({ code: 'x', stamp: 'x6m1ty0f6', labels: ['X6M-1TY-0F6'], sources: ['pokecottage', 'tcgdex'] })])).toEqual({
       x: ['unnamed'],
     });
+  });
+});
+
+describe('photoShows', () => {
+  const unlimited = { stamp: null };
+  const first = { stamp: '1st-edition' };
+  it('a photo shared by the unlimited and the 1st Edition shows the 1st Edition', () => {
+    expect(photoShows(unlimited, [unlimited, first])).toBe('1st-edition');
+    expect(photoShows(first, [unlimited, first])).toBe('1st-edition');
+  });
+  it('a photo only the unlimited has shows the unlimited', () => {
+    expect(photoShows(unlimited, [unlimited])).toBe('');
+    expect(photoShows({ stamp: 'pokemon-center' }, [{ stamp: 'pokemon-center' }])).toBe('pokemon-center');
+  });
+  it('a mark made by hand wins, also a mark back to the unlimited', () => {
+    expect(photoShows(unlimited, [unlimited], '1st-edition')).toBe('1st-edition');
+    expect(photoShows(first, [unlimited, first], '')).toBe('');
   });
 });

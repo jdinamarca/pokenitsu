@@ -464,3 +464,21 @@ export function auditPrintings(
   }
   return out;
 }
+
+// ---------- what variant a photo shows (fotos-por-variante) ----------
+/** the stamp a photo shows: a stamp key ('1st-edition'…) or '' for the printing with no stamp (unlimited) */
+export type PhotoShows = string;
+export interface PhotoHolder {
+  stamp: string | null;
+}
+/**
+ * The variant a photo of `holder` shows. A mark made by hand wins. Otherwise, a photo shared by the unlimited and the
+ * 1st Edition of the same card (same set, number and language: `holders`, all that have this photo) is the 1st
+ * Edition's: the catalogs keep one scan per card, and for WotC cards it carries the stamp. Otherwise, the holder's own.
+ */
+export function photoShows(holder: PhotoHolder, holders: readonly PhotoHolder[], mark?: PhotoShows | null): PhotoShows {
+  if (mark != null) return mark;
+  const stamps = new Set(holders.map(h => h.stamp || ''));
+  if (stamps.has('1st-edition') && stamps.has('')) return '1st-edition';
+  return holder.stamp || '';
+}

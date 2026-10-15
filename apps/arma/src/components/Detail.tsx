@@ -1,6 +1,7 @@
 import type { RuleResult } from '@pokenitsu/core';
 import type { Copy, Facts, Printing, Source } from '../api.ts';
 import { LANG_NAME, pictureOf, RULES, STICKER, variantName, type Picture } from '../model.ts';
+import { PhotoTools } from './PhotoTools.tsx';
 
 const FIELDS: { key: keyof Facts; label: string }[] = [
   { key: 'exists', label: 'Existe la impresión' },
@@ -21,10 +22,16 @@ interface Props {
   sources: Map<string, Source>;
   /** why the classification check marked it (empty when it did not) */
   reasons: { kind: string; text: string }[];
+  /** the same card's printings, every variant (fotos-por-variante) */
+  siblings: Printing[];
+  marks: Record<string, string>;
+  onMark: (src: string, shows: string | null) => Promise<void>;
+  onUpload: (code: string, file: File) => Promise<void>;
+  onRemovePhoto: (code: string) => Promise<void>;
 }
 
 /** the selected printing: what it is, whether it counts, my copies and where every fact came from */
-export function Detail({ p, fallback, result, copies, sources, reasons }: Props) {
+export function Detail({ p, fallback, result, copies, sources, reasons, siblings, marks, onMark, onUpload, onRemovePhoto }: Props) {
   if (!p)
     return (
       <aside className="detail empty-detail" aria-label="Ficha">
@@ -41,19 +48,37 @@ export function Detail({ p, fallback, result, copies, sources, reasons }: Props)
       <p className="code">{p.code}</p>
       <div className={'big' + (out ? ' off' : '')}>
         {img ? (
-          <img src={img.src.replace('/low.webp', '/high.webp')} alt={`${p.name || 'Carta'} de ${p.set_name || p.set_key}`} />
+          <img
+            src={img.src.replace('/low.webp', '/high.webp')}
+            alt={`${p.name || 'Carta'} de ${p.set_name || p.set_key}`}
+            className={!picture || img.other ? 'ref' : ''}
+          />
         ) : (
           <span className="blank">Sin foto con permiso</span>
         )}
-        {img && (!picture || img.local) && (
+        {img && (!picture || img.local || img.other) && (
           <span className={'ref-note' + (img.local ? ' local' : '')}>
             {img.local && <span className="sticker s-local" aria-hidden="true" />}
-            {[!picture && 'Foto de otra impresión del mismo diseño', img.local && `Foto solo para uso local · ${img.source}`]
+            {[
+              !picture && 'Foto de otra impresión del mismo diseño',
+              img.other && `Foto de ${img.other} · falta esta variante`,
+              img.local && `Foto solo para uso local · ${img.source}`,
+            ]
               .filter(Boolean)
               .join(' · ')}
           </span>
         )}
       </div>
+      <PhotoTools
+        key={p.code}
+        p={p}
+        picture={picture}
+        siblings={siblings}
+        mark={picture ? marks[picture.src] : undefined}
+        onMark={onMark}
+        onUpload={onUpload}
+        onRemove={onRemovePhoto}
+      />
       <div className="title">
         <h2>{p.name || 'Sin nombre'}</h2>
         <p>
