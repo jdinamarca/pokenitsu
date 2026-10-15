@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Términos para aportar fotos · Nitsu Collectibles</title>
+<meta name="description" content="Qué aceptas al compartir la foto de tu carta con la comunidad de Nitsu Collectibles, y cómo reportar una foto.">
+<meta name="theme-color" content="#0d0f16">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:dark;--bg:#0d0f16;--panel:#171a26;--line:#2a2f42;--ink:#eef0f8;--muted:#9aa0b8;--red:#ff5a3c;--gold:#ffc83d;--green:#2fd28a;--err:#ff6b61}
+@media (prefers-color-scheme:light){:root{color-scheme:light;--bg:#f4f5fa;--panel:#fff;--line:#e3e6ef;--ink:#1c1f2e;--muted:#6b7086;--red:#e3350d;--gold:#c27c00;--green:#1f9d63;--err:#d1342b}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.65 Nunito,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+h1,h2{font-family:"Bricolage Grotesque",Nunito,system-ui,sans-serif;letter-spacing:-.02em;line-height:1.1;margin:0}
+.wrap{max-width:760px;margin:0 auto;padding:28px 16px 64px}
+.logo{display:inline-flex;align-items:center;gap:10px;text-decoration:none;margin-bottom:34px}
+.logo svg{width:32px;height:32px}.logo b{display:block;font:800 22px/1 "Bricolage Grotesque",sans-serif}
+.logo small{display:block;font-size:10px;font-weight:800;letter-spacing:.3em;text-transform:uppercase;color:var(--gold)}
+h1{font-size:clamp(30px,6vw,42px)}
+.ver{color:var(--muted);font-weight:700;font-size:14px;margin:8px 0 26px}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px 22px;margin:18px 0}
+h2{font-size:22px;margin:30px 0 8px}
+ol,ul{padding-left:22px}li{margin:6px 0}
+.short{border-color:var(--gold)}
+.short ul{list-style:none;padding:0;margin:8px 0 0}.short li::before{content:"✓ ";color:var(--green);font-weight:800}
+form{display:grid;gap:12px;margin-top:10px}
+label{display:grid;gap:5px;font-weight:700;font-size:14px;color:var(--muted)}
+input,select,textarea{font:600 16px Nunito,sans-serif;padding:10px 12px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);width:100%}
+textarea{min-height:90px;resize:vertical}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:520px){.two{grid-template-columns:1fr}}
+button{font:800 16px Nunito,sans-serif;padding:12px 22px;border-radius:999px;border:0;background:var(--red);color:#fff;cursor:pointer;justify-self:start}
+button:disabled{opacity:.5}
+.msg{font-weight:700;min-height:1.4em;margin:0}.msg.ok{color:var(--green)}.msg.err{color:var(--err)}
+.back{display:inline-block;margin-top:30px;color:var(--muted);font-weight:700;text-decoration:none}
+:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <a class="logo" href="/" aria-label="Nitsu Collectibles, inicio"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="#fff" stroke="#1c1f2e" stroke-width="2"/><path d="M1 16a15 15 0 0 1 30 0z" fill="#e3350d" stroke="#1c1f2e" stroke-width="2"/><circle cx="16" cy="16" r="4.5" fill="#fff" stroke="#1c1f2e" stroke-width="2"/></svg><span><b>Nitsu</b><small>Collectibles</small></span></a>
+  <h1>Términos para aportar fotos</h1>
+  <!-- the version: the same as TERMS_VERSION in apps/api/src/aportes.js -->
+  <p class="ver">Versión <span id="ver">2026-10-14</span> · vigentes desde el 14 de octubre de 2026</p>
+
+  <div class="box short">
+    <b>En corto:</b> solo compartes fotos que sacaste tú de una carta que tienes en tus manos. Nitsu puede mostrarlas en la app con tu nombre. Si alguien sube una foto ajena, la quitamos y esa cuenta ya no puede aportar fotos.
+    <ul><li>Tu foto, sacada por ti</li><li>Nunca copiada de tiendas, eBay, redes u otras webs</li><li>Con tu nombre como crédito</li><li>Puedes pedir que la quitemos cuando quieras</li></ul>
+  </div>
+
+  <h2>1. Qué fotos puedes compartir</h2>
+  <p>Cuando una carta no tiene foto en Nitsu Collectibles, puedes compartir la foto de tu carta con la comunidad. Al hacerlo declaras que:</p>
+  <ol>
+    <li><b>La foto la sacaste tú</b>, de una carta que tienes o tuviste en tus manos.</li>
+    <li><b>No la copiaste</b> de una tienda, una publicación de eBay o de otro marketplace, una red social, un buscador ni ningún otro sitio, ni es un escaneo hecho por otra persona.</li>
+    <li>La foto <b>no tiene marcas de agua</b>, logos de tiendas ni datos personales tuyos o de otras personas.</li>
+  </ol>
+
+  <h2>2. Qué permiso le das a Nitsu</h2>
+  <p>Le das a Nitsu Collectibles un permiso <b>gratuito, no exclusivo y sin límite de tiempo</b> para mostrar tu foto dentro de la app como la foto de esa carta, y para recortarla, enderezarla, achicarla y convertirla a otros formatos para ese fin. La foto se muestra con tu nombre de usuario como crédito.</p>
+  <p>La foto sigue siendo tuya: puedes usarla donde quieras. Nitsu no la vende ni la entrega a terceros como colección de imágenes.</p>
+  <p>El arte y el diseño de las cartas pertenecen a sus dueños (The Pokémon Company, Nintendo, Creatures y GAME FREAK). Nitsu Collectibles no está afiliado a ellos; tu foto sirve para identificar la carta.</p>
+
+  <h2>3. Tu responsabilidad</h2>
+  <p>Si compartes una foto que no es tuya, eres responsable frente a su autor por ese uso. Antes de publicarse, cada foto pasa por una revisión, pero esa revisión no reemplaza lo que tú declaras al compartirla.</p>
+
+  <h2>4. Qué puede hacer Nitsu</h2>
+  <ul>
+    <li><b>Aprobar o rechazar</b> cualquier foto, sin obligación de publicarla.</li>
+    <li><b>Quitar</b> una foto ya publicada en cualquier momento, por ejemplo, si recibe un reporte.</li>
+    <li><b>Bloquear los aportes</b> de una cuenta que comparta fotos ajenas. La cuenta sigue funcionando, pero ya no puede compartir fotos.</li>
+  </ul>
+
+  <h2>5. Quitar tu foto</h2>
+  <p>Puedes pedir que quitemos una foto que compartiste usando el formulario de abajo con el motivo "Otro". Al quitarla, la carta vuelve a quedar sin foto.</p>
+
+  <h2>6. Cambios a estos términos</h2>
+  <p>Si cambiamos estos términos, publicaremos una versión nueva en esta página y te pediremos aceptarla la próxima vez que compartas una foto. Las fotos que compartiste antes siguen con los términos que aceptaste en ese momento.</p>
+
+  <h2 id="reportar">Reportar una foto</h2>
+  <p>¿Una foto de Nitsu es tuya y no autorizaste su uso, o no corresponde a la carta? Cuéntanos y la revisamos. No necesitas una cuenta.</p>
+  <div class="box">
+    <form id="rep">
+      <div class="two">
+        <label>Expansión <input name="sid" placeholder="Por ejemplo: S8b, ja-S8b o swsh7" required autocomplete="off"></label>
+        <label>Número de la carta <input name="num" placeholder="Por ejemplo: 101" required autocomplete="off"></label>
+      </div>
+      <label>Motivo <select name="reason" required><option value="mine">Es mi foto y no autoricé su uso</option><option value="wrong">No corresponde a la carta</option><option value="other">Otro (por ejemplo, quitar una foto que compartí)</option></select></label>
+      <label>Tu correo o contacto <input name="contact" type="text" required autocomplete="email" placeholder="tu@correo.cl"></label>
+      <label>Detalles (opcional) <textarea name="message" placeholder="Por ejemplo: el link donde publicaste la foto original"></textarea></label>
+      <button>Enviar reporte</button>
+      <p class="msg" id="repMsg" role="status"></p>
+    </form>
+  </div>
+  <a class="back" href="/">← Volver a Nitsu Collectibles</a>
+</main>
+<script>
+// a card link like /terminos-fotos?sid=ja-S8b&num=101#reportar fills the form in
+const f = document.getElementById('rep'), msg = document.getElementById('repMsg'), q = new URLSearchParams(location.search);
+for (const k of ['sid', 'num', 'reason']) if (q.get(k)) f[k].value = q.get(k);
+f.addEventListener('submit', async e => {
+  e.preventDefault();
+  const b = f.querySelector('button'); b.disabled = true; msg.textContent = 'Enviando…'; msg.className = 'msg';
+  try {
+    const r = await fetch('/api/photo-reports', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(Object.fromEntries(new FormData(f))) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || 'No se pudo enviar (HTTP ' + r.status + ')');
+    f.reset(); msg.textContent = '¡Gracias! Recibimos tu reporte y lo vamos a revisar.'; msg.className = 'msg ok';
+  } catch (err) { msg.textContent = err.message; msg.className = 'msg err'; }
+  b.disabled = false;
+});
+</script>
+</body>
+</html>
