@@ -65,3 +65,57 @@ La Vitrina y la ficha SHALL usar primero una foto con permiso de imagen (las cop
 #### Scenario: Carta con foto propia
 - **WHEN** una impresión tiene nuestra copia de pokemontcg.io y además una foto de Bulbagarden Archives
 - **THEN** se muestra nuestra copia, sin marca violeta
+
+### Requirement: Orden por expansión
+La Vitrina SHALL ofrecer dos órdenes, "Por diseño" (el de hoy) y "Por expansión", y SHALL recordar el elegido en el navegador. En "Por expansión" SHALL mostrar una repisa por expansión, en una sola línea de tiempo por fecha de salida que mezcla regiones. Cada repisa SHALL mostrar el nombre, la región y el mes de salida de su expansión, y sus impresiones SHALL ir ordenadas por número de carta y, para cada número, por idioma, acabado y sello. Las reglas SHALL apagar las impresiones igual que en el orden por diseño.
+
+#### Scenario: Rocket Gang antes que Team Rocket
+- **WHEN** el usuario elige "Por expansión"
+- **THEN** la repisa "ロケット団" (Japón, 1997-11) aparece antes que "Team Rocket" (Internacional, 2000-04), y la de Jungle muestra #51 EN, #51 EN 1st Edition y luego #51 en francés y alemán
+
+#### Scenario: El orden se recuerda
+- **WHEN** el usuario elige "Por expansión" y recarga la página
+- **THEN** la Vitrina sigue ordenada por expansión
+
+### Requirement: Qué es una expansión
+Las impresiones en idiomas occidentales de una misma expansión internacional SHALL formar una sola expansión. Cada expansión japonesa SHALL ser propia, igual que cada china simplificada. Las impresiones en chino tradicional, tailandés, indonesio o coreano que pertenecen a una expansión japonesa SHALL formar su propia expansión, con su nombre local y la región de su idioma.
+
+#### Scenario: Expansión traducida
+- **WHEN** el Full tiene Eevee de "VMAXクライマックス" en japonés y en chino tradicional
+- **THEN** hay dos repisas: "VMAXクライマックス" (Japón) y "VMAX絕群壓軸" (China tradicional)
+
+### Requirement: Fecha de salida de una expansión
+La fecha de una expansión SHALL ser la más antigua entre sus impresiones. Si no hay ninguna, SHALL usarse la de su expansión japonesa (para las traducidas) y, si tampoco hay, la del catálogo. Las expansiones sin fecha SHALL ir al final de la línea de tiempo, en orden alfabético, con la leyenda "Fecha por confirmar".
+
+#### Scenario: Traducida sin fecha propia
+- **WHEN** "寶可夢卡牌151" (chino tradicional) no tiene fecha y "ポケモンカード151" sí (2023-06-18)
+- **THEN** la repisa china toma 2023-06 y queda junto a la japonesa, después de ella
+
+### Requirement: La foto calza con la variante
+La Vitrina y la ficha SHALL mostrar, para cada impresión, una foto que muestre su variante, en este orden: una foto propia subida, una foto con permiso y una foto solo local. Si ninguna calza, SHALL mostrar la foto de otra variante de la misma carta, atenuada y, en la ficha, con la nota "Foto de \<variante\> · falta esta variante". Una impresión MUST NOT mostrar como propia una foto de otra variante.
+
+#### Scenario: Team Rocket #55 unlimited sin foto propia
+- **WHEN** Team Rocket #55 unlimited solo tiene la foto compartida con la 1st Edition
+- **THEN** la vitrina la muestra atenuada y la ficha dice "Foto de la 1st Edition · falta esta variante"
+
+#### Scenario: La 1st Edition con su foto
+- **WHEN** se mira la Jungle #51 1st Edition
+- **THEN** muestra la foto compartida, sin nota ni atenuación
+
+### Requirement: Marcar y subir desde la ficha
+La ficha SHALL permitir, para la foto que se muestra, marcar qué variante muestra (entre las variantes de la misma carta) y subir o quitar la foto propia de la impresión. Los cambios SHALL verse en la vitrina sin recargar la página.
+
+#### Scenario: Corregir una foto
+- **WHEN** el usuario marca en la ficha que la foto de Gym Challenge #51 unlimited muestra la 1st Edition
+- **THEN** la unlimited pasa a mostrar la nota "Foto de la 1st Edition · falta esta variante", y la 1st Edition sigue mostrándola como propia
+
+### Requirement: Impresiones por verificar a la vista
+La Vitrina SHALL marcar en su etiqueta las impresiones por verificar y SHALL ofrecer el filtro "Por verificar (N)", que muestra solo esas. La ficha SHALL listar los motivos de una impresión por verificar, en lenguaje de coleccionista.
+
+#### Scenario: Ficha de una impresión dudosa
+- **WHEN** el usuario abre la ficha de una impresión que solo TCGdex conoce
+- **THEN** ve "Por verificar" con el motivo "Solo TCGdex dice que existe; pokemontcg.io, PokeCottage y TCGplayer conocen la carta"
+
+#### Scenario: Filtro
+- **WHEN** el usuario activa "Por verificar (N)"
+- **THEN** la vitrina muestra solo las N impresiones marcadas, y al desactivarlo vuelve a mostrar todo

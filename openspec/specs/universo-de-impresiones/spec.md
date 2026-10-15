@@ -91,3 +91,59 @@ Cada foto SHALL descargarse una sola vez a una carpeta local fuera de git y fuer
 #### Scenario: Foto que Limitless no tiene
 - **WHEN** Limitless responde 404 para una carta japonesa
 - **THEN** esa impresión queda sin foto de Limitless y las demás descargas siguen
+
+### Requirement: Qué variante muestra cada foto
+Cada foto de una impresión SHALL tener una variante mostrada. Si el usuario marcó a mano qué variante muestra la foto, SHALL valer esa marca. Si no, y la foto es compartida por la impresión sin sello y la 1st Edition de la misma carta (misma expansión, número e idioma), SHALL entenderse que muestra la 1st Edition. Si no se cumple ninguna de las dos, SHALL entenderse que muestra la variante de la impresión que la tiene. Las marcas SHALL guardarse como dato propio, con quién y cuándo las hizo.
+
+#### Scenario: Foto compartida de Jungle #51
+- **WHEN** pokemontcg.io da la misma foto a Jungle #51 sin sello y a la 1st Edition
+- **THEN** esa foto muestra la 1st Edition
+
+#### Scenario: Marca a mano
+- **WHEN** el usuario marca que el escaneo de Bulbapedia de Team Rocket #55 muestra la 1st Edition
+- **THEN** esa foto deja de contar como foto de la unlimited
+
+### Requirement: Fotos propias subidas
+El usuario SHALL poder subir una foto de una impresión (JPEG, PNG o WebP, hasta 8 MB) y quitarla. La foto SHALL guardarse en el almacenamiento propio (`IMAGE_DIR`) como dato propio de esa impresión y SHALL mostrar la variante de esa impresión.
+
+#### Scenario: Subir la unlimited de Team Rocket #55
+- **WHEN** el usuario sube su foto de Team Rocket #55 unlimited
+- **THEN** la impresión tiene un dato "foto" de la fuente "Dato propio", y la foto se sirve desde `/img/arma/`
+
+### Requirement: Fotos locales para la variante correcta
+Con las fotos solo locales encendidas, el importador de fotos SHALL buscar fotos también para las impresiones que tienen fotos, pero ninguna que muestre su variante.
+
+#### Scenario: Unlimited de Jungle #51
+- **WHEN** se piden las fotos locales y Jungle #51 sin sello solo tiene la foto compartida con la 1st Edition
+- **THEN** recibe el escaneo de Bulbapedia (`EeveeJungle51.jpg`) como foto solo local
+
+### Requirement: Correcciones de clasificación al fusionar fuentes
+Al fusionar las fuentes, el sistema SHALL tratar como holo cosmos una holo genérica (pokemontcg.io, TCGplayer, o TCGdex sin tipo de brillo) cuando una fuente específica (PokeCottage, o TCGdex con tipo de brillo) dice holo cosmos para la misma carta y ninguna fuente específica dice holo normal. SHALL poner en japonés las expansiones `jpn_*` de PokeCottage y en chino simplificado las `scn_*`. SHALL tratar como un solo sello dos nombres de sello de la misma carta y acabado cuando el de TCGdex es el final del de PokeCottage, y quedarse con el más completo.
+
+#### Scenario: Wizards Promo #11 holo
+- **WHEN** pokemontcg.io dice "Holo" y TCGdex, PokeCottage y TCGplayer dicen "Holo cosmos" para la Eevee Wizards Promo #11 inglesa
+- **THEN** hay una sola impresión, holo cosmos, con las cuatro fuentes
+
+#### Scenario: Promo japonesa marcada como International
+- **WHEN** PokeCottage trae `jpn_unp-157` (JR East Rally 2000) con región "International"
+- **THEN** la impresión queda en japonés, en las promos japonesas sin número
+
+### Requirement: Sellos exclusivos de Japón
+El sistema SHALL tener una lista de sellos exclusivos de Japón (JR Stamp Rally, también llamado JR East Rally 2000). Un dato que pone uno de esos sellos en una carta en idioma occidental MUST NOT crear una impresión: SHALL descartarse y contarse en el resumen de la importación como mal catalogado.
+
+#### Scenario: JR Stamp Rally en la Wizards Promo #11
+- **WHEN** TCGdex dice que la carta inglesa `basep-11` tiene una variante con el sello JR Stamp Rally
+- **THEN** no existe la impresión "Wizards Black Star Promos #11 · Inglés · JR Stamp Rally", y el resumen de TCGdex cuenta 1 dato mal catalogado
+
+### Requirement: Revisión de clasificación
+El sistema SHALL marcar como "por verificar" cada impresión dudosa, con todos sus motivos:
+- **región:** un sello exclusivo de Japón en un idioma occidental, una expansión japonesa en un idioma occidental o una expansión occidental en japonés;
+- **acabado:** la misma carta sin sello como holo y como holo cosmos;
+- **una sola fuente:** solo una fuente dice que existe y al menos otra conoce la carta;
+- **sin nombre:** la variante solo tiene un código.
+
+La revisión SHALL poder consultarse con `GET /api/audit/:dex` y SHALL venir en el Full.
+
+#### Scenario: Variante sin nombre
+- **WHEN** PokeCottage registra EX Unseen Forces #55 con la variante "X6M-1TY-0F6"
+- **THEN** esa impresión aparece por verificar con el motivo "sin nombre"
