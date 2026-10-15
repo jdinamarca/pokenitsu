@@ -332,6 +332,7 @@ Una opción nueva, separada de la app actual ([ADR 0020](docs/adr/0020-arma-tu-c
 
   Las combinaciones se guardan como **vistas** por cuenta; "Full" siempre está.
 - **La Vitrina** (maqueta AE del canvas, diseño en `apps/arma/DESIGN.md` y `PRODUCT.md`): repisas por diseño, contador "bajo luz / Full", y una ficha con el código de catálogo, tus copias (leídas de tu inventario **en solo lectura**) y de dónde sale cada dato.
+- **Ordenar la vitrina:** "Por diseño" (una repisa por ilustración) o "Por expansión" (una repisa por expansión en orden de salida, en una sola línea de tiempo con todas las regiones: Rocket Gang de Japón, 1997, va antes que Team Rocket, 2000). Las internacionales agrupan los idiomas occidentales; cada japonesa y cada china simplificada es propia; las traducidas al chino tradicional, tailandés, indonesio o coreano son su propia expansión, con su nombre local. La fecha es la de sus cartas, o la de su japonesa, o la del catálogo; las que no tienen van al final como "Fecha por confirmar". La elección se recuerda en el navegador.
 - **Datos:** esquema `arma` de la misma base (`printings`, `facts`, `sources`, `designs`, `views`, `source_cache`, `imports`), con migraciones propias en `apps/arma/server/migrations`. La app nueva solo escribe ahí. Para borrarla entera: `DROP SCHEMA arma CASCADE`.
 - **Fuera de esta versión:** editar equivalencias a mano, agregar variantes propias, el informe "Listo para producción" y otros Pokémon.
 

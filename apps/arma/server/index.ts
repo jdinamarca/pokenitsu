@@ -32,7 +32,9 @@ app.get<{ Params: { dex: string } }>('/api/full/:dex', async req => {
   const dex = dexOf(req.params.dex);
   const [printings, sources, last] = await Promise.all([
     pool.query(
-      `SELECT p.code, p.set_key, coalesce(cs.name_en, cs.name, p.set_name) AS set_name, p.number, p.lang, p.finish, p.stamp, p.name, p.artist, p.release, p.design_id, p.card_id, p.equiv_id,
+      `SELECT p.code, p.set_key, coalesce(cs.name_en, cs.name, p.set_name) AS set_name,
+              -- the printing's own name for its set (VMAX絕群壓軸 for the Chinese one of a Japanese set) and the catalog's date
+              p.set_name AS set_name_local, cs.release_date::text AS set_release, p.number, p.lang, p.finish, p.stamp, p.name, p.artist, p.release, p.design_id, p.card_id, p.equiv_id,
               d.sort_date AS design_date,
               coalesce(jsonb_object_agg(f.field, f.facts) FILTER (WHERE f.field IS NOT NULL), '{}'::jsonb) AS facts
        FROM arma.printings p
@@ -46,7 +48,7 @@ app.get<{ Params: { dex: string } }>('/api/full/:dex', async req => {
            AND NOT (NOT $2 AND field = 'image' AND source_id IN (SELECT id FROM arma.sources WHERE permission = 'local'))
          GROUP BY field) f ON true
        WHERE p.dex = $1
-       GROUP BY p.code, d.sort_date, cs.name_en, cs.name
+       GROUP BY p.code, d.sort_date, cs.name_en, cs.name, cs.release_date
        ORDER BY d.sort_date NULLS LAST, p.design_id, p.release NULLS LAST, p.lang, p.finish, p.stamp NULLS FIRST`,
       [dex, localPhotosOn()],
     ),

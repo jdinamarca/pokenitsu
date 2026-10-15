@@ -20,6 +20,10 @@ export interface Printing {
   code: string;
   set_key: string;
   set_name: string | null;
+  /** the printing's own name for its set (local script for Asian ones) */
+  set_name_local: string | null;
+  /** the catalog's release date of the set */
+  set_release: string | null;
   number: string;
   lang: string;
   finish: ArmaFinish;

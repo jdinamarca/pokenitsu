@@ -29,7 +29,7 @@ export function Showcase({ shelves, result, sources, copies, selected, onSelect 
                 p={p}
                 lit={result.get(p.code)?.in ?? true}
                 owned={(copies.get(p.code) || []).reduce((n, c) => n + c.qty, 0)}
-                {...shown(pictureOf(p, sources), s.picture)}
+                {...shown(pictureOf(p, sources), s.fallback(p))}
                 tone={STICKER[existsPermission(p, sources)].tone}
                 selected={selected === p.code}
                 onSelect={onSelect}

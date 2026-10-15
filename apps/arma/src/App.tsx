@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { applyRules, type ArmaRules, type RuleId } from '@pokenitsu/core';
 import { LogIn, RefreshCw } from 'lucide-react';
 import { api, ApiError, type Copy, type Full, type SavedView, type Source } from './api.ts';
-import { copiesByCode, REDUCES, RULES, shelvesOf, STICKER } from './model.ts';
+import { copiesByCode, REDUCES, RULES, shelvesBySet, shelvesOf, STICKER, type Order } from './model.ts';
 import { Rail } from './components/Rail.tsx';
 import { Showcase } from './components/Showcase.tsx';
 import { Detail } from './components/Detail.tsx';
@@ -38,6 +38,22 @@ export function App() {
   const [active, setActive] = useState<RuleId | null>('onlyEnglish');
   const [selected, setSelected] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
+  // the case's order, remembered in this browser (a convenience: without storage it is "by design")
+  const [order, setOrder] = useState<Order>(() => {
+    try {
+      return localStorage.getItem('arma.orden') === 'set' ? 'set' : 'design';
+    } catch {
+      return 'design';
+    }
+  });
+  const chooseOrder = (o: Order) => {
+    setOrder(o);
+    try {
+      localStorage.setItem('arma.orden', o);
+    } catch {
+      /* private window: only for this visit */
+    }
+  };
 
   // fetching never touches state; applying the result does, once it arrives
   const apply = useCallback((r: Loaded) => {
@@ -69,7 +85,10 @@ export function App() {
       ),
     [printings, rules],
   );
-  const shelves = useMemo(() => shelvesOf(printings, sources), [printings, sources]);
+  const shelves = useMemo(
+    () => (order === 'set' ? shelvesBySet(printings, sources) : shelvesOf(printings, sources)),
+    [order, printings, sources],
+  );
   const owned = useMemo(() => copiesByCode(copies), [copies]);
   const lit = useMemo(() => [...result.values()].filter(r => r.in).length, [result]);
   const missing = useMemo(() => printings.filter(p => result.get(p.code)?.in && !owned.has(p.code)).length, [printings, result, owned]);
@@ -144,7 +163,7 @@ export function App() {
 
   const sel = printings.find(p => p.code === selected) || null;
   const activeRule = RULES.find(r => r.id === active);
-  const shelfPicture = sel ? (shelves.find(s => s.printings.includes(sel))?.picture ?? null) : null;
+  const shelfPicture = sel ? (shelves.find(s => s.printings.includes(sel))?.fallback(sel) ?? null) : null;
   return (
     <div className="app">
       <Rail
@@ -188,6 +207,25 @@ export function App() {
               </li>
             ))}
           </ul>
+          <div className="order" role="group" aria-label="Ordenar la vitrina">
+            <span>Ordenar</span>
+            {(
+              [
+                ['design', 'Por diseño'],
+                ['set', 'Por expansión'],
+              ] as const
+            ).map(([o, label]) => (
+              <button
+                key={o}
+                type="button"
+                className={'view' + (order === o ? ' sel' : '')}
+                aria-pressed={order === o}
+                onClick={() => chooseOrder(o)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </header>
         <Showcase shelves={shelves} result={result} sources={sources} copies={owned} selected={selected} onSelect={setSelected} />
       </main>
