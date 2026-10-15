@@ -5,6 +5,7 @@ import {
   catalogCode,
   FULL_RULES,
   mergeClaims,
+  photoShows,
   printingKey,
   variantFromInventory,
   variantFromPokecottage,
@@ -169,5 +170,22 @@ describe('2.3 reglas', () => {
   it('nunca quita impresiones del Full: siempre devuelve una respuesta por cada una', () => {
     const r = applyRules(full, { onlyEnglish: true, asiaAsJapanese: true, stampsAndDecks: false, wcd: false, jumbo: false });
     expect(r.size).toBe(full.length);
+  });
+});
+
+describe('photoShows', () => {
+  const unlimited = { stamp: null };
+  const first = { stamp: '1st-edition' };
+  it('a photo shared by the unlimited and the 1st Edition shows the 1st Edition', () => {
+    expect(photoShows(unlimited, [unlimited, first])).toBe('1st-edition');
+    expect(photoShows(first, [unlimited, first])).toBe('1st-edition');
+  });
+  it('a photo only the unlimited has shows the unlimited', () => {
+    expect(photoShows(unlimited, [unlimited])).toBe('');
+    expect(photoShows({ stamp: 'pokemon-center' }, [{ stamp: 'pokemon-center' }])).toBe('pokemon-center');
+  });
+  it('a mark made by hand wins, also a mark back to the unlimited', () => {
+    expect(photoShows(unlimited, [unlimited], '1st-edition')).toBe('1st-edition');
+    expect(photoShows(first, [unlimited, first], '')).toBe('');
   });
 });

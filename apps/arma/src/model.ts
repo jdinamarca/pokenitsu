@@ -1,6 +1,6 @@
 // What the screen derives from the Full: labels, the permission sticker of each printing, shelves and pictures
-import { normNumber, variantLabel, type ArmaRules, type RuleId } from '@pokenitsu/core';
-import type { Copy, Permission, Printing, Source } from './api.ts';
+import { normNumber, photoShows, STAMP_LABEL, variantLabel, type ArmaRules, type RuleId } from '@pokenitsu/core';
+import type { Copy, FactValue, Permission, Printing, Source } from './api.ts';
 
 export const LANG_NAME: Record<string, string> = {
   EN: 'Inglés',
@@ -52,22 +52,59 @@ export interface Picture {
   /** a photo for local use only (fotos-solo-local): shown with the violet mark */
   local: boolean;
   source: string;
-}
-/** a picture only from a source allowed to show it: our own copy first, then TCGdex;
- *  a photo for local use only just when there is none of those */
-export function pictureOf(p: Printing, sources: Map<string, Source>): Picture | null {
-  const imgs = (p.facts.image || []).filter(f => f.value && sources.get(f.source)?.images);
-  const allowed = imgs.filter(f => sources.get(f.source)?.permission !== 'local');
-  const f = allowed.find(f => f.value!.startsWith('/img/')) || allowed[0] || imgs[0];
-  return f
-    ? { src: f.value!, local: sources.get(f.source)?.permission === 'local', source: sources.get(f.source)?.name || f.source }
-    : null;
+  /** the photo shows another variant of the card (fotos-por-variante): "la 1st Edition", "la versión sin sello" */
+  other?: string;
 }
 
-// the design's picture: one allowed to be shown if any printing has it, a local-only one otherwise
+/** each photo of the Full with the variant it shows (photoShows: a mark by hand, or the automatic rule) */
+export function withPhotoShows(printings: Printing[], marks: Record<string, string>): Printing[] {
+  const card = (p: Printing) => `${p.set_key}|${p.number}|${p.lang}`;
+  const holders = new Map<string, Printing[]>();
+  for (const p of printings)
+    for (const src of new Set((p.facts.image || []).map(f => f.value).filter(Boolean)))
+      holders.set(`${card(p)}|${src}`, [...(holders.get(`${card(p)}|${src}`) || []), p]);
+  return printings.map(p =>
+    p.facts.image
+      ? {
+          ...p,
+          facts: {
+            ...p.facts,
+            image: p.facts.image.map(f =>
+              f.value ? { ...f, shows: photoShows(p, holders.get(`${card(p)}|${f.value}`) || [p], marks[f.value]) } : f,
+            ),
+          },
+        }
+      : p,
+  );
+}
+
+/** "la 1st Edition", "la versión sin sello", "la Pokémon Center": the variant a photo shows, for the sheet's note */
+export const showsLabel = (shows: string) => (shows ? `la ${STAMP_LABEL[shows] || shows}` : 'la versión sin sello');
+
+/** a picture that shows the printing's own variant: your upload first, then our copy, TCGdex and the other allowed
+ *  sources, and a photo for local use only after those; when none fits, another variant's photo of the same card
+ *  (marked with `other`, never shown as the printing's own) */
+export function pictureOf(p: Printing, sources: Map<string, Source>): Picture | null {
+  const imgs = (p.facts.image || []).filter(f => f.value && sources.get(f.source)?.images);
+  const perm = (f: FactValue) => sources.get(f.source)?.permission;
+  const rank = (f: FactValue) => (f.source === 'own' ? 0 : f.value!.startsWith('/img/') ? 1 : perm(f) !== 'local' ? 2 : 3);
+  const own = p.stamp || '';
+  const best = (fs: FactValue[]) => [...fs].sort((a, b) => rank(a) - rank(b))[0];
+  const f = best(imgs.filter(f => (f.shows ?? own) === own)) || best(imgs);
+  if (!f) return null;
+  const shows = f.shows ?? own;
+  return {
+    src: f.value!,
+    local: perm(f) === 'local',
+    source: sources.get(f.source)?.name || f.source,
+    ...(shows !== own ? { other: showsLabel(shows) } : {}),
+  };
+}
+
+// the design's picture: one that fits its printing and may be shown if any has it; a local-only one otherwise
 function designPicture(ps: Printing[], sources: Map<string, Source>): Picture | null {
   const pics = ps.map(p => pictureOf(p, sources)).filter((x): x is Picture => !!x);
-  return pics.find(x => !x.local) || pics[0] || null;
+  return pics.find(x => !x.local && !x.other) || pics.find(x => !x.other) || pics[0] || null;
 }
 
 export const variantName = (p: Printing): string => {

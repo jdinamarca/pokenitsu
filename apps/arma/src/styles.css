@@ -556,6 +556,8 @@ button {
 
 /* ---------- the detail ---------- */
 .detail {
+  /* the containing block of its screen-reader texts: without it they hang below the page and stretch it */
+  position: relative;
   background: var(--room-2);
   border-left: 1px solid var(--room-line);
   padding: 22px;
@@ -590,6 +592,67 @@ button {
   object-fit: cover;
   display: block;
   transition: filter var(--dim) var(--ease-out);
+}
+/* the sheet's photo tools (fotos-por-variante) */
+.photo-tools {
+  display: grid;
+  gap: 8px;
+  margin: 10px 0 4px;
+  font-size: 12.5px;
+  color: var(--ink-mute);
+}
+.photo-tools .field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.photo-tools select {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--room-line);
+  background: var(--room-2);
+  color: var(--ink);
+  font: inherit;
+}
+.photo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.photo-actions .view {
+  background: var(--room-2);
+  border-color: var(--room-line);
+  color: var(--ink);
+  cursor: pointer;
+}
+.photo-actions .view:hover {
+  background: var(--room-line);
+}
+.upload input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+.upload {
+  position: relative;
+}
+.upload:focus-within {
+  outline: 2px solid var(--light);
+  outline-offset: 2px;
+}
+.upload.busy,
+.photo-actions .view:disabled {
+  opacity: 0.6;
+}
+.photo-error {
+  color: var(--none);
+}
+/* another printing's or another variant's photo, dimmed like on the case */
+.big img.ref {
+  opacity: 0.82;
 }
 .big.off img {
   filter: grayscale(1) brightness(0.45);

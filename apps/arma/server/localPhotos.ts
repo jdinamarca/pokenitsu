@@ -2,7 +2,7 @@
 // with no photo from a source allowed to show it. Each file is downloaded once to LOCAL_IMAGE_DIR and recorded as an
 // image fact of its source (permission 'local'), served at /img-local/… only while ARMA_FOTOS_LOCALES=1.
 import { basename, join } from 'node:path';
-import { normNumber } from '@pokenitsu/core';
+import { normNumber, photoShows } from '@pokenitsu/core';
 import { pool, tx } from './db.ts';
 import { LOCAL_IMAGE_DIR, localPhotosOn } from './local.ts';
 import { intlSetByName, loadCatalog, nameKey } from './sources/catalog.ts';
@@ -15,6 +15,10 @@ interface Target {
   number: string;
   lang: string;
   pc_ref: string | null;
+}
+interface Holder extends Target {
+  stamp: string | null;
+  card: string;
 }
 interface Found {
   code: string;
@@ -42,7 +46,7 @@ const fileOf = (url: string) =>
     .slice(-120);
 
 /** PokeCottage: the photo of each master-set entry, matched to its printing by the entry id kept as ref */
-async function pokecottage(dex: number, species: string, targets: Target[]): Promise<Found[]> {
+async function pokecottage(dex: number, species: string, targets: Holder[], all: Holder[]): Promise<Found[]> {
   const url = `https://pokecottagecdn.com/mastersets/data/${dex}-${nameKey(species)}.json`;
   // its own cache key: the text importer's cache (without any picture URL) stays as it is
   const data = await fetchJson<{ cards: { id: string; url: string | null }[] }>(url, {
@@ -56,9 +60,17 @@ async function pokecottage(dex: number, species: string, targets: Target[]): Pro
   });
   if (!data) throw new Error('PokeCottage no trajo el master set');
   const byId = new Map(data.cards.filter(c => c.url).map(c => [c.id, c.url!]));
+  // the same picture for two entries of one card (unlimited and 1st Edition) shows only one of them: photoShows says which
+  const holders = new Map<string, Holder[]>();
+  for (const h of all) {
+    const u = h.pc_ref && byId.get(h.pc_ref);
+    if (u) holders.set(`${h.card}|${u}`, [...(holders.get(`${h.card}|${u}`) || []), h]);
+  }
   return targets
     .filter(t => t.pc_ref && byId.has(t.pc_ref))
-    .map(t => ({ code: t.code, source: 'pokecottage-fotos', url: byId.get(t.pc_ref!)!, file: '' }));
+    .map(t => ({ t, url: byId.get(t.pc_ref!)! }))
+    .filter(({ t, url }) => photoShows(t, holders.get(`${t.card}|${url}`) || [t]) === (t.stamp || ''))
+    .map(({ t, url }) => ({ code: t.code, source: 'pokecottage-fotos', url, file: '' }));
 }
 
 /** Limitless: Japanese set code + number with 3 digits (SV2a 133 → SV2a_133_R_JP_LG.png); only the Japanese printing,
@@ -99,17 +111,36 @@ async function bulbagarden(species: string, targets: Target[]): Promise<Found[]>
     const t = key ? byCard.get(`${key}|${normNumber(num)}`) : undefined;
     if (t) titles.set(`${name!.trim()} (${set!.trim()} ${num!.trim()})`, t);
   }
-  const found: Found[] = [];
+  // the card's own scan: the page's file whose name ends with its set and number ("…NeoDiscovery38.jpg"); the page's
+  // lead image is sometimes another card (Neo Discovery 38 → a Premium File promo)
+  const alnum = (x: string) => x.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const files = new Map<string, Target>();
   const list = [...titles.keys()];
-  for (let i = 0; i < list.length; i += 50) {
-    const batch = list.slice(i, i + 50);
+  for (let i = 0; i < list.length; i += 10) {
+    const batch = list.slice(i, i + 10);
     const r = await fetchJson<{
-      query?: { normalized?: { from: string; to: string }[]; pages?: Record<string, { title: string; original?: { source: string } }> };
-    }>(`${API}?action=query&prop=pageimages&piprop=original&format=json&titles=${encodeURIComponent(batch.join('|'))}`);
+      query?: { normalized?: { from: string; to: string }[]; pages?: Record<string, { title: string; images?: { title: string }[] }> };
+    }>(`${API}?action=query&prop=images&imlimit=500&format=json&titles=${encodeURIComponent(batch.join('|'))}`);
     const back = new Map((r?.query?.normalized || []).map(n => [n.to, n.from]));
     for (const p of Object.values(r?.query?.pages || {})) {
-      const t = titles.get(back.get(p.title) || p.title);
-      if (t && p.original?.source) found.push({ code: t.code, source: 'bulbagarden', url: p.original.source, file: '' });
+      const title = back.get(p.title) || p.title;
+      const t = titles.get(title);
+      const end = alnum(title.replace(/^.*\(|\)$/g, ''));
+      const file = (p.images || []).find(im => /\.(jpe?g|png)$/i.test(im.title) && alnum(im.title.replace(/\.\w+$/, '')).endsWith(end));
+      if (t && file) files.set(file.title, t);
+    }
+  }
+  const found: Found[] = [];
+  const names = [...files.keys()];
+  for (let i = 0; i < names.length; i += 50) {
+    const r = await fetchJson<{
+      query?: { normalized?: { from: string; to: string }[]; pages?: Record<string, { title: string; imageinfo?: { url: string }[] }> };
+    }>(`${API}?action=query&prop=imageinfo&iiprop=url&format=json&titles=${encodeURIComponent(names.slice(i, i + 50).join('|'))}`);
+    const back = new Map((r?.query?.normalized || []).map(n => [n.to, n.from]));
+    for (const p of Object.values(r?.query?.pages || {})) {
+      const t = files.get(back.get(p.title) || p.title);
+      const u = p.imageinfo?.[0]?.url;
+      if (t && u) found.push({ code: t.code, source: 'bulbagarden', url: u, file: '' });
     }
   }
   return found;
@@ -128,19 +159,28 @@ export function importLocalPhotos(dex: number): Promise<PhotoSummary> {
 
 async function run(dex: number): Promise<PhotoSummary> {
   const { en } = await speciesNames(dex);
-  // the printings with no photo from a source allowed to show it
-  const { rows: targets } = await pool.query<Target>(
-    `SELECT p.code, p.set_key, p.number, p.lang,
-            (SELECT ref FROM arma.facts WHERE printing_code = p.code AND source_id = 'pokecottage' AND field = 'exists') AS pc_ref
-     FROM arma.printings p
-     WHERE p.dex = $1 AND NOT EXISTS (
-       SELECT 1 FROM arma.facts f JOIN arma.sources s ON s.id = f.source_id
-       WHERE f.printing_code = p.code AND f.field = 'image' AND s.images AND s.permission <> 'local')`,
+  // the printings with no photo, from a source allowed to show it, that shows their own variant (fotos-por-variante):
+  // an unlimited whose only photo is the one shared with its 1st Edition still needs one
+  const { rows } = await pool.query<Target & { stamp: string | null; card: string; allowed: string[] }>(
+    `SELECT p.code, p.set_key, p.number, p.lang, p.stamp, p.set_key || '|' || p.number || '|' || p.lang AS card,
+            (SELECT ref FROM arma.facts WHERE printing_code = p.code AND source_id = 'pokecottage' AND field = 'exists') AS pc_ref,
+            coalesce((SELECT array_agg(f.value) FROM arma.facts f JOIN arma.sources s ON s.id = f.source_id
+                      WHERE f.printing_code = p.code AND f.field = 'image' AND s.images AND s.permission <> 'local'), '{}') AS allowed
+     FROM arma.printings p WHERE p.dex = $1`,
     [dex],
+  );
+  const marks = new Map(
+    (await pool.query<{ src: string; shows: string }>('SELECT src, shows FROM arma.photo_marks')).rows.map(m => [m.src, m.shows]),
+  );
+  // who else of the same card has each photo
+  const holders = new Map<string, { stamp: string | null }[]>();
+  for (const r of rows) for (const src of r.allowed) holders.set(`${r.card}|${src}`, [...(holders.get(`${r.card}|${src}`) || []), r]);
+  const targets = rows.filter(
+    r => !r.allowed.some(src => photoShows(r, holders.get(`${r.card}|${src}`) || [r], marks.get(src)) === (r.stamp || '')),
   );
   const summary: PhotoSummary = {};
   const plan: [string, () => Promise<Found[]> | Found[]][] = [
-    ['pokecottage-fotos', () => pokecottage(dex, en, targets)],
+    ['pokecottage-fotos', () => pokecottage(dex, en, targets, rows)],
     ['limitless', () => limitless(targets)],
     ['bulbagarden', () => bulbagarden(en, targets)],
   ];
@@ -172,6 +212,14 @@ async function run(dex: number): Promise<PhotoSummary> {
     }
   }
   await tx(async c => {
+    // a source that answered replaces its photos of this Pokémon: one that no longer fits its printing goes away
+    for (const [source, r] of Object.entries(summary))
+      if (r.ok)
+        await c.query(
+          `DELETE FROM arma.facts f USING arma.printings p
+           WHERE p.code = f.printing_code AND p.dex = $1 AND f.field = 'image' AND f.source_id = $2 AND NOT (f.printing_code = ANY($3))`,
+          [dex, source, saved.filter(x => x.source === source).map(x => x.code)],
+        );
     for (const f of saved)
       await c.query(
         `INSERT INTO arma.facts (printing_code, field, source_id, value, ref) VALUES ($1, 'image', $2, $3, $4)

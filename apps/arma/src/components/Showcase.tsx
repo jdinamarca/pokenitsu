@@ -58,7 +58,8 @@ interface ItemProps {
 // what the case shows for a printing: its own picture, or the design's
 const shown = (own: Picture | null, design: Picture | null) => {
   const pic = own || design;
-  return { img: pic?.src ?? null, isRef: !own && !!design, local: !!pic?.local };
+  // another printing's picture, or another variant's: shown dimmed, never as the printing's own
+  return { img: pic?.src ?? null, isRef: (!own && !!design) || !!pic?.other, local: !!pic?.local };
 };
 
 const Item = memo(function Item({ p, lit, owned, img, isRef, local, tone, selected, onSelect }: ItemProps) {

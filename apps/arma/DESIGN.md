@@ -208,7 +208,7 @@ Chips de fieltro hondo con borde de fieltro; la elegida pasa a cartulina. "Full"
 
 ### Impresión en la vitrina (componente firma)
 
-La carta a 112px con su foto real y, debajo, una etiqueta de cartulina con idioma y variante en Archivo Narrow y el sticker de su mejor permiso. Si la foto es solo para uso local, lleva un sticker violeta de 10px en la esquina inferior izquierda de la foto, con un anillo de grafito para separarlo de la ilustración; en la ficha, la foto lleva la nota "Foto solo para uso local · fuente".
+La carta a 112px con su foto real y, debajo, una etiqueta de cartulina con idioma y variante en Archivo Narrow y el sticker de su mejor permiso. Si la foto es solo para uso local, lleva un sticker violeta de 10px en la esquina inferior izquierda de la foto, con un anillo de grafito para separarlo de la ilustración; en la ficha, la foto lleva la nota "Foto solo para uso local · fuente". Una foto de otra variante (la 1st Edition en una unlimited) se ve atenuada como las de referencia, con la nota "Foto de la 1st Edition · falta esta variante". Bajo la foto de la ficha van las herramientas de foto en grafito: "Esta foto muestra" (un select) y "Subir tu foto" / "Quitar tu foto" (botones como los chips de vista).
 
 - **Sin foto propia:** usa la foto de otra impresión del mismo diseño, un poco atenuada.
 - **Copias:** una pastilla de luz cálida (×2) en la esquina.

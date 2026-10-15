@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { applyRules, type ArmaRules, type RuleId } from '@pokenitsu/core';
 import { LogIn, RefreshCw } from 'lucide-react';
 import { api, ApiError, type Copy, type Full, type SavedView, type Source } from './api.ts';
-import { copiesByCode, REDUCES, RULES, shelvesBySet, shelvesOf, STICKER, type Order } from './model.ts';
+import { copiesByCode, REDUCES, RULES, shelvesBySet, shelvesOf, STICKER, withPhotoShows, type Order } from './model.ts';
 import { Rail } from './components/Rail.tsx';
 import { Showcase } from './components/Showcase.tsx';
 import { Detail } from './components/Detail.tsx';
@@ -38,6 +38,8 @@ export function App() {
   const [active, setActive] = useState<RuleId | null>('onlyEnglish');
   const [selected, setSelected] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
+  // what variant each photo shows, marked by hand (fotos-por-variante); changed from the sheet without reloading
+  const [marks, setMarks] = useState<Record<string, string>>({});
   // the case's order, remembered in this browser (a convenience: without storage it is "by design")
   const [order, setOrder] = useState<Order>(() => {
     try {
@@ -59,6 +61,7 @@ export function App() {
   const apply = useCallback((r: Loaded) => {
     if (r.kind === 'ready') {
       setFull(r.full);
+      setMarks(r.full.photoMarks || {});
       setCopies(r.copies);
       setViews(r.views);
     }
@@ -67,6 +70,31 @@ export function App() {
     );
   }, []);
   const refresh = useCallback(() => fetchAll().then(apply), [apply]);
+  // the sheet's photo tools: a mark changes the case right away; an upload brings the Full again
+  const markPhoto = useCallback(async (src: string, shows: string | null) => {
+    if (shows === null) await api.unmarkPhoto(src);
+    else await api.markPhoto(src, shows);
+    setMarks(m => {
+      const next = { ...m };
+      if (shows === null) delete next[src];
+      else next[src] = shows;
+      return next;
+    });
+  }, []);
+  const uploadPhoto = useCallback(
+    async (code: string, file: File) => {
+      await api.uploadPhoto(code, file);
+      await refresh();
+    },
+    [refresh],
+  );
+  const removePhoto = useCallback(
+    async (code: string) => {
+      await api.removePhoto(code);
+      await refresh();
+    },
+    [refresh],
+  );
   useEffect(() => {
     let alive = true;
     void fetchAll().then(r => alive && apply(r));
@@ -76,7 +104,7 @@ export function App() {
   }, [apply]);
 
   const sources = useMemo(() => new Map<string, Source>((full?.sources || []).map(s => [s.id, s])), [full]);
-  const printings = useMemo(() => full?.printings || [], [full]);
+  const printings = useMemo(() => withPhotoShows(full?.printings || [], marks), [full, marks]);
   const result = useMemo(
     () =>
       applyRules(
@@ -235,6 +263,11 @@ export function App() {
         result={sel ? result.get(sel.code) : undefined}
         copies={sel ? owned.get(sel.code) || [] : []}
         sources={sources}
+        siblings={sel ? printings.filter(x => x.set_key === sel.set_key && x.number === sel.number && x.lang === sel.lang) : []}
+        marks={marks}
+        onMark={markPhoto}
+        onUpload={uploadPhoto}
+        onRemovePhoto={removePhoto}
       />
     </div>
   );
