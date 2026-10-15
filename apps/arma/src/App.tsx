@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { applyRules, type ArmaRules, type RuleId } from '@pokenitsu/core';
 import { CircleHelp, LogIn, RefreshCw } from 'lucide-react';
 import { api, ApiError, type Copy, type Full, type SavedView, type Source } from './api.ts';
-import { copiesByCode, REDUCES, RULES, shelvesBySet, shelvesOf, STICKER, withPhotoShows, type Order } from './model.ts';
+import { copiesByCode, REDUCES, RULES, shelvesBySet, shelvesOf, STICKER, withPhotoShows, cardOf, type Order } from './model.ts';
 import { Rail } from './components/Rail.tsx';
 import { Showcase } from './components/Showcase.tsx';
 import { Detail } from './components/Detail.tsx';
@@ -288,7 +288,7 @@ export function App() {
         result={sel ? result.get(sel.code) : undefined}
         copies={sel ? owned.get(sel.code) || [] : []}
         sources={sources}
-        siblings={sel ? printings.filter(x => x.set_key === sel.set_key && x.number === sel.number && x.lang === sel.lang) : []}
+        siblings={sel ? printings.filter(x => cardOf(x) === cardOf(sel)) : []}
         marks={marks}
         onMark={markPhoto}
         onUpload={uploadPhoto}

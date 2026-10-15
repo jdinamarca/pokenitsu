@@ -11,6 +11,8 @@ import {
   type MergedPrinting,
 } from '@pokenitsu/core';
 import { pool, tx } from './db.ts';
+import { deducedClaims, spanishClaims } from './languages.ts';
+import { wikidexSpanish } from './sources/wikidex.ts';
 import { cardIdOf, catalogClaims, loadCatalog } from './sources/catalog.ts';
 import { stats } from './sources/http.ts';
 import { bulbapediaLinks } from './sources/bulbapedia.ts';
@@ -82,6 +84,19 @@ async function run(dex: number): Promise<ImportSummary> {
     links = r.links;
     return { links: r.links.length, designs: r.designs, unmatched: r.unmatched };
   });
+  // other languages, from what the sources above brought (cartas-en-otros-idiomas): Spanish confirmed by WikiDex,
+  // then Italian and Portuguese deduced from TCGdex's set lists
+  await attempt(['wikidex'], async () => {
+    const r = await wikidexSpanish(cat, en);
+    return {
+      claims: spanishClaims(r.cards, claims),
+      pages: r.pages,
+      notReleased: r.notReleased,
+      unknown: r.unknown,
+      unmatched: r.unmatched,
+    };
+  });
+  await attempt(['tcgdex-expansiones'], () => deducedClaims(cat, claims));
 
   // Bulbapedia down: its links are rebuilt from the equivalences it backed in the last import, so none is lost
   if (!sources.bulbapedia?.ok) {

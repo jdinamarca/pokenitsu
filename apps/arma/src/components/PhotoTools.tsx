@@ -30,7 +30,7 @@ export function PhotoTools({ p, picture, siblings, mark, onMark, onUpload, onRem
     }
   };
   // one option per variant of the card, named like its tag ("1st Edition", "Normal")
-  const variants = [...new Map(siblings.map(s => [s.stamp || '', s.stamp ? variantName(s) : `${variantName(s)} (sin sello)`])).entries()];
+  const variants = [...new Map(siblings.map(s => [s.stamp || '', s.stamp ? variantName(s) : 'Sin sello'])).entries()];
   const uploaded = (p.facts.image || []).some(f => f.source === 'own');
   const src = picture?.src;
   return (
