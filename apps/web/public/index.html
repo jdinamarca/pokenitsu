@@ -702,7 +702,7 @@ button.lock.on{background:color-mix(in srgb,#8a3ffc 18%,var(--panel));border-col
 .profile summary{display:flex;align-items:center;gap:8px;padding:4px 12px 4px 4px}
 .profile .mename{font-weight:700}
 @media (max-width:640px){.profile .mename{display:none}.profile summary{padding:4px}}
-.profilepop{width:min(420px,calc(100vw - 24px));padding:18px;gap:14px}
+.profilepop{width:min(420px,calc(100vw - 24px));padding:18px;gap:14px;max-height:calc(100dvh - 80px);overflow-y:auto;overscroll-behavior:contain}
 .profilepop .ph{display:flex;align-items:center;gap:14px}
 .profilepop .ph b{font-size:18px}
 .profilepop .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
