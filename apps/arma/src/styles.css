@@ -343,7 +343,7 @@ button {
   color: var(--ink-mute);
 }
 .order {
-  grid-column: 1 / -1;
+  grid-column: 1;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -680,6 +680,59 @@ button {
   font-size: 13px;
   margin-top: 4px;
 }
+/* the classification check (corregir-clasificacion-de-cartas): a filter, a mark on the tag, the reasons in the sheet */
+.audit-filter {
+  /* beside "Ordenar", on the same row */
+  grid-column: 2;
+  align-self: center;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--room-line);
+  background: var(--room-2);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.chip:hover {
+  background: var(--room-line);
+}
+.chip.sel {
+  background: var(--stock);
+  border-color: var(--stock);
+  color: var(--stock-ink);
+}
+.tag .doubt {
+  flex: none;
+  margin-left: auto;
+  color: var(--stock-ink);
+  opacity: 0.75;
+}
+.doubts {
+  border: 1px dashed #6b6457;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.doubts h3 {
+  font: 600 11px Archivo;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink);
+  margin: 0 0 6px;
+}
+.doubts ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+  font-size: 12.5px;
+  color: var(--ink-mute);
+}
 .status {
   border-radius: 8px;
   padding: 8px 12px;
@@ -847,6 +900,10 @@ button {
   .top {
     grid-template-columns: 1fr;
     padding: 18px 16px 12px;
+  }
+  .order,
+  .audit-filter {
+    grid-column: 1;
   }
   .count .n {
     font-size: 52px;

@@ -1,3 +1,4 @@
+import { CircleHelp } from 'lucide-react';
 import { memo } from 'react';
 import type { RuleResult } from '@pokenitsu/core';
 import type { Copy, Printing, Source } from '../api.ts';
@@ -10,10 +11,11 @@ interface Props {
   copies: Map<string, Copy[]>;
   selected: string | null;
   onSelect: (code: string) => void;
+  audit: Record<string, { kind: string; text: string }[]>;
 }
 
 /** the case: one shelf per design; what a rule leaves out stays in place, in the dark */
-export function Showcase({ shelves, result, sources, copies, selected, onSelect }: Props) {
+export function Showcase({ shelves, result, sources, copies, audit, selected, onSelect }: Props) {
   return (
     <div className="case" role="region" aria-label="Vitrina">
       {shelves.map(s => (
@@ -31,6 +33,7 @@ export function Showcase({ shelves, result, sources, copies, selected, onSelect 
                 owned={(copies.get(p.code) || []).reduce((n, c) => n + c.qty, 0)}
                 {...shown(pictureOf(p, sources), s.fallback(p))}
                 tone={STICKER[existsPermission(p, sources)].tone}
+                doubtful={!!audit[p.code]}
                 selected={selected === p.code}
                 onSelect={onSelect}
               />
@@ -52,6 +55,8 @@ interface ItemProps {
   /** the picture is for local use only */
   local: boolean;
   tone: string;
+  /** the classification check marked it: worth checking */
+  doubtful: boolean;
   selected: boolean;
   onSelect: (code: string) => void;
 }
@@ -62,7 +67,7 @@ const shown = (own: Picture | null, design: Picture | null) => {
   return { img: pic?.src ?? null, isRef: (!own && !!design) || !!pic?.other, local: !!pic?.local };
 };
 
-const Item = memo(function Item({ p, lit, owned, img, isRef, local, tone, selected, onSelect }: ItemProps) {
+const Item = memo(function Item({ p, lit, owned, img, isRef, local, tone, doubtful, selected, onSelect }: ItemProps) {
   return (
     <li>
       <button
@@ -70,7 +75,7 @@ const Item = memo(function Item({ p, lit, owned, img, isRef, local, tone, select
         className={'print' + (lit ? '' : ' off') + (selected ? ' sel' : '')}
         aria-pressed={selected}
         title={p.code}
-        aria-label={`${p.name || 'Carta'} · ${p.set_name || p.set_key} #${p.number} · ${LANG_NAME[p.lang] || p.lang} · ${tagOf(p)}${lit ? '' : ' · fuera de tu colección'}${owned ? ` · tienes ${owned}` : ''} · ${p.code}`}
+        aria-label={`${p.name || 'Carta'} · ${p.set_name || p.set_key} #${p.number} · ${LANG_NAME[p.lang] || p.lang} · ${tagOf(p)}${lit ? '' : ' · fuera de tu colección'}${owned ? ` · tienes ${owned}` : ''}${doubtful ? ' · por verificar' : ''} · ${p.code}`}
         onClick={() => onSelect(p.code)}
       >
         <span className="art">
@@ -84,6 +89,7 @@ const Item = memo(function Item({ p, lit, owned, img, isRef, local, tone, select
         </span>
         <span className="tag">
           <span className="tag-text">{tagOf(p)}</span>
+          {doubtful && <CircleHelp className="doubt" size={12} aria-label="Por verificar" />}
           <span className={'sticker ' + tone} aria-hidden="true" />
         </span>
       </button>

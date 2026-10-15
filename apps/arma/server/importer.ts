@@ -1,6 +1,15 @@
 // Builds the Full of one Pokémon from every source and stores it in arma.* (never anywhere else).
 // A source that fails keeps what it had brought before; the summary says which one failed and why.
-import { buildEquivalences, catalogCode, mergeClaims, normNumber, type Claim, type DesignLink, type MergedPrinting } from '@pokenitsu/core';
+import {
+  buildEquivalences,
+  catalogCode,
+  mergeClaims,
+  misfiled,
+  normNumber,
+  type Claim,
+  type DesignLink,
+  type MergedPrinting,
+} from '@pokenitsu/core';
 import { pool, tx } from './db.ts';
 import { cardIdOf, catalogClaims, loadCatalog } from './sources/catalog.ts';
 import { stats } from './sources/http.ts';
@@ -49,12 +58,15 @@ async function run(dex: number): Promise<ImportSummary> {
   const attempt = async (ids: string[], fn: () => Promise<Record<string, unknown> & { claims?: Claim[] }>) => {
     try {
       const r = await fn();
-      if (r.claims) claims.push(...r.claims);
+      // a claim no source should make (a Japan-only stamp on a Western card) is left out and counted
+      if (r.claims) claims.push(...r.claims.filter(c => !misfiled(c)));
       for (const id of ids) {
         const mine = r.claims?.filter(c => c.source === id).length;
+        const wrong = r.claims?.filter(c => c.source === id && misfiled(c)).length;
         sources[id] = {
           ok: true,
           ...(mine !== undefined ? { claims: mine } : {}),
+          ...(wrong ? { misfiled: wrong } : {}),
           ...Object.fromEntries(Object.entries(r).filter(([k]) => k !== 'claims')),
         };
       }
@@ -147,9 +159,11 @@ async function run(dex: number): Promise<ImportSummary> {
         );
     }
   });
-  // a printing no source backs anymore (every source behind it answered and none brought it) is gone
+  // a printing no source says exists anymore (every source behind it answered and none brought it) is gone, with what
+  // still hung from it (a local photo, by cascade): otherwise a misfiled printing would live on through its photo
   const { rowCount: removed } = await pool.query(
-    `DELETE FROM arma.printings p WHERE p.dex = $1 AND NOT EXISTS (SELECT 1 FROM arma.facts f WHERE f.printing_code = p.code)`,
+    `DELETE FROM arma.printings p WHERE p.dex = $1
+     AND NOT EXISTS (SELECT 1 FROM arma.facts f WHERE f.printing_code = p.code AND f.field = 'exists')`,
     [dex],
   );
   const summary: ImportSummary = {

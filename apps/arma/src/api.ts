@@ -46,6 +46,8 @@ export interface Full {
   lastImport: { summary: { printings: number }; started_at: string } | null;
   /** ARMA_FOTOS_LOCALES=1: photos for local use only come in the Full */
   localPhotos: boolean;
+  /** the classification check: the doubtful printings and why (corregir-clasificacion-de-cartas) */
+  audit: Record<string, { kind: string; text: string }[]>;
   /** what variant a photo shows, marked by hand: { src: stamp key, or '' for the printing with no stamp } */
   photoMarks: Record<string, string>;
 }

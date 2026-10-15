@@ -6,7 +6,7 @@ import { importDex } from './importer.ts';
 import { importLocalPhotos } from './localPhotos.ts';
 import { LOCAL_IMAGE_DIR, localPhotosOn } from './local.ts';
 import { ownedCopies, requireViewer, viewerOf } from './session.ts';
-import { FULL_RULES, type ArmaRules } from '@pokenitsu/core';
+import { auditPrintings, FULL_RULES, type ArmaFinish, type ArmaRules, type AuditReason } from '@pokenitsu/core';
 import { createReadStream } from 'node:fs';
 import { mkdir, readdir, stat, unlink, writeFile } from 'node:fs/promises';
 import { extname, join, normalize, resolve } from 'node:path';
@@ -51,7 +51,7 @@ app.get<{ Params: { dex: string } }>('/api/full/:dex', async req => {
        GROUP BY p.code, d.sort_date, cs.name_en, cs.name, cs.release_date
        ORDER BY d.sort_date NULLS LAST, p.design_id, p.release NULLS LAST, p.lang, p.finish, p.stamp NULLS FIRST`,
       [dex, localPhotosOn()],
-    ),
+    ) as Promise<{ rows: FullRow[] }>,
     pool.query('SELECT id, name, url, permission, images, note FROM arma.sources ORDER BY id'),
     pool.query('SELECT summary, started_at FROM arma.imports WHERE dex = $1 ORDER BY id DESC LIMIT 1', [dex]),
     pool.query<{ src: string; shows: string }>('SELECT src, shows FROM arma.photo_marks'),
@@ -64,6 +64,44 @@ app.get<{ Params: { dex: string } }>('/api/full/:dex', async req => {
     localPhotos: localPhotosOn(),
     // what variant a photo shows, marked by hand (fotos-por-variante): { src: stamp, or '' for the unlimited }
     photoMarks: Object.fromEntries(marks.rows.map(m => [m.src, m.shows])),
+    // the classification check (corregir-clasificacion-de-cartas): { code: reasons } for each doubtful printing
+    audit: Object.fromEntries(auditOf(printings.rows, sources.rows)),
+  };
+});
+
+// the doubtful printings of a Pokémon, with their reasons: run it after importing any Pokémon, and check each one
+type FullRow = {
+  code: string;
+  set_key: string;
+  number: string;
+  lang: string;
+  finish: ArmaFinish;
+  stamp: string | null;
+  facts: Record<string, { source: string; value: string | null }[]>;
+};
+function auditOf(rows: FullRow[], sources: { id: string; name: string }[]): Map<string, AuditReason[]> {
+  const names = new Map(sources.map(s => [s.id, s.name]));
+  return auditPrintings(
+    rows.map(r => ({
+      code: r.code,
+      set_key: r.set_key,
+      number: r.number,
+      lang: r.lang,
+      finish: r.finish,
+      stamp: r.stamp,
+      sources: (r.facts.exists || []).map(f => f.source),
+      labels: (r.facts.variant || []).map(f => f.value || ''),
+    })),
+    id => names.get(id) || id,
+  );
+}
+app.get<{ Params: { dex: string } }>('/api/audit/:dex', async req => {
+  const dex = dexOf(req.params.dex);
+  const full = (await app.inject({ method: 'GET', url: `/api/full/${dex}` })).json() as { audit: Record<string, AuditReason[]> };
+  return {
+    dex,
+    doubtful: Object.keys(full.audit).length,
+    printings: Object.entries(full.audit).map(([code, reasons]) => ({ code, reasons })),
   };
 });
 

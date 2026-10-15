@@ -62,6 +62,9 @@ const STAMP_ALIAS: Record<string, string> = {
   'set-stamp': 'set-logo',
   'expansion-stamp': 'set-logo',
   'jr-east-rally-2000': 'jr-stamp-rally',
+  // PokeCottage's JREastRally2000
+  'jreast-rally2000': 'jr-stamp-rally',
+  'jr-east-rally2000': 'jr-stamp-rally',
   'pokemon-card-gym': 'pokemon-card-gym',
 };
 export const stampKey = (s: unknown): string | null => {
@@ -169,6 +172,8 @@ export interface Claim extends PrintingId {
   cardId?: string;
   designId?: string;
   label?: string;
+  /** the source only says "holo", not which holo (pokemontcg.io, TCGplayer, TCGdex without foil) */
+  genericFinish?: boolean;
 }
 export interface Fact {
   field: ArmaField;
@@ -200,20 +205,32 @@ export function mergeClaims(claims: readonly Claim[]): MergedPrinting[] {
   const byCard = new Map<string, Claim[]>();
   for (const c of claims) byCard.set(card(c), [...(byCard.get(card(c)) || []), c]);
   const fixed: Claim[] = [];
+  const generic = (c: Claim) => c.genericFinish ?? (c.source === 'pokemontcg' || c.source === 'tcgplayer');
   for (const list of byCard.values()) {
     const has = (src: string, f: ArmaFinish) => list.some(c => c.source === src && c.finish === f && !c.stamp);
     const td = (f: ArmaFinish) => has('tcgdex', f),
       tp = (f: ArmaFinish) => has('tcgplayer', f);
+    // what the sources that name the holo say (PokeCottage, TCGdex with its foil)
+    const specific = (f: ArmaFinish) => list.some(c => !generic(c) && c.finish === f && !c.stamp);
+    const out: Claim[] = [];
     for (const c of list) {
       let finish = c.finish;
-      if (c.source === 'tcgplayer' && !c.stamp) {
-        if (finish === 'holo' && !td('holo') && td('cosmos')) finish = 'cosmos';
-        else if (finish === 'normal' && !td('normal') && (td('holo') || td('cosmos')) && !tp('holo'))
-          finish = td('holo') ? 'holo' : 'cosmos';
-      }
-      if (c.source === 'tcgdex' && !c.stamp && finish === 'normal' && tp('holo') && !tp('normal') && !td('holo') && !td('cosmos'))
+      let inferred = false;
+      if (c.source === 'tcgplayer' && !c.stamp && finish === 'normal' && !td('normal') && (td('holo') || td('cosmos')) && !tp('holo'))
+        finish = td('holo') ? 'holo' : 'cosmos';
+      if (c.source === 'tcgdex' && !c.stamp && finish === 'normal' && tp('holo') && !tp('normal') && !td('holo') && !td('cosmos')) {
         finish = 'holo';
-      fixed.push(finish === c.finish ? c : { ...c, finish });
+        inferred = true; // deduced from TCGplayer's "holo": it does not say which holo either
+      }
+      // a plain "holo" is the cosmos holo when a source that names the holo says cosmos and none says plain holo
+      if (!c.stamp && finish === 'holo' && (generic(c) || inferred) && specific('cosmos') && !specific('holo')) finish = 'cosmos';
+      out.push(finish === c.finish ? c : { ...c, finish });
+    }
+    // one stamp under two names: TCGdex's "jun-hasebe" is PokeCottage's "world-championships-deck2007-jun-hasebe"
+    const pc = out.filter(c => c.source === 'pokecottage' && c.stamp);
+    for (const c of out) {
+      const longer = c.source === 'tcgdex' && c.stamp && pc.find(x => x.finish === c.finish && x.stamp!.endsWith('-' + c.stamp));
+      fixed.push(longer ? { ...c, stamp: longer.stamp } : c);
     }
   }
   const map = new Map<string, Claim[]>();
@@ -364,6 +381,85 @@ export function applyRules(printings: readonly RulePrinting[], rules: ArmaRules)
       if (members.length < 2) continue;
       const keep = pick(members, prefer)!;
       for (const p of members) if (p.key !== keep.key) out.set(p.key, { in: false, by: id });
+    }
+  }
+  return out;
+}
+
+// ---------- classification checks (corregir-clasificacion-de-cartas) ----------
+/** stamps only ever printed on Japanese cards: on a Western card they are a source's mistake */
+export const JAPAN_ONLY_STAMPS = ['jr-stamp-rally'];
+/** stamps usually seen on Japanese cards; on a Western one, worth checking */
+export const USUALLY_JAPANESE_STAMPS = ['pokemon-card-gym'];
+const isWestern = (lang: string) => WESTERN.includes(lang);
+/** a claim no source should make: a Japan-only stamp on a card in a Western language */
+export const misfiled = (c: Pick<Claim, 'lang' | 'stamp'>): boolean =>
+  isWestern(c.lang) && (c.stamp || '').split('+').some(s => JAPAN_ONLY_STAMPS.includes(s));
+
+export interface AuditPrinting {
+  code: string;
+  set_key: string;
+  number: string;
+  lang: string;
+  finish: ArmaFinish;
+  stamp: string | null;
+  /** the sources that say it exists */
+  sources: string[];
+  /** the variant's name as each source gives it */
+  labels: string[];
+}
+export type AuditKind = 'region' | 'finish' | 'oneSource' | 'unnamed';
+export interface AuditReason {
+  kind: AuditKind;
+  text: string;
+}
+const JAPANESE_SET = /^(ja-|pc:jpn_|td-ja)/;
+const listNames = (xs: string[]) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} y ${xs[xs.length - 1]}`);
+
+/**
+ * The printings whose classification is doubtful, each with its reasons, so a person checks them against Bulbapedia
+ * and the other sources: sources make mistakes, and a collector does not know every master set.
+ */
+export function auditPrintings(
+  printings: readonly AuditPrinting[],
+  sourceName: (id: string) => string = id => id,
+): Map<string, AuditReason[]> {
+  const out = new Map<string, AuditReason[]>();
+  const add = (code: string, r: AuditReason) => out.set(code, [...(out.get(code) || []), r]);
+  const byCard = new Map<string, AuditPrinting[]>();
+  for (const p of printings) {
+    const k = `${p.set_key}|${normNumber(p.number)}|${p.lang}`;
+    byCard.set(k, [...(byCard.get(k) || []), p]);
+  }
+  for (const ps of byCard.values()) {
+    const knowCard = new Set(ps.flatMap(p => p.sources));
+    const holo = ps.find(p => p.finish === 'holo' && !p.stamp),
+      cosmos = ps.find(p => p.finish === 'cosmos' && !p.stamp);
+    const sameSources = holo && cosmos && holo.sources.some(s => cosmos.sources.includes(s));
+    for (const p of ps) {
+      const stamps = (p.stamp || '').split('+').filter(Boolean);
+      if (isWestern(p.lang) && stamps.some(s => JAPAN_ONLY_STAMPS.includes(s)))
+        add(p.code, { kind: 'region', text: 'Lleva un sello que solo se imprimió en cartas japonesas, pero está en un idioma occidental' });
+      // usually Japanese, but not proven to be only: say so, without claiming more than we know
+      else if (isWestern(p.lang) && stamps.some(s => USUALLY_JAPANESE_STAMPS.includes(s)))
+        add(p.code, { kind: 'region', text: 'Lleva un sello que normalmente es de cartas japonesas, pero está en un idioma occidental' });
+      if (isWestern(p.lang) && JAPANESE_SET.test(p.set_key))
+        add(p.code, { kind: 'region', text: 'Es de una expansión japonesa, pero está en un idioma occidental' });
+      if (p.lang === 'JA' && !JAPANESE_SET.test(p.set_key))
+        add(p.code, { kind: 'region', text: 'Está en japonés, pero en una expansión internacional' });
+      if (holo && cosmos && !sameSources && (p === holo || p === cosmos))
+        add(p.code, {
+          kind: 'finish',
+          text: `Las fuentes no coinciden en el brillo: holo según ${listNames(holo.sources.map(sourceName))}, holo cosmos según ${listNames(cosmos.sources.map(sourceName))}`,
+        });
+      const others = [...knowCard].filter(s => !p.sources.includes(s));
+      if (p.sources.length === 1 && others.length)
+        add(p.code, {
+          kind: 'oneSource',
+          text: `Solo ${sourceName(p.sources[0]!)} dice que existe; ${listNames(others.map(sourceName))} ${others.length === 1 ? 'conoce' : 'conocen'} la carta`,
+        });
+      if (p.labels.some(l => /^[A-Z0-9]{3}-[A-Z0-9]{3}-[A-Z0-9]{3}$/.test(l)))
+        add(p.code, { kind: 'unnamed', text: 'La fuente registra esta variante solo con un código, sin decir qué la distingue' });
     }
   }
   return out;
