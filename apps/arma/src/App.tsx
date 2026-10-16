@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { applyRules, type ArmaRules, type RuleId } from '@pokenitsu/core';
-import { CircleHelp, LogIn, RefreshCw } from 'lucide-react';
+import { CircleHelp, RefreshCw } from 'lucide-react';
+import { toLogin } from './auth.ts';
 import { api, ApiError, type Copy, type Full, type SavedView, type Source } from './api.ts';
 import { copiesByCode, REDUCES, RULES, shelvesBySet, shelvesOf, STICKER, withPhotoShows, cardOf, type Order } from './model.ts';
 import { Rail } from './components/Rail.tsx';
@@ -9,7 +10,6 @@ import { Detail } from './components/Detail.tsx';
 
 const DEX = 133;
 const SPECIES = 'Eevee';
-const NITSU = 'http://localhost:3000/entrar';
 const MASTER_EN: ArmaRules = { onlyEnglish: true, asiaAsJapanese: true, stampsAndDecks: true, wcd: true, jumbo: false };
 
 type Load = { state: 'loading' } | { state: 'signedOut' } | { state: 'error'; message: string } | { state: 'ready' };
@@ -159,18 +159,11 @@ export function App() {
   };
 
   if (load.state === 'loading') return <Gate title="Abriendo la vitrina…" />;
-  if (load.state === 'signedOut')
-    return (
-      <Gate
-        title="Entra en Nitsu para armar tu colección"
-        text="Arma tu colección usa tu cuenta de Nitsu para saber qué cartas tienes. No cambia nada de tu inventario."
-      >
-        <a className="primary" href={NITSU}>
-          <LogIn size={16} strokeWidth={2} />
-          Entrar en Nitsu
-        </a>
-      </Gate>
-    );
+  // without a session, to this app's own way in, coming back here after entering (login-en-arma)
+  if (load.state === 'signedOut') {
+    toLogin();
+    return null;
+  }
   if (load.state === 'error')
     return (
       <Gate title="No pude abrir la vitrina" text={load.message}>

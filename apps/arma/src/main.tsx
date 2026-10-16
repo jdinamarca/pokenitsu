@@ -7,10 +7,12 @@ import '@fontsource/archivo/700.css';
 import '@fontsource/archivo-narrow/600.css';
 import '@fontsource/archivo-narrow/700.css';
 import { App } from './App.tsx';
+import { Login } from './Login.tsx';
 import './styles.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    {/* the way in has its own address (login-en-arma); everything else is the app */}
+    {location.pathname.startsWith('/entrar') ? <Login /> : <App />}
   </StrictMode>,
 );

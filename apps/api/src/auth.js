@@ -8,6 +8,8 @@ const port = Number(process.env.PORT || 3000);
 // the app is opened as localhost or 127.0.0.1; both are the same origin for logging in
 const origins = [process.env.BETTER_AUTH_URL, `http://localhost:${port}`, `http://127.0.0.1:${port}`,
   ...String(process.env.BETTER_AUTH_TRUSTED_ORIGINS || '').split(',')].map(s => (s || '').trim()).filter(Boolean);
+// "Arma tu colección" logs in here too (login-en-arma, ADR 0021): its callback URLs come back to its own origin
+origins.push(...(process.env.ARMA_WEB_ORIGIN ? [process.env.ARMA_WEB_ORIGIN] : ['http://localhost:5180', 'http://127.0.0.1:5180']));
 
 // during the alpha only invited emails can create an account (AUTH_ALLOWED_EMAILS, comma separated)
 export const allowedEmails = () => new Set(String(process.env.AUTH_ALLOWED_EMAILS || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean));
