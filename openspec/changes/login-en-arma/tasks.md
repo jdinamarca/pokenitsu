@@ -21,5 +21,5 @@
   - pedir el link de recuperación → "Revisa tu correo" (el link queda en el log de correos de desarrollo) y, con ese token, poner la contraseña nueva y entrar con ella;
   - cerrar sesión → `/entrar`;
   - capturas a 1440 y 390 px.
-- [ ] 3.2 README: cómo se entra a la app nueva y que Nitsu tiene que estar corriendo; verificar que lo explica
-- [ ] 3.3 `pnpm build && pnpm typecheck && pnpm lint && pnpm test` en verde; base real sin cambios; borrar la copia y las cuentas de prueba
+- [x] 3.2 README: cómo se entra a la app nueva y que Nitsu tiene que estar corriendo; verificar que lo explica
+- [x] 3.3 `pnpm build && pnpm typecheck && pnpm lint && pnpm test` en verde; base real sin cambios; borrar la copia y las cuentas de prueba
