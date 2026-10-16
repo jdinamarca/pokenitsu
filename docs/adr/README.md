@@ -24,3 +24,4 @@ Por qué el sistema es como es. El **qué** hace está en [`openspec/specs/`](..
 | [0018](0018-rls-forzado-con-usuario-por-conexion.md) | RLS forzado, con el usuario fijado en la conexión de cada petición | Aceptado |
 | [0019](0019-artes-conectados-compartidos.md) | Artes conectados compartidos, editados por el dueño | Aceptado |
 | [0020](0020-arma-tu-coleccion-app-aparte.md) | "Arma tu colección": app aparte, esquema propio y procedencia por dato | Aceptado |
+| [0021](0021-arma-tu-coleccion-reemplaza-a-nitsu.md) | "Arma tu colección" pasa a ser la app que reemplaza a Nitsu, por etapas | Aceptado |

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Bookmark, Plus, X } from 'lucide-react';
+import { Bookmark, LogOut, Plus, X } from 'lucide-react';
+import { signOut } from '../auth.ts';
 import type { ArmaRules, RuleId } from '@pokenitsu/core';
 import type { SavedView } from '../api.ts';
 import { RULES } from '../model.ts';
@@ -116,6 +117,11 @@ export function Rail({ species, dex, total, rules, active, onToggle, views, view
           </button>
         )}
       </section>
+      {/* the way out (login-en-arma): the session ends in Nitsu too, it is the same one */}
+      <button type="button" className="sign-out" onClick={() => void signOut()}>
+        <LogOut size={14} strokeWidth={2.25} aria-hidden="true" />
+        Cerrar sesión
+      </button>
     </nav>
   );
 }

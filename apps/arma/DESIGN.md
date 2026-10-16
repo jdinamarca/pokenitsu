@@ -225,6 +225,16 @@ Columna de grafito alzado: código de catálogo en cifras condensadas, foto gran
 
 Luz cálida con tinta de etiqueta, 9px de esquinas, 11×16px, con icono de línea (lucide) a la izquierda; al presionar se encoge a 0.97.
 
+### Acceso (Mostrador)
+
+La pantalla `/entrar` es el mostrador de la tienda, elegido en el canvas (AK):
+
+- **Izquierda:** el fieltro con el titular en Archivo 54px sobre luz cálida y una repisa de cinco cartas reales bajo la luz del vidrio. Dos están en penumbra.
+- **Derecha:** el formulario en grafito alzado: pestañas "Entrar · Crear cuenta" como chips de vista, campos con su etiqueta arriba, el botón principal en luz cálida y "Continuar con Google" en grafito.
+- **Al enfocar un campo** la luz del vidrio sube y las cartas en penumbra se encienden: el mismo lenguaje de la penumbra de las reglas, al revés. Es un cambio de luz, no de forma; con "reducir movimiento" es instantáneo.
+- **En pantallas angostas** el formulario va primero y la repisa abajo, con scroll horizontal.
+- **Al pie del riel**, "Cerrar sesión" como un chip con borde de fieltro.
+
 ## Do's and Don'ts
 
 ### Do:
