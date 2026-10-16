@@ -1,32 +1,21 @@
-// Who is asking: the Better Auth session of the current app (cookie pokenitsu.session_token = "token.signature").
-// Cookies ignore the port, so the one set by localhost:3000 also reaches this app on localhost.
+// Who is asking: the Better Auth session (cookie pokenitsu.session_token, its signature checked), served by this API
+// itself since cuentas-en-arma; the same session as Nitsu's.
 import type { FastifyRequest } from 'fastify';
 import { variantFromInventory } from '@pokenitsu/core';
+import { sessionOf } from './auth.ts';
 import { pool } from './db.ts';
-
-const COOKIE = 'pokenitsu.session_token';
 
 export interface Viewer {
   id: string;
   name: string;
 }
 export async function viewerOf(req: FastifyRequest): Promise<Viewer | null> {
-  const raw = (req.headers.cookie || '')
-    .split(';')
-    .map(c => c.trim())
-    .find(c => c.startsWith(COOKIE + '=') || c.startsWith('__Secure-' + COOKIE + '='));
-  if (!raw) return null;
-  const token = decodeURIComponent(raw.slice(raw.indexOf('=') + 1)).split('.')[0];
-  if (!token) return null;
-  const { rows } = await pool.query<Viewer>(
-    `SELECT u.id, u.name FROM public."session" s JOIN public."user" u ON u.id = s."userId" WHERE s.token = $1 AND s."expiresAt" > now()`,
-    [token],
-  );
-  return rows[0] || null;
+  const s = await sessionOf(req.headers).catch(() => null);
+  return s ? { id: s.user.id, name: s.user.name } : null;
 }
 export async function requireViewer(req: FastifyRequest): Promise<Viewer> {
   const v = await viewerOf(req);
-  if (!v) throw Object.assign(new Error('Entra en Nitsu para ver tu colección'), { statusCode: 401 });
+  if (!v) throw Object.assign(new Error('Entra para ver tu colección'), { statusCode: 401 });
   return v;
 }
 

@@ -25,3 +25,4 @@ Por qué el sistema es como es. El **qué** hace está en [`openspec/specs/`](..
 | [0019](0019-artes-conectados-compartidos.md) | Artes conectados compartidos, editados por el dueño | Aceptado |
 | [0020](0020-arma-tu-coleccion-app-aparte.md) | "Arma tu colección": app aparte, esquema propio y procedencia por dato | Aceptado |
 | [0021](0021-arma-tu-coleccion-reemplaza-a-nitsu.md) | "Arma tu colección" pasa a ser la app que reemplaza a Nitsu, por etapas | Aceptado |
+| [0022](0022-cuentas-en-arma-tu-coleccion.md) | Las cuentas se atienden en "Arma tu colección", con su configuración compartida | Aceptado |
