@@ -6,12 +6,15 @@ import { importDex } from './importer.ts';
 import { importLocalPhotos } from './localPhotos.ts';
 import { LOCAL_IMAGE_DIR, localPhotosOn } from './local.ts';
 import { ownedCopies, requireViewer, viewerOf } from './session.ts';
+import { authRoutes, initAuth } from './auth.ts';
 import { auditPrintings, FULL_RULES, type ArmaFinish, type ArmaRules, type AuditReason } from '@pokenitsu/core';
 import { createReadStream } from 'node:fs';
 import { mkdir, readdir, stat, unlink, writeFile } from 'node:fs/promises';
 import { extname, join, normalize, resolve } from 'node:path';
 
 const app = Fastify({ logger: false });
+// accounts: /api/auth/* and /api/auth-options, served here (cuentas-en-arma)
+authRoutes(app);
 
 app.get('/api/health', async () => {
   await pool.query('SELECT 1');
@@ -275,5 +278,6 @@ app.get<{ Params: { '*': string } }>('/img/*', async (req, reply) => {
 
 const port = Number(process.env.ARMA_PORT || 3002);
 for (const m of await migrate()) console.log('migración aplicada:', m);
+initAuth();
 await app.listen({ port, host: '127.0.0.1' });
 console.log(`Arma tu colección (API) en http://127.0.0.1:${port}`);
