@@ -4,6 +4,7 @@ import { migrate } from './migrate.ts';
 import { pool } from './db.ts';
 import { importDex } from './importer.ts';
 import { importLocalPhotos } from './localPhotos.ts';
+import { catalogJob, startCatalogPhotos } from './catalogPhotos.ts';
 import { LOCAL_IMAGE_DIR, localPhotosOn } from './local.ts';
 import { isOwner, ownedCopies, requireOwner, requireViewer, viewerOf } from './session.ts';
 import { authRoutes, initAuth } from './auth.ts';
@@ -281,6 +282,42 @@ app.delete<{ Params: { cardId: string } }>('/api/card-photos/:cardId', async req
   await removeCardUpload(req.params.cardId);
   const { rowCount } = await pool.query(`DELETE FROM arma.card_photos WHERE card_id = $1 AND source_id = 'own'`, [req.params.cardId]);
   return { removed: rowCount };
+});
+
+// ---------- "Por reemplazar" (fotos-solo-local-en-catalogo): the administrator's gallery ----------
+// the catalog cards shown with a photo for local use only (no own photo, no catalog photo), and the progress: of the
+// cards that have one, how many already have a photo that can go to production
+app.get('/api/replace/cards', async req => {
+  await requireOwner(req);
+  const [cards, totals] = await Promise.all([
+    localPhotosOn()
+      ? pool.query(
+          `SELECT p.card_id, c.set_id AS sid, c.number AS num, c.name, coalesce(st.name_en, st.name) AS set_name, coalesce(st.code, '') AS set_code,
+                  s.id AS source_id, s.name AS source, p.src
+           FROM arma.card_photos p JOIN arma.sources s ON s.id = p.source_id AND s.permission = 'local'
+           JOIN cards c ON c.id = p.card_id JOIN sets st ON st.id = c.set_id
+           WHERE c.image_small IS NULL AND NOT EXISTS (SELECT 1 FROM arma.card_photos o WHERE o.card_id = p.card_id AND o.source_id = 'own')
+           ORDER BY st.release_date NULLS LAST, c.set_id, c.number_norm ~ '^[0-9]+$' DESC,
+                    nullif(regexp_replace(c.number_norm, '[^0-9]', '', 'g'), '')::int NULLS LAST, c.number`,
+        )
+      : Promise.resolve({ rows: [] }),
+    pool.query<{ total: number; ready: number }>(
+      `SELECT count(DISTINCT p.card_id)::int AS total,
+              count(DISTINCT p.card_id) FILTER (WHERE c.image_small IS NOT NULL
+                OR EXISTS (SELECT 1 FROM arma.card_photos o WHERE o.card_id = p.card_id AND o.source_id = 'own'))::int AS ready
+       FROM arma.card_photos p JOIN arma.sources s ON s.id = p.source_id AND s.permission = 'local' JOIN cards c ON c.id = p.card_id`,
+    ),
+  ]);
+  return { localPhotos: localPhotosOn(), cards: cards.rows, ...totals.rows[0]! };
+});
+// the whole Japanese catalog's photos for local use only: one expansion after the other, never two runs at once
+app.post('/api/local-photos/catalog', async req => {
+  await requireOwner(req);
+  return startCatalogPhotos();
+});
+app.get('/api/local-photos/catalog', async req => {
+  await requireOwner(req);
+  return { localPhotos: localPhotosOn(), job: catalogJob() };
 });
 
 // photos for local use only: downloaded once to LOCAL_IMAGE_DIR, only with ARMA_FOTOS_LOCALES=1 (403 otherwise)

@@ -44,6 +44,12 @@ async function run(setId: string): Promise<SetPhotos> {
      ORDER BY c.number_norm ~ '^[0-9]+$' DESC, nullif(regexp_replace(c.number_norm, '[^0-9]', '', 'g'), '')::int NULLS LAST, c.number`,
     [setId],
   );
+  // the probe only says "Limitless doesn't have it" for an expansion with no photo from it yet: one that has some is
+  // there, and its pending cards are the ones it lacks
+  const { rowCount: started } = await pool.query(
+    `SELECT 1 FROM arma.card_photos p JOIN cards c ON c.id = p.card_id WHERE c.set_id = $1 AND p.source_id = 'limitless' LIMIT 1`,
+    [setId],
+  );
   const r: SetPhotos = { set: setId, cards: rows.length, fetched: 0, existing: 0, missing: 0, failed: 0, skipped: false };
   const todo = rows.flatMap(c => {
     if (notThere.has(c.id)) return [];
@@ -70,7 +76,7 @@ async function run(setId: string): Promise<SetPhotos> {
         }
       }),
     );
-    if (i + 2 >= PROBE && r.missing === i + 2 && i + 2 < todo.length) {
+    if (!started && i + 2 >= PROBE && r.missing === i + 2 && i + 2 < todo.length) {
       r.skipped = true;
       setNotThere.add(setId);
       break;

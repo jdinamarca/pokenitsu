@@ -24,7 +24,7 @@
 
 ## 3. Galería "Por reemplazar"
 
-- [ ] 3.1 API:
+- [x] 3.1 API:
   - `GET /api/replace/cards`: las cartas del catálogo con foto solo local en uso, y M y N de cartas;
   - `POST /api/local-photos/catalog` y `GET` del avance: todas las expansiones japonesas, una por una, sin dos descargas a la vez.
 
