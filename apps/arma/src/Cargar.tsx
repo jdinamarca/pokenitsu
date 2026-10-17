@@ -16,7 +16,19 @@ import { Plus, RefreshCw, Search, Undo2 } from 'lucide-react';
 import { api, ApiError, type CardSet, type InvLocation, type SetCard, type SetCards } from './api.ts';
 import { toLogin } from './auth.ts';
 import { Shell } from './components/Shell.tsx';
-import { cardQty, COND_LABEL, LANG_LABEL, litCount, planRow, setLine, variantName, withRow, type LoadRow, type Session } from './load.ts';
+import {
+  cardQty,
+  COND_LABEL,
+  setVariantLabels,
+  LANG_LABEL,
+  litCount,
+  planRow,
+  setLine,
+  variantName,
+  withRow,
+  type LoadRow,
+  type Session,
+} from './load.ts';
 
 // the load session and the recent expansions, remembered in this browser (a convenience: without storage, the defaults)
 type Recent = { id: string; lang: Lang };
@@ -84,6 +96,7 @@ export function Cargar() {
     else other(message(e));
   }, []);
   const putData = (d: SetCards | null) => {
+    if (d) setVariantLabels(d.labels);
     dataRef.current = d;
     setData(d);
   };

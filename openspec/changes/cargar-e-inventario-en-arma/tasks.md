@@ -16,19 +16,19 @@
 
 ## 3. Pantallas
 
-- [ ] 3.1 `Shell` con el riel de navegación ("Arma · Eevee", "Cargar", "Mi inventario", "Cerrar sesión"), rutas `/cargar` y `/inventario` con `pushState`, y redirección a `/entrar` sin sesión.
-- [ ] 3.2 Cargar (AO):
+- [x] 3.1 `Shell` con el riel de navegación ("Arma · Eevee", "Cargar", "Mi inventario", "Cerrar sesión"), rutas `/cargar` y `/inventario` con `pushState`, y redirección a `/entrar` sin sesión.
+- [x] 3.2 Cargar (AO):
   - búsqueda de expansión con recientes y sufijo de idioma, y "Cargando cartas…" con reintento;
   - vitrina encendida o en penumbra con ×N, contador "N / total encendidas" y filtro "solo las que faltan";
   - entrada con toda la sintaxis, carta marcada al escribir, Esc, Enter vacío que repite y confirmación de rangos;
   - clic para marcar y cargar, ficha con lo que se va a cargar, "Nueva", resumen de la sesión y Deshacer (botón y ⌘/Ctrl+Z);
   - chips de la sesión recordados en el navegador.
-- [ ] 3.3 Mi inventario (AR):
+- [x] 3.3 Mi inventario (AR):
   - repisas por ubicación en su orden, con "Sin ubicación" al final, ×N y etiqueta;
   - riel con "Todas", ubicaciones y conteos;
   - contador y nota de valor, búsqueda y filtro "Para";
   - ficha con −1/+1, mover en línea ("¿Cuántas de las N copias?"), personales y mi precio.
-- [ ] 3.4 En Chrome sin interfaz, contra una copia de la base, con Nitsu apagado y sin errores de JS:
+- [x] 3.4 En Chrome sin interfaz, contra una copia de la base, con Nitsu apagado y sin errores de JS:
   - cargar `133r`, `25*3`, `-25`, `1-10` y deshacer el rango;
   - una expansión sin descargar;
   - clic en una carta en penumbra;

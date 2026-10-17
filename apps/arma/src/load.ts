@@ -24,7 +24,12 @@ export const VARIANT_LABEL: Record<string, string> = {
   pokeballholo: 'Poké Ball',
   masterballholo: 'Master Ball',
 };
-export const variantName = (v: string) => VARIANT_LABEL[v] || v;
+// the catalog's names (variant_labels), set when an answer brings them
+let labels: Record<string, string> = {};
+export const setVariantLabels = (l: Record<string, string>) => {
+  labels = { ...labels, ...l };
+};
+export const variantName = (v: string) => labels[v] || VARIANT_LABEL[v] || v;
 export const LANG_LABEL: Record<string, string> = {
   ES: 'Español',
   EN: 'Inglés',

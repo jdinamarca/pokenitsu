@@ -28,6 +28,11 @@ type OwnRow = { card_id: string; variant: string; clp: number | null; usd: numbe
 // my own prices of some cards, in CLP (in USD they follow today's rate): { "cardId|variant": clp }
 const ownMap = (rows: OwnRow[], fx: { usd: number } | null) =>
   Object.fromEntries(rows.map(r => [`${r.card_id}|${r.variant}`, ownClp(r, fx)]));
+// the names of the variants, as Nitsu shows them (cosmosholo → Cosmos Holo)
+const variantLabels = () =>
+  pool
+    .query<{ slug: string; label: string }>('SELECT slug, label FROM variant_labels')
+    .then(r => Object.fromEntries(r.rows.map(x => [x.slug, x.label])));
 
 export function inventoryRoutes(app: FastifyInstance) {
   // every expansion, or the ones a search finds (Nitsu's criteria; "MEW ES" also says the language)
@@ -50,7 +55,7 @@ export function inventoryRoutes(app: FastifyInstance) {
     const { rows: set } = await pool.query('SELECT 1 FROM sets WHERE id = $1', [sid]);
     if (!set.length) throw Object.assign(new Error('Esa expansión no existe'), { statusCode: 404 });
     await inv.ensureSetCards(sid);
-    const fx = await getFx(pool);
+    const [fx, labels] = await Promise.all([getFx(pool), variantLabels()]);
     return asViewer(
       v,
       async c => {
@@ -83,6 +88,7 @@ export function inventoryRoutes(app: FastifyInstance) {
         return {
           cfg,
           fx,
+          labels,
           own: ownMap(own.rows, fx),
           cards: cards.rows.map(r => ({ ...r, prices: priceOf.get(r.id) || null, copies: copiesOf.get(r.id) || [] })),
         };
@@ -94,7 +100,7 @@ export function inventoryRoutes(app: FastifyInstance) {
   // the account's inventory (each row with its card and expansion) and its locations, in their order
   app.get('/api/inventory', async req => {
     const v = await requireViewer(req);
-    const fx = await getFx(pool);
+    const [fx, labels] = await Promise.all([getFx(pool), variantLabels()]);
     return asViewer(
       v,
       async c => {
@@ -112,7 +118,7 @@ export function inventoryRoutes(app: FastifyInstance) {
           c.query<OwnRow>('SELECT o.card_id, o.variant, o.clp, o.usd::float AS usd FROM price_overrides o'),
           priceSettings(c),
         ]);
-        return { cfg, fx, own: ownMap(own.rows, fx), rows: rows.rows, locations: locations.rows };
+        return { cfg, fx, labels, own: ownMap(own.rows, fx), rows: rows.rows, locations: locations.rows };
       },
       true,
     );

@@ -5,7 +5,7 @@ import { api, ApiError, type Inventory as InvData, type InvRow } from './api.ts'
 import { toLogin } from './auth.ts';
 import { Gate } from './Cargar.tsx';
 import { Shell } from './components/Shell.tsx';
-import { clp, LANG_LABEL, rowFor, rowMatches, shelvesOf, VARIANT_LABEL, variantName, type ForFilter } from './load.ts';
+import { clp, LANG_LABEL, setVariantLabels, rowFor, rowMatches, shelvesOf, VARIANT_LABEL, variantName, type ForFilter } from './load.ts';
 
 const keyOf = (r: InvRow) => `${r.card_id}|${r.variant}|${r.lang}|${r.cond}|${r.loc}`;
 const rowBody = (r: InvRow) => ({ sid: r.sid, num: r.num, variant: r.variant, lang: r.lang, cond: r.cond, loc: r.loc });
@@ -24,7 +24,10 @@ export function Inventario() {
   const fetchInv = useCallback(
     () =>
       api.inventory().then(
-        data => setLoad({ state: 'ready', data }),
+        data => {
+          setVariantLabels(data.labels);
+          setLoad({ state: 'ready', data });
+        },
         e => {
           if (e instanceof ApiError && e.status === 401) toLogin();
           else setLoad({ state: 'error', message: message(e) });

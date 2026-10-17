@@ -115,6 +115,8 @@ export interface Fx {
   eur: number;
 }
 export interface SetCards {
+  /** the variants' names: { slug: label } */
+  labels: Record<string, string>;
   cfg: PriceCfg;
   fx: Fx | null;
   own: Record<string, number | null>;
@@ -145,6 +147,7 @@ export interface InvRow extends CopyRow {
   price_eur: CardPrices['eur'];
 }
 export interface Inventory {
+  labels: Record<string, string>;
   cfg: PriceCfg;
   fx: Fx | null;
   own: Record<string, number | null>;
