@@ -233,6 +233,15 @@ La misma carta de la vitrina, a 112px, con una etiqueta de cartulina: en Cargar,
 - **En Cargar:** encendida si tienes alguna copia (cualquier variante, idioma o estado), en penumbra si te falta. La marcada (al escribir su número o con un clic) lleva el contorno de luz a 3px. Una expansión de más de 250 cartas usa `content-visibility: auto`.
 - **Sin foto propia ni del catálogo:** la foto de referencia del mismo Pokémon, atenuada como las de referencia de Eevee; en la ficha grande, con la nota "Foto de referencia: esta carta no tiene foto". Tu foto de la variante siempre gana.
 
+### Galería "Por reemplazar"
+
+La pantalla del administrador (`/reemplazar`), sin ficha lateral: el riel lleva los filtros (Fuente y Qué, con sus cifras condensadas), y la zona de trabajo ocupa el resto del ancho.
+
+- **Arriba:** el contador "N de M listas para producción", la nota y, a la derecha, "Bajar fotos locales del catálogo japonés" como botón de grafito. Un aviso en ámbar si las fotos locales están apagadas, y una franja de fieltro con el avance de la descarga.
+- **Cada foto:** la carta a 112px con la foto que hoy se ve, el sticker violeta de solo uso local y su etiqueta de cartulina con el nombre. Debajo, la expansión, el número (y el idioma y la variante de una impresión) y la fuente, y el botón "Subir la mía" en grafito, en una línea.
+- **Al reemplazar,** la carta sale de la vitrina y el contador sube en uno.
+- **En el riel,** "Por reemplazar" (icono ImageUp) aparece solo para el administrador.
+
 ### Ficha
 
 Columna de grafito alzado: código de catálogo en cifras condensadas, foto grande, nombre y datos, una franja de estado ("Cuenta para tu colección" / "Fuera de tu colección por…"), la caja de fieltro con tus copias, y "De dónde sale cada dato", una lista de definiciones con una fuente y su sticker por línea.

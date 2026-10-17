@@ -49,13 +49,13 @@
 
 ## 4. Documentación y cierre
 
-- [ ] 4.1 README:
+- [x] 4.1 README:
   - fotos solo locales del catálogo (Limitless por expansión, la regla de nombres);
   - PokeCottage con fotos solo para uso local;
   - la galería "Por reemplazar" y el orden de las fotos.
 
   DESIGN.md de arma: la galería. Verificar leyendo ambas secciones.
-- [ ] 4.2 `pnpm build && pnpm typecheck && pnpm lint && pnpm test` en verde. Borrar la copia de la base y confirmar que se borró.
+- [x] 4.2 `pnpm build && pnpm typecheck && pnpm lint && pnpm test` en verde. Borrar la copia de la base y confirmar que se borró.
 
 ## Workflow follow-up
 

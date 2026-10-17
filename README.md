@@ -309,7 +309,7 @@ Una opción nueva, separada de la app actual ([ADR 0020](docs/adr/0020-arma-tu-c
   - **Deshacer** (botón o ⌘/Ctrl+Z con la caja vacía): revierte la última carga de la cuenta, o el rango completo.
 - **Mi inventario** (diseño AR, "Estantería por ubicación"): una repisa por cada caja o carpeta, en tu orden, con "Sin ubicación" al final si hay copias sin ubicación. En el riel, "Todas" y cada ubicación con sus copias y lo que recibe. Arriba, el total de copias, las cartas distintas y el valor para vender (sin las personales). Búsqueda por nombre, expansión, número o ilustrador, y filtro "Para". La ficha permite −1/+1, mover algunas copias o todas (ubicación, variante, idioma, estado: "¿Cuántas de las N copias?"), marcar personales y poner tu precio en US$ (vacío vuelve al de mercado).
 - **El mismo inventario que Nitsu ([ADR 0023](docs/adr/0023-arma-escribe-el-inventario-compartido.md)):** Cargar y Mi inventario leen y escriben las mismas filas, con las mismas reglas y la misma RLS, a través de `@pokenitsu/inventory`. Lo cargado o movido en una app se ve en la otra; cada cuenta ve solo lo suyo.
-  - **Fotos:** tu foto de la variante (de Nitsu) gana; si la carta no tiene foto, se muestra atenuada una de referencia del mismo Pokémon, con la nota "Foto de referencia".
+  - **Fotos:** tu foto de la variante (de Nitsu), después la foto propia de la carta, la del catálogo, la solo local de Limitless (marcada en violeta, solo con `ARMA_FOTOS_LOCALES=1`) y, sin ninguna, una de referencia del mismo Pokémon, atenuada y con la nota "Foto de referencia" (ver "Fotos solo para uso local" y "Por reemplazar" más abajo).
   - **Qué sigue en Nitsu:** crear y editar ubicaciones, lotes, exportar e importar, respaldo, precios y tipo de cambio (arma usa los que Nitsu dejó guardados y no baja precios), colecciones, Pokédex, ilustradores, artes conectados, aportes de fotos, y completar los detalles de las cartas japonesas recién bajadas (Pokédex e ilustrador, que dan la foto de referencia).
 - **El Full:** todas las impresiones del Pokémon (carta × idioma × variante: acabado, sellos, mazos de Battle Academy, World Championship Decks, jumbo…). El botón "Traer el Full", o `POST /api/import/133`, lo arma desde cuatro fuentes y deja un resumen por fuente. Reimportar no duplica nada; si una fuente falla, se conserva lo que había traído.
 - **Fuentes y permisos.** Cada dato guarda su fuente, y la ficha lo muestra con un sticker de color:
@@ -326,8 +326,8 @@ Una opción nueva, separada de la app actual ([ADR 0020](docs/adr/0020-arma-tu-c
 
   | Fuente | Qué fotos | Permiso |
   |---|---|---|
-  | PokeCottage | La de cada entrada de su master set, por variante | 🟣 solo uso local (autorizó el texto, no las fotos) |
-  | Limitless TCG | Cartas japonesas (por expansión y número) | 🟣 solo uso local |
+  | PokeCottage | La de cada entrada de su master set, por variante | 🟣 solo uso local (autorizó sus fotos solo para uso local, nunca producción) |
+  | Limitless TCG | Cartas japonesas (por expansión y número), también las del catálogo general | 🟣 solo uso local (sin permiso) |
   | Bulbagarden Archives | El escaneo de la carta base de la lista de Bulbapedia | 🟣 solo uso local |
 
   - **Encenderlas:** `ARMA_FOTOS_LOCALES=1` en el `.env`, reinicia `pnpm arma` y llama a `POST /api/local-photos/133` (con `curl -X POST http://localhost:3002/api/local-photos/133`). Deja un resumen por fuente: cuántas trajo, cuántas ya estaban, cuántas no existen y cuántas fallaron.
@@ -335,6 +335,13 @@ Una opción nueva, separada de la app actual ([ADR 0020](docs/adr/0020-arma-tu-c
   - **Nunca salen de tu computador:** no van a git, ni al almacenamiento compartido, ni a producción. Se marcan con un sticker violeta en la carta y en la ficha ("Foto solo para uso local · PokeCottage"), y quedan registradas con su fuente para el futuro informe "Listo para producción".
   - **Prioridad:** primero nuestra copia o TCGdex; una foto solo local se usa solo si la impresión no tiene ninguna de esas.
   - **Apagadas** (sin la variable), la app no las descarga, no las muestra y no sirve sus archivos: se ve igual que antes. Para borrarlas: borra la carpeta y, si quieres, `DELETE FROM arma.facts WHERE source_id IN ('pokecottage-fotos', 'limitless', 'bulbagarden')`.
+  - **Limitless, nombre del archivo:** el código de la expansión y el número **sin ceros a la izquierda** (`S8b_1`, no `S8b_001`); las promos usan otro código (`SV-P` → `SVP`, `M-P` → `MP`, y lo mismo para `SM-P`, `S-P`, `XY-P` y `BW-P`). Limitless tiene las japonesas desde Black & White; las de 1997 a 2005 no.
+  - **Catálogo japonés (Cargar y Mi inventario):** las cartas japonesas sin foto se bajan de Limitless **por expansión**: solas, en segundo plano, al abrir la expansión en Cargar, o todas de una vez desde "Por reemplazar". Se bajan de a dos, con pausa, una sola vez (`data/imagenes-locales/limitless/`, tabla `arma.card_photos`). Una expansión que Limitless no tiene se detecta con sus primeras 4 cartas y no se sigue preguntando. Todo el catálogo son unas 2.900 fotos (~140 KB cada una, unos 400 MB).
+  - **Qué foto muestra una carta en Cargar y Mi inventario:** tu foto de la variante, después la foto propia de la carta, la del catálogo, la solo local (con la marca violeta y "Foto solo para uso local · fuente" en la ficha) y, al final, la de referencia del mismo Pokémon.
+- **Por reemplazar** (`/reemplazar`, solo el administrador: la primera cuenta creada, como en Nitsu): una galería con cada foto que hoy se ve pero no puede ir a producción, tanto de cartas del catálogo como de impresiones del Full, con su carta y su fuente.
+  - **"Subir la mía"** (JPEG, PNG o WebP, hasta 8 MB) la reemplaza ahí mismo y sale de la galería. En una carta del catálogo, la foto propia va a `data/imagenes/arma/cartas/` y la ven todas las cuentas; en una impresión, es la misma foto propia de la ficha.
+  - **Filtros** por fuente y por tipo, con el avance "N de M listas para producción", y el botón "Bajar fotos locales del catálogo japonés" con su avance.
+  - **Rutas:** `GET /api/replace/cards`, `POST`/`GET /api/local-photos/catalog`, y `POST`/`DELETE /api/card-photos/:cardId`, todas solo para el administrador.
 
 - **Equivalencias:** la misma carta internacional en distintos idiomas, y la inglesa con su original japonesa cuando Bulbapedia las une. Solo agrupan; no cambian ningún conteo por sí solas.
 - **Reglas** (no borran nada del Full: lo que queda fuera sale de la vitrina, y la nota dice cuántas sacó y cuántas de ellas tienes):
