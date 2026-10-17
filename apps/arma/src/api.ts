@@ -1,5 +1,5 @@
 // The app's own API (server/index.ts), through Vite's proxy
-import type { ArmaFinish, ArmaRules } from '@pokenitsu/core';
+import type { ArmaFinish, ArmaRules, CardPrices, LocationRule } from '@pokenitsu/core';
 
 export type Permission = 'ok' | 'text_only' | 'review' | 'none' | 'own' | 'local';
 export interface Source {
@@ -66,6 +66,119 @@ export interface SavedView {
   builtIn?: boolean;
 }
 
+// ---------- Cargar and Mi inventario (cargar-e-inventario-en-arma): the inventory shared with Nitsu ----------
+export interface CardSet {
+  id: string;
+  name: string;
+  name_ja: string;
+  series: string | null;
+  code: string;
+  date: string;
+  total: number | null;
+  printed: number | null;
+  sym: string;
+  source: string;
+  /** the only language of the expansion (Japanese ones), or null */
+  lang: string | null;
+  has_cards: boolean;
+}
+/** one row of a card: variant + language + condition + location */
+export interface CopyRow {
+  variant: string;
+  lang: string;
+  cond: string;
+  loc: number;
+  qty: number;
+  personal: number;
+}
+export interface SetCard {
+  id: string;
+  sid: string;
+  num: string;
+  name: string;
+  dex: number[] | null;
+  artist: string | null;
+  rarity: string | null;
+  img: string | null;
+  supertype: string | null;
+  variants: string[] | null;
+  vguess: boolean | null;
+  prices: CardPrices | null;
+  copies: CopyRow[];
+  /** the account's own photo of some variants: { variant: img } */
+  photos: Record<string, string>;
+  /** without a picture: one of the same Pokémon from another expansion, shown as a reference */
+  ref: string | null;
+}
+export interface PriceCfg {
+  source: string;
+  cond: Record<string, number>;
+}
+export interface Fx {
+  usd: number;
+  eur: number;
+}
+export interface SetCards {
+  /** the variants' names: { slug: label } */
+  labels: Record<string, string>;
+  cfg: PriceCfg;
+  fx: Fx | null;
+  own: Record<string, number | null>;
+  cards: SetCard[];
+}
+export interface InvLocation {
+  id: number;
+  name: string;
+  kind: string;
+  pos: number;
+  note: string | null;
+  rule: LocationRule | null;
+}
+export interface InvRow extends CopyRow {
+  card_id: string;
+  added: string;
+  sid: string;
+  num: string;
+  name: string;
+  dex: number[] | null;
+  artist: string | null;
+  rarity: string | null;
+  img: string | null;
+  supertype: string | null;
+  set_name: string;
+  set_code: string;
+  price_usd: CardPrices['usd'];
+  price_eur: CardPrices['eur'];
+  /** the account's own photo of this variant */
+  own_img: string | null;
+  ref: string | null;
+}
+export interface Inventory {
+  labels: Record<string, string>;
+  cfg: PriceCfg;
+  fx: Fx | null;
+  own: Record<string, number | null>;
+  rows: InvRow[];
+  locations: InvLocation[];
+}
+/** what the API answers after a load, a removal or an undo: the row as it ends up */
+export interface RowResult {
+  sid: string;
+  num: string;
+  variant: string;
+  lang: string;
+  cond: string;
+  loc: number;
+  qty: number;
+  personal: number;
+}
+export interface Undone extends Partial<RowResult> {
+  undone: number | null;
+  batch?: string | null;
+  rows: RowResult[];
+}
+type RowKey = Pick<RowResult, 'sid' | 'num' | 'variant' | 'lang' | 'cond' | 'loc'>;
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -85,6 +198,17 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
   return j as T;
 }
 export const api = {
+  // Cargar and Mi inventario
+  sets: (q?: string) => call<{ sets: CardSet[]; lang: string | null }>('GET', '/sets' + (q ? '?q=' + encodeURIComponent(q) : '')),
+  setCards: (id: string) => call<SetCards>('GET', `/sets/${encodeURIComponent(id)}/cards`),
+  inventory: () => call<Inventory>('GET', '/inventory'),
+  add: (row: RowKey & { delta: number; personal?: boolean; batch?: string }) =>
+    call<RowResult & { real: number; logId: number | null }>('POST', '/inventory/add', row),
+  undo: () => call<Undone>('POST', '/inventory/undo', {}),
+  move: (row: RowKey & { to: Partial<Pick<RowResult, 'variant' | 'lang' | 'cond' | 'loc'>>; n?: number }) =>
+    call<{ moved: number }>('POST', '/inventory/move', row),
+  personal: (row: RowKey & { personal: number }) => call<{ personal: number }>('POST', '/inventory/personal', row),
+  ownPrice: (b: { sid: string; num: string; variant: string; usd: number | '' }) => call<{ ok: true }>('PUT', '/prices/own', b),
   me: () => call<{ viewer: { id: string; name: string } | null }>('GET', '/me'),
   full: (dex: number) => call<Full>('GET', `/full/${dex}`),
   owned: (dex: number) => call<{ copies: Copy[] }>('GET', `/owned/${dex}`),

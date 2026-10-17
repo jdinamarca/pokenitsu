@@ -170,6 +170,12 @@ Una herramienta de escritorio en tres columnas fijas que ocupan toda la ventana:
 
 La zona de trabajo tiene arriba el contador con su nota y la leyenda de stickers, y debajo la vitrina, que hace scroll por dentro con su borde de luz pegado arriba. La vitrina se ordena en repisas por diseño (una ilustración y todas sus impresiones), de la más antigua a la más nueva; dentro de una repisa, por idioma (inglés primero), luego expansión, acabado y sello. Bajo la leyenda, "Ordenar: Por diseño · Por expansión" (dos botones como los chips de vista, en grafito; el elegido en cartulina) cambia a una repisa por expansión en una sola línea de tiempo que mezcla regiones (ロケット団, Japón 1997, antes que Team Rocket, 2000). Su subtítulo es "Región · AAAA-MM" o "Fecha por confirmar", y dentro va por número y luego idioma, acabado y sello.
 
+**Riel de navegación:** bajo la marca, "Arma · Eevee", "Cargar" y "Mi inventario" con su icono de línea (Layers, Plus, Archive); la pantalla actual va en cartulina. Debajo, la zona propia de cada pantalla (reglas y vistas en Eevee, expansiones recientes en Cargar, ubicaciones en Mi inventario) y "Cerrar sesión" al pie. Las listas del riel (recientes, ubicaciones) son renglones con su cifra condensada a la derecha y una línea de ayuda; el elegido se ilumina con la luz cálida.
+
+**Cargar (canvas AO):** el mismo esqueleto. Arriba, el contador "N / total encendidas", el nombre de la expansión con su idioma y la entrada grande (48px, cifras condensadas en luz cálida, borde de luz al enfocar). Debajo, los ajustes de la sesión como chips de grafito con su select (Idioma, Estado, Para, Guardar en) y, a la derecha, "Todas · Solo las que faltan". La vitrina muestra la expansión entera por número; la ficha muestra la carta marcada, lo que se va a cargar, "Cargar una" y "Deshacer", los avisos y "En esta sesión".
+
+**Mi inventario (canvas AR):** el contador de copias con su nota (cartas distintas y valor para vender), la búsqueda y "Para". La vitrina tiene una repisa por ubicación real, en el orden del usuario; las repisas envuelven sus cartas en varias filas (nunca hay scroll horizontal escondido). La ficha usa formularios en línea (mover, personales, mi precio), nunca ventanas emergentes.
+
 Ritmo: 6 / 10 / 16 / 22px. Las cartas van a 112px de ancho, con 14px entre columnas y 16px entre filas.
 
 ## Elevation & Depth
@@ -216,6 +222,13 @@ La carta a 112px con su foto real y, debajo, una etiqueta de cartulina con idiom
 - **Elegida:** contorno de luz cálida a 3px.
 - **Hover:** sube 3px.
 - **Código de catálogo:** en su tooltip y en su etiqueta accesible.
+
+### Carta de carga y de estantería
+
+La misma carta de la vitrina, a 112px, con una etiqueta de cartulina: en Cargar, número y variante automática; en Mi inventario, idioma · variante y estado.
+
+- **En Cargar:** encendida si tienes alguna copia (cualquier variante, idioma o estado), en penumbra si te falta. La marcada (al escribir su número o con un clic) lleva el contorno de luz a 3px. Una expansión de más de 250 cartas usa `content-visibility: auto`.
+- **Sin foto propia ni del catálogo:** la foto de referencia del mismo Pokémon, atenuada como las de referencia de Eevee; en la ficha grande, con la nota "Foto de referencia: esta carta no tiene foto". Tu foto de la variante siempre gana.
 
 ### Ficha
 

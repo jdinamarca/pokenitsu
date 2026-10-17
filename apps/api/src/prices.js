@@ -5,12 +5,12 @@
 // Checklist and hand-typed cards have no market price: set your own with price_overrides.
 import { pool, asSystem } from './db.js';
 import { fetchJSON, norm } from './catalog.js';
+import { getFx as fxOf } from '@pokenitsu/inventory';
 
 const PTCG = 'https://api.pokemontcg.io/v2';
 const TCGDEX_JA = 'https://api.tcgdex.net/v2/ja';
 const TCGDEX_EN = 'https://api.tcgdex.net/v2/en';
 const MAX_AGE = '20 hours';
-const FX_MAX_AGE_MS = 12 * 3600 * 1000;
 
 const num = x => (typeof x === 'number' && x > 0 ? Math.round(x * 100) / 100 : undefined);
 const clean = o => { const r = Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined)); return Object.keys(r).length ? r : null; };
@@ -228,18 +228,5 @@ export async function putSetting(key, value) {
     [key, JSON.stringify(value)]);
 }
 
-// CLP per USD and per EUR; tries exchangerate-api, then mindicador.cl (Banco Central's rates); keeps the last ones on failure
-async function downloadFx() {
-  try {
-    const j = await fetchJSON('https://open.er-api.com/v6/latest/USD', 2);
-    if (j.rates?.CLP && j.rates?.EUR) return { usd: Math.round(j.rates.CLP * 100) / 100, eur: Math.round(j.rates.CLP / j.rates.EUR * 100) / 100, src: 'exchangerate-api.com' };
-  } catch (e) { console.warn('tipo de cambio (exchangerate-api):', e.message); }
-  const j = await fetchJSON('https://mindicador.cl/api', 2);
-  return { usd: j.dolar.valor, eur: j.euro.valor, src: 'mindicador.cl' };
-}
-export async function getFx(force = false) {
-  const cur = await getSetting('fx', null);
-  if (cur && !force && Date.now() - new Date(cur.at).getTime() < FX_MAX_AGE_MS) return cur;
-  try { await putSetting('fx', await downloadFx()); return await getSetting('fx', null); }
-  catch (e) { console.warn('tipo de cambio:', e.message); return cur; }
-}
+// CLP per USD and per EUR, shared by every account; refreshed when stale (shared with Arma tu colección)
+export const getFx = (force = false) => fxOf(pool, force);

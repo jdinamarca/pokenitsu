@@ -9,11 +9,13 @@ import { pool, tx, migrate, runAsUser, endUser } from './db.js';
 import { createAuth, googleEnabled } from './auth.js';
 import { IMAGE_DIR } from './imagenes.js';
 import { aportesRoutes } from './aportes.js';
-import { norm, ensureSets, syncSets, ensureSetCards, syncAllCards, syncJaDex, applyJaNames } from './catalog.js';
+import { norm, ensureSets, syncSets, syncAllCards, syncJaDex, applyJaNames } from './catalog.js';
 import { syncCameos, cameosJob, CAMEO_SOURCE } from './cameos.js';
 import { fillDetails, startDetailsJob, detailsJob, startVariantsJob, variantsJob, startVariantsForMySets } from './details.js';
 import { ensureCardPrice, ensureSetPrices, refreshPrices, staleCount, getSetting, putSetting, getFx } from './prices.js';
+import { inv } from './inventory.js';
 import { pickPrice } from '@pokenitsu/core';
+import { writeRow, lockRow, ownClp, bad, checkVariant, checkCond, checkLang, checkLoc, PRICE_CFG as INV_PRICE_CFG } from '@pokenitsu/inventory';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const LANGS = ['ES', 'EN', 'PT', 'FR', 'DE', 'IT', 'JA', 'KO', 'ZH'];
@@ -25,10 +27,8 @@ const IMAGE_EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp
 // card fields the page needs, aliased to the names it uses
 const CARD_COLS = `c.set_id AS sid, c.number AS num, c.name, c.dex, c.artist, c.rarity, c.image_small AS img, c.supertype`;
 
-const bad = msg => Object.assign(new Error(msg), { statusCode: 400 });
 // normal / holo / reverse, or a special variant slug (firstedition, pokeballholo…)
 const VARIANT_RE = /^[a-z0-9]{1,60}$/;
-const checkVariant = v => { if (!VARIANT_RE.test(String(v))) throw bad(`Variante inválida: ${v}`); return v; };
 // group pictures: an http(s) URL or a file we stored under /art/
 const checkImageUrl = u => {
   u = String(u ?? '').trim();
@@ -41,23 +41,10 @@ async function removeLocalImage(u) {
 }
 // card condition, NM unless said otherwise (bulk is almost always NM)
 const CONDS = ['NM', 'LP', 'MP', 'HP', 'DMG'];
-const checkCond = c => { c = String(c ?? 'NM').toUpperCase() || 'NM'; if (!CONDS.includes(c)) throw bad(`Estado inválido: ${c}`); return c; };
-const checkLang = (l, allowEmpty = true) => {
-  l = String(l ?? '').toUpperCase();
-  if (l === '' && allowEmpty) return l;
-  if (!LANGS.includes(l)) throw bad(`Idioma inválido: ${l}`);
-  return l;
-};
 
-// Finds the card id for a set + number as typed (exact first, then normalized: 025 → 25, TG05 → TG5)
-async function resolveCard(c, sid, num) {
-  const q = () => c.query(
-    'SELECT id, number FROM cards WHERE set_id = $1 AND (number = $2 OR number_norm = $3) ORDER BY (number = $2) DESC LIMIT 1',
-    [sid, String(num), norm(num)]);
-  let { rows } = await q();
-  if (!rows.length) { await ensureSetCards(sid); ({ rows } = await q()); }
-  return rows[0] || null;
-}
+
+// the inventory and catalog operations shared with Arma tu colección (@pokenitsu/inventory)
+const { resolveCard, ensureSetCards, rowOf, moveRow } = inv;
 
 async function groupsWithCards(c = pool) {
   const { rows: groups } = await c.query('SELECT id, name, cols, image_url, kind, note FROM art_groups ORDER BY created_at DESC, id DESC');
@@ -222,7 +209,8 @@ app.post('/api/catalog/sync', async () => {
 });
 
 // ---------- prices ----------
-const PRICE_CFG = { source: 'tcgplayer', cond: { NM: 1, LP: 0.85, MP: 0.7, HP: 0.5, DMG: 0.3 }, alert: 5000, ownDays: 7 };
+// default price settings, shared with Arma tu colección
+const PRICE_CFG = INV_PRICE_CFG;
 const PRICE_COLS = `c.set_id || '|' || c.number AS k, p.usd, p.eur, p.url, to_char(p.fetched_at, 'YYYY-MM-DD"T"HH24:MI:SSOF') AS at`;
 let priceJob = null;
 function startPriceJob(force) {
@@ -277,27 +265,8 @@ app.put('/api/prices/settings', async req => {
   await putSetting('prices', { source: b.source === 'cardmarket' ? 'cardmarket' : 'tcgplayer', cond, alert, ownDays });
   return getSetting('prices', PRICE_CFG);
 });
-// my own price in CLP; typed in USD it follows today's exchange rate
-const ownClp = (r, fx) => r.usd != null && fx ? Math.round(r.usd * fx.usd) : r.clp;
 // my own price (NM) for a card + variant, in usd or clp; both null = back to the market price
-app.put('/api/prices/own', async req => {
-  const { sid, num } = req.body || {};
-  const variant = checkVariant(req.body.variant);
-  const card = await resolveCard(pool, sid, num);
-  if (!card) throw bad(`La carta ${num} no existe en la expansión ${sid}`);
-  const id = card.id;
-  const usd = req.body.usd == null || req.body.usd === '' ? null : Math.round(Number(req.body.usd) * 100) / 100;
-  if (usd == null && (req.body.clp == null || req.body.clp === '')) await pool.query('DELETE FROM price_overrides WHERE card_id = $1 AND variant = $2', [id, variant]);
-  else {
-    if (usd != null && !(usd >= 0)) throw bad('Precio inválido');
-    const clp = usd != null ? ownClp({ usd }, await getFx()) : parseInt(req.body.clp, 10);
-    if (!(clp >= 0)) throw bad(usd != null ? 'No tengo el tipo de cambio para convertir a CLP' : 'Precio inválido');
-    // saving the same value again counts as "checked today"
-    await pool.query(`INSERT INTO price_overrides (card_id, variant, clp, usd) VALUES ($1, $2, $3, $4)
-      ON CONFLICT (user_id, card_id, variant) DO UPDATE SET clp = $3, usd = $4, updated_at = now()`, [id, variant, clp, usd]);
-  }
-  return { ok: true };
-});
+app.put('/api/prices/own', async req => inv.ownPrice(pool, req.body || {}));
 
 // one representative card per Pokédex number (prefers recent commons from regular expansions), used to show species you don't own yet.
 // Promos, McDonald's, Rumble, trainer kits… go last: several of their images are missing at pokemontcg.io (404) or look odd
@@ -431,113 +400,15 @@ app.delete('/api/card-image', async req => {
 
 // ---------- inventory ----------
 // A row is one card + variant + language + condition + location: r = { cardId, variant, lang, cond, loc }
-const ROW_WHERE = 'card_id = $1 AND variant = $2 AND lang = $3 AND cond = $4 AND loc = $5';
-const rowArgs = r => [r.cardId, r.variant, r.lang, r.cond, r.loc];
-// Writes a row's quantities (deletes it at 0)
-async function writeRow(c, r, qty, personal) {
-  if (qty <= 0) await c.query(`DELETE FROM inventory WHERE ${ROW_WHERE}`, rowArgs(r));
-  else await c.query(
-    `INSERT INTO inventory (card_id, variant, lang, cond, loc, qty, personal) VALUES ($1, $2, $3, $4, $5, $6, $7)
-     ON CONFLICT (user_id, card_id, variant, lang, cond, loc) DO UPDATE SET qty = $6, personal = $7, updated_at = now()`,
-    [...rowArgs(r), qty, Math.min(Math.max(personal, 0), qty)]);
-}
-const lockRow = (c, r) => c.query(`SELECT qty, personal, added_at FROM inventory WHERE ${ROW_WHERE} FOR UPDATE`, rowArgs(r))
-  .then(x => x.rows[0] || { qty: 0, personal: 0, added_at: null });
-const checkLoc = l => { l = parseInt(l ?? 0, 10) || 0; if (l < 0) throw bad('Ubicación inválida'); return l; };
-// the row a request talks about (resolves set + number to the card)
-async function rowOf(c, b) {
-  const variant = checkVariant(b.variant), lang = checkLang(b.lang), cond = checkCond(b.cond), loc = checkLoc(b.loc);
-  if (loc) { const { rows } = await c.query('SELECT 1 FROM locations WHERE id = $1', [loc]); if (!rows.length) throw bad('Esa ubicación ya no existe'); }
-  const card = await resolveCard(c, b.sid, b.num);
-  if (!card) throw Object.assign(new Error(`La carta ${b.num} no existe en la expansión ${b.sid}`), { statusCode: 404 });
-  return { cardId: card.id, num: card.number, variant, lang, cond, loc };
-}
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 // personal: true = the added copies go to my personal collection; batch: id shared by every card of a range ("1-30"), undone together
-app.post('/api/inventory/add', async req => {
-  const b = req.body || {};
-  const d = parseInt(b.delta, 10);
-  if (!d || Math.abs(d) > 10000) throw bad('Cantidad inválida');
-  if (b.batch != null && !UUID_RE.test(String(b.batch))) throw bad('Grupo inválido');
-  return tx(async c => {
-    const r = await rowOf(c, b);
-    const cur = await lockRow(c, r);
-    const next = Math.max(0, cur.qty + d), real = next - cur.qty;
-    // removing takes copies for sale first, then personal ones
-    const pers = real > 0 && b.personal ? cur.personal + real : Math.min(cur.personal, next);
-    await writeRow(c, r, next, pers);
-    let logId = null;
-    if (real) ({ rows: [{ id: logId }] } = await c.query(
-      'INSERT INTO inventory_log (card_id, variant, lang, cond, loc, delta, personal, batch) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id',
-      [...rowArgs(r), real, pers - cur.personal, b.batch || null]));
-    return { sid: b.sid, num: r.num, variant: r.variant, lang: r.lang, cond: r.cond, loc: r.loc, qty: next, personal: next ? pers : 0, real, logId };
-  });
-});
-
+app.post('/api/inventory/add', async req => tx(c => inv.add(c, req.body || {})));
 // How many copies of a row are personal (0..qty)
-app.post('/api/inventory/personal', async req => {
-  const n = parseInt(req.body?.personal, 10);
-  if (!(n >= 0)) throw bad('Cantidad inválida');
-  return tx(async c => {
-    const r = await rowOf(c, req.body);
-    const cur = await lockRow(c, r);
-    if (!cur.qty) throw bad('No tienes copias de esa carta');
-    await writeRow(c, r, cur.qty, n);
-    return { personal: Math.min(n, cur.qty) };
-  });
-});
-
+app.post('/api/inventory/personal', async req => tx(c => inv.setPersonal(c, req.body || {})));
 // Undoes the last load; when it was part of a range (batch), the whole range at once.
 // rows: every row as it ends up; the first one's fields are also at the top level (single loads)
-app.post('/api/inventory/undo', async () => tx(async c => {
-  const { rows: [last] } = await c.query('SELECT id, batch FROM inventory_log ORDER BY id DESC LIMIT 1 FOR UPDATE');
-  if (!last) return { undone: null, rows: [] };
-  const { rows: entries } = await c.query(
-    `SELECT l.*, ${CARD_COLS} FROM inventory_log l JOIN cards c ON c.id = l.card_id
-     WHERE ${last.batch ? 'l.batch = $1' : 'l.id = $1'} ORDER BY l.id DESC FOR UPDATE OF l`, [last.batch || last.id]);
-  const out = [];
-  for (const e of entries) {
-    const r = { cardId: e.card_id, variant: e.variant, lang: e.lang, cond: e.cond, loc: e.loc };
-    const cur = await lockRow(c, r);
-    const next = Math.max(0, cur.qty - e.delta), pers = Math.min(Math.max(0, cur.personal - e.personal), next);
-    await writeRow(c, r, next, pers);
-    await c.query('DELETE FROM inventory_log WHERE id = $1', [e.id]);
-    out.push({ undone: e.id, sid: e.sid, num: e.num, variant: e.variant, lang: e.lang, cond: e.cond, loc: e.loc, qty: next, personal: next ? pers : 0 });
-  }
-  return { ...out[0], batch: last.batch, rows: out };
-}));
-
-// Moves n copies (default all; copies for sale go first) of a row to another variant / language / condition / location,
-// merging if that row already exists. Log entries follow when the whole row moves, so undo stays coherent.
-async function moveRow(c, from, to, n = Infinity) {
-  const cur = await lockRow(c, from);
-  if (!cur.qty || ['variant', 'lang', 'cond', 'loc'].every(k => from[k] === to[k])) return 0;
-  const k = Math.min(n, cur.qty), kp = Math.max(0, k - (cur.qty - cur.personal));
-  await writeRow(c, from, cur.qty - k, cur.personal - kp);
-  await c.query(
-    `INSERT INTO inventory (card_id, variant, lang, cond, loc, qty, personal, added_at) VALUES ($1, $2, $3, $4, $5, $6, $7, coalesce($8, now()))
-     ON CONFLICT (user_id, card_id, variant, lang, cond, loc) DO UPDATE SET qty = inventory.qty + excluded.qty, personal = inventory.personal + excluded.personal,
-       added_at = least(inventory.added_at, excluded.added_at), updated_at = now()`,
-    [...rowArgs(to), k, kp, cur.added_at]);
-  if (k === cur.qty) await c.query(`UPDATE inventory_log SET variant = $6, lang = $7, cond = $8, loc = $9 WHERE ${ROW_WHERE}`, [...rowArgs(from), to.variant, to.lang, to.cond, to.loc]);
-  return k;
-}
+app.post('/api/inventory/undo', async () => tx(c => inv.undo(c)));
 // n copies (default all) of a row to another language, condition and/or location: body = row + {to: {lang?, cond?, loc?}, n?}
-app.post('/api/inventory/move', async req => {
-  const b = req.body || {}, t = b.to || {};
-  const n = b.n == null ? Infinity : parseInt(b.n, 10);
-  if (!(n > 0)) throw bad('Cantidad inválida');
-  return tx(async c => {
-    const from = await rowOf(c, b);
-    const to = { ...from, variant: t.variant !== undefined ? checkVariant(t.variant) : from.variant, lang: t.lang !== undefined ? checkLang(t.lang, false) : from.lang, cond: t.cond !== undefined ? checkCond(t.cond) : from.cond, loc: t.loc !== undefined ? checkLoc(t.loc) : from.loc };
-    if (to.loc) { const { rows } = await c.query('SELECT 1 FROM locations WHERE id = $1', [to.loc]); if (!rows.length) throw bad('Esa ubicación ya no existe'); }
-    const moved = await moveRow(c, from, to, n);
-    // the copies just loaded were re-filed (e.g. its price sent it to the binder): undo must find them in the new place
-    if (moved && b.logId) await c.query('UPDATE inventory_log SET variant = $2, lang = $3, cond = $4, loc = $5 WHERE id = $1', [b.logId, to.variant, to.lang, to.cond, to.loc]);
-    return { moved };
-  });
-});
+app.post('/api/inventory/move', async req => tx(c => inv.move(c, req.body || {})));
 // several whole rows to new locations at once (auto-assign): moves [{sid, num, variant, lang, cond, loc, to}]
 app.post('/api/inventory/move-locs', { bodyLimit: 20 * 1024 * 1024 }, async req => {
   const moves = Array.isArray(req.body?.moves) ? req.body.moves : [];
