@@ -6,8 +6,9 @@ import { normNumber, photoShows } from '@pokenitsu/core';
 import { pool, tx } from './db.ts';
 import { LOCAL_IMAGE_DIR, localPhotosOn } from './local.ts';
 import { limitlessFile, limitlessUrl } from './limitless.ts';
-import { intlSetByName, loadCatalog, nameKey } from './sources/catalog.ts';
+import { intlSetByName, loadCatalog } from './sources/catalog.ts';
 import { downloadOnce, fetchJson, mapLimit } from './sources/http.ts';
+import { pokecottageAlbum } from './sources/pokecottage.ts';
 import { speciesNames } from './sources/tcgdex.ts';
 
 interface Target {
@@ -41,26 +42,17 @@ export interface PhotoSummary {
 }
 
 // a safe file name from a URL (no folders, no odd characters)
-const fileOf = (url: string) =>
+export const fileOf = (url: string) =>
   basename(new URL(url).pathname)
     .replace(/[^\w.-]+/g, '_')
     .slice(-120);
 
 /** PokeCottage: the photo of each master-set entry, matched to its printing by the entry id kept as ref */
 async function pokecottage(dex: number, species: string, targets: Holder[], all: Holder[]): Promise<Found[]> {
-  const url = `https://pokecottagecdn.com/mastersets/data/${dex}-${nameKey(species)}.json`;
-  // its own cache key: the text importer's cache (without any picture URL) stays as it is
-  const data = await fetchJson<{ cards: { id: string; url: string | null }[] }>(url, {
-    cacheKey: url + '#fotos',
-    transform: raw => ({
-      cards: ((raw as { cards?: { id: string; imageUrl?: string; originalImageUrl?: string }[] }).cards || []).map(c => ({
-        id: c.id,
-        url: c.imageUrl || c.originalImageUrl || null,
-      })),
-    }),
-  });
-  if (!data) throw new Error('PokeCottage no trajo el master set');
-  const byId = new Map(data.cards.filter(c => c.url).map(c => [c.id, c.url!]));
+  // the same album (30 days in the cache) as the Japanese catalog's photos
+  const cards = await pokecottageAlbum(dex, species);
+  if (!cards) throw new Error('PokeCottage no trajo el master set');
+  const byId = new Map(cards.filter(c => c.url).map(c => [c.id, c.url!]));
   // the same picture for two entries of one card (unlimited and 1st Edition) shows only one of them: photoShows says which
   const holders = new Map<string, Holder[]>();
   for (const h of all) {

@@ -4,11 +4,11 @@ import { migrate } from './migrate.ts';
 import { pool } from './db.ts';
 import { importDex } from './importer.ts';
 import { importLocalPhotos } from './localPhotos.ts';
-import { catalogJob, startCatalogPhotos } from './catalogPhotos.ts';
+import { catalogJob, PRINTED_PHOTOS, startCatalogPhotos } from './catalogPhotos.ts';
 import { LOCAL_IMAGE_DIR, localPhotosOn } from './local.ts';
 import { isOwner, ownedCopies, requireOwner, requireViewer, viewerOf } from './session.ts';
 import { authRoutes, initAuth } from './auth.ts';
-import { inventoryRoutes, PRINTED_PHOTOS } from './inventory.ts';
+import { inventoryRoutes } from './inventory.ts';
 import { auditPrintings, FULL_RULES, type ArmaFinish, type ArmaRules, type AuditReason } from '@pokenitsu/core';
 import { createReadStream } from 'node:fs';
 import { mkdir, readdir, stat, unlink, writeFile } from 'node:fs/promises';
@@ -314,9 +314,11 @@ app.get('/api/replace/cards', async req => {
   return { localPhotos: localPhotosOn(), cards: cards.rows, ...totals.rows[0]! };
 });
 // the whole Japanese catalog's photos for local use only: one expansion after the other, never two runs at once
-app.post('/api/local-photos/catalog', async req => {
+app.post<{ Body: { dex?: unknown } }>('/api/local-photos/catalog', async req => {
   await requireOwner(req);
-  return startCatalogPhotos();
+  // dex: only those Pokémon (to try it without the whole catalog)
+  const dex = Array.isArray(req.body?.dex) ? req.body.dex.map(Number).filter(n => Number.isInteger(n) && n > 0) : undefined;
+  return startCatalogPhotos({ dex });
 });
 app.get('/api/local-photos/catalog', async req => {
   await requireOwner(req);

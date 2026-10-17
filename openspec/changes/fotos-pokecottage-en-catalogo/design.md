@@ -53,6 +53,8 @@ Al ir después de Limitless, solo se le pide a PokeCottage lo que de verdad falt
 - Estimación: unos 850 álbumes y unas 1.300 fotos nuevas tardan en torno a 40 minutos, y la máxima carga es menos de 1,5 peticiones por segundo.
 
 ### 3. 429/503: esperar lo que pide, y detenerse si sigue fallando
+*Al implementar:* una falla que no es "esperar" (un 500, un archivo que no es imagen) no se repite. Se cuenta como fallida, se espera una pausa de 5 s y se sigue con la siguiente; así, una sola foto rota no traba todas las descargas. Las fallas seguidas se cuentan igual, y con 3 se detiene.
+
 - `http.ts` agrega `class SourceBusy extends Error { retryAfterMs }`. `fetchJson` y `downloadOnce` la lanzan con 429 o 503, **sin** su reintento rápido.
 - El valor sale de `Retry-After` en segundos o como fecha. Si no viene, son 60 s, con un tope de 10 minutos.
 - El paso de PokeCottage atrapa `SourceBusy`, espera ese tiempo, dejando `waitingUntil` en el avance, y reintenta **la misma** petición.
@@ -60,9 +62,11 @@ Al ir después de Limitless, solo se le pide a PokeCottage lo que de verdad falt
 - Retomar es pedir la descarga otra vez: lo ya bajado está en `arma.card_photos` y los álbumes, en caché.
 
 ### 4. El álbum se guarda 30 días, con lo justo
-`fetchJson(url, { ttl: 30 días, cacheKey: url + '#fotos', transform })` usa la misma clave que `localPhotos.ts`, así que el álbum de Eevee ya bajado sirve. El `transform` se queda solo con lo que se usa: `pokemonNumber`, `cardNumber`, `variantType`, `set.id`, `set.name` e `imageUrl` de las entradas japonesas.
+`pokecottageAlbum(dex, nombre)` llama a `fetchJson(url, { ttl: 30 días, tries: 1, cacheKey: url + '#fotos-v2', transform })`. Con `tries: 1`, quien llama decide cuándo volver a preguntar, así que nunca hay un reintento rápido a PokeCottage. El `transform` se queda solo con lo que se usa de cada entrada: `id`, URL de la foto, `pokemonNumber`, `cardNumber`, `variantType`, `set.id` y `set.name`.
 
-`localPhotos.ts` pasa a pedirlo con el mismo `ttl` y `transform`, para que ambos guarden lo mismo bajo esa clave. Su `transform` actual es un subconjunto, así que se reemplaza por el nuevo.
+`localPhotos.ts` (las fotos del Full) usa la misma función, así que un álbum se pide una sola vez para las dos cosas.
+
+*Cambio al implementar:* la clave es `#fotos-v2` y no `#fotos`. La entrada `#fotos` guardada tenía la forma vieja (solo `id` y URL), y con 30 días de vida habría pasado por buena sin los campos nuevos. Cuesta pedir de nuevo una sola vez el álbum de Eevee.
 
 El nombre en inglés de cada Pokémon sale de `speciesNames(dex)`, como en el importador. Un 404 del álbum (un nombre que PokeCottage escribe distinto) se cuenta como "PokeCottage no tiene ese Pokémon" y no detiene nada.
 
@@ -79,11 +83,13 @@ Entre varias entradas de una carta, gana la de `variantType = 'default'`, y si n
 
 El Pokédex es la segunda verificación que pide la regla de veracidad. Así, un nombre de expansión mal cruzado no puede darle a una carta la foto de otro Pokémon.
 
-**Alias:** se agrega `PC_SET_ALIASES: Record<nameKey de PokeCottage, id de la expansión>` en el mismo archivo. Se arma así:
+**Alias:** se agrega `PC_SET_ALIASES: Record<id de expansión de PokeCottage, id de la nuestra>` en el mismo archivo. Va por id y no por nombre, porque PokeCottage repite nombres ("Sun & Moon"). Se arma así:
 1. Correr el cruce sobre todos los álbumes ya guardados y listar los nombres de expansión japonesa de PokeCottage que no calzan y que tienen cartas sin foto en el catálogo.
 2. Verificar cada alias contra TCGdex y Bulbapedia (fecha, total y nombre japonés) antes de agregarlo.
 
-El primero por revisar es "Strength Expansion Pack Sun & Moon" (6 cartas en la muestra). A qué expansión corresponde se confirma al implementar.
+Resultado al implementar: de las 23 expansiones con japonesas sin foto, solo dos necesitaron alias:
+- `jpn_sm1+` "Sun & Moon" → `ja-SM1p` (サン＆ムーン, 51 cartas, 2017-01-27). Coincide en el catálogo, PokeCottage y Bulbapedia ("Enhanced Expansion Pack Sun & Moon").
+- `jpn_neop2` → `pc-jpn_neop2`, una expansión que el catálogo tomó de PokeCottage con su mismo id.
 
 ### 6. Registro y orden entre fotos solo locales
 Lo encontrado se guarda en `arma.card_photos` con `source_id = 'pokecottage-fotos'`, `src = /img-local/pokecottage-fotos/<archivo>` y `ref` = la URL de PokeCottage. El nombre de archivo es el mismo que usa `localPhotos.ts`, así que una foto que ya bajó el Full no se vuelve a pedir.

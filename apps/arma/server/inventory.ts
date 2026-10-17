@@ -5,7 +5,8 @@ import { searchSetsLang } from '@pokenitsu/core';
 import { CARD_COLS, createInventory, getFx, ownClp, priceSettings, type RowBody } from '@pokenitsu/inventory';
 import { pool, tx } from './db.ts';
 import { requireViewer } from './session.ts';
-import { ensureLocalCardPhotos } from './catalogPhotos.ts';
+import { ensureLocalCardPhotos, PRINTED_PHOTOS } from './catalogPhotos.ts';
+import { pickCardPhotos, type CardPhotos } from './photoOrder.ts';
 import { localPhotosOn } from './local.ts';
 import { asViewer } from './viewerTx.ts';
 
@@ -50,8 +51,6 @@ async function refImages(dexes: number[]): Promise<Map<number, string>> {
   );
   return new Map(rows.map(r => [r.dex, r.img]));
 }
-// a catalog card's own photo (anyone's, production-ready) and its photo for local use only (only with the switch on)
-type CardPhotos = { own_card: string | null; local: { src: string; source: string } | null };
 async function cardPhotos(ids: string[]): Promise<Map<string, CardPhotos>> {
   const out = new Map<string, CardPhotos>();
   if (!ids.length) return out;
@@ -67,22 +66,8 @@ async function cardPhotos(ids: string[]): Promise<Map<string, CardPhotos>> {
      ORDER BY p.card_id, p.source_id, p.stamp IS NOT NULL, p.finish <> 'normal', p.code`,
     [ids],
   );
-  // the card's own photo wins over its printing's; a printing's photo for local use only, over Limitless by expansion
-  for (const r of [...rows, ...printed]) {
-    const cur = out.get(r.card_id) || { own_card: null, local: null };
-    if (r.source_id === 'own') cur.own_card ||= r.src;
-    else if (r.permission === 'local' && localPhotosOn() && (!cur.local || printed.includes(r))) cur.local = { src: r.src, source: r.name };
-    out.set(r.card_id, cur);
-  }
-  return out;
+  return pickCardPhotos([...rows.map(r => ({ ...r, printed: false })), ...printed.map(r => ({ ...r, printed: true }))], localPhotosOn());
 }
-/** the photos of the Full's printings of a catalog card (card_id, source_id, src, stamp, finish, code): only in the
- *  card's language (a Taiwanese printing tied to a Japanese card isn't its photo) and not one marked as showing another variant */
-export const PRINTED_PHOTOS = `(SELECT p.card_id, f.source_id, f.value AS src, p.stamp, p.finish, p.code
-  FROM arma.printings p JOIN cards c ON c.id = p.card_id JOIN sets k ON k.id = c.set_id
-  JOIN arma.facts f ON f.printing_code = p.code AND f.field = 'image' AND f.value IS NOT NULL
-  LEFT JOIN arma.photo_marks m ON m.src = f.value
-  WHERE p.lang = CASE WHEN k.lang = 'JA' THEN 'JA' ELSE 'EN' END AND coalesce(m.shows, '') = coalesce(p.stamp, ''))`;
 const NO_PHOTOS: CardPhotos = { own_card: null, local: null };
 
 type Pictured = { img: string | null; dex: number[] | null };
