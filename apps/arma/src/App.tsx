@@ -5,6 +5,7 @@ import { toLogin } from './auth.ts';
 import { api, ApiError, type Copy, type Full, type SavedView, type Source } from './api.ts';
 import { copiesByCode, REDUCES, RULES, shelvesBySet, shelvesOf, STICKER, withPhotoShows, cardOf, type Order } from './model.ts';
 import { Rail } from './components/Rail.tsx';
+import { Shell } from './components/Shell.tsx';
 import { Showcase } from './components/Showcase.tsx';
 import { Detail } from './components/Detail.tsx';
 
@@ -190,20 +191,25 @@ export function App() {
   const activeRule = RULES.find(r => r.id === active);
   const shelfPicture = sel ? (shelves.find(s => s.printings.includes(sel))?.fallback(sel) ?? null) : null;
   return (
-    <div className="app">
-      <Rail
-        species={SPECIES}
-        dex={DEX}
-        total={printings.length}
-        rules={rules}
-        active={active}
-        onToggle={toggle}
-        views={views}
-        viewId={viewId}
-        onView={pickView}
-        onSave={saveView}
-        onDelete={id => void deleteView(id)}
-      />
+    <Shell
+      path="/"
+      label="Navegación, reglas y vistas"
+      rail={
+        <Rail
+          species={SPECIES}
+          dex={DEX}
+          total={printings.length}
+          rules={rules}
+          active={active}
+          onToggle={toggle}
+          views={views}
+          viewId={viewId}
+          onView={pickView}
+          onSave={saveView}
+          onDelete={id => void deleteView(id)}
+        />
+      }
+    >
       <main className="main">
         <header className="top">
           <p className="count" aria-live="polite">
@@ -288,7 +294,7 @@ export function App() {
         onRemovePhoto={removePhoto}
         reasons={sel ? audit[sel.code] || [] : []}
       />
-    </div>
+    </Shell>
   );
 }
 
