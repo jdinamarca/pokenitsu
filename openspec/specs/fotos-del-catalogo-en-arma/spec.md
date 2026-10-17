@@ -1,7 +1,7 @@
 # fotos-del-catalogo-en-arma Specification
 
 ## Purpose
-Mostrar en arma una foto para cada carta del catálogo, con fotos solo locales (Limitless y PokeCottage) para las japonesas sin foto y la foto propia del administrador, sin que una foto sin permiso llegue a producción.
+Mostrar en arma una foto para cada carta del catálogo, con fotos solo locales (Limitless, PokeCottage y Bill's Archive) para las japonesas sin foto y la foto propia del administrador, sin que una foto sin permiso llegue a producción.
 
 ## Requirements
 
@@ -10,7 +10,7 @@ En Cargar y en Mi inventario, cada carta SHALL mostrar la primera foto que tenga
 1. la foto que la cuenta puso a esa variante;
 2. la foto propia de la carta, o la propia de su impresión del Full;
 3. la foto del catálogo;
-4. la foto solo local de la carta (solo con `ARMA_FOTOS_LOCALES=1`): la de su impresión del Full, si no la de Limitless TCG y, si no, la de PokeCottage;
+4. la foto solo local de la carta (solo con `ARMA_FOTOS_LOCALES=1`): la de su impresión del Full, si no la de Limitless TCG, si no la de PokeCottage y, si no, la de Bill's Archive;
 5. la foto de referencia del mismo Pokémon.
 
 La impresión del Full de una carta SHALL ser una que apunte a esa carta y esté en su mismo idioma: una impresión taiwanesa ligada a una carta japonesa MUST NOT darle su foto. Se prefiere la impresión sin sello y normal. Una foto marcada como de otra variante MUST NOT usarse.
@@ -34,9 +34,10 @@ Una foto solo local SHALL verse con la marca violeta de "solo uso local" en la c
 - **THEN** la carta se muestra con la foto propia, sin marca violeta, para todas las cuentas
 
 ### Requirement: Fotos solo locales del catálogo japonés
-Con el interruptor encendido, el sistema SHALL bajar la foto de cada carta japonesa del catálogo que no tenga foto del catálogo, propia ni de su impresión del Full, de dos fuentes solo locales:
+Con el interruptor encendido, el sistema SHALL bajar la foto de cada carta japonesa del catálogo que no tenga foto del catálogo, propia ni de su impresión del Full, de tres fuentes solo locales:
 - **Limitless TCG**, por expansión, con las mismas reglas de nombre de la descarga local de las fotos;
-- **PokeCottage**, por Pokémon, para las que Limitless no tiene.
+- **PokeCottage**, por Pokémon, para las que Limitless no tiene;
+- **Bill's Archive**, por expansión, para las que siguen sin foto (sobre todo Entrenadores y Energías antiguos).
 
 Cada foto SHALL bajarse una sola vez a la carpeta de fotos locales (nunca al almacenamiento propio) y registrarse con su fuente y el permiso "solo local".
 
@@ -48,6 +49,10 @@ Las de PokeCottage SHALL cumplir estas reglas:
 - **Ritmo:** MUST NOT haber más de una petición a PokeCottage a la vez, y SHALL haber una pausa entre peticiones.
 - **Lo ya pedido:** el álbum de cada Pokémon SHALL guardarse y reutilizarse por 30 días, sin volver a pedirlo. Lo que una carta tiene ya registrado MUST NOT volver a pedirse.
 - **Respuestas de error:** ante una respuesta 429 o 503, el sistema SHALL esperar lo que indique `Retry-After` antes de seguir. Tras varias fallas seguidas, SHALL detener la descarga y decirlo, y una nueva descarga SHALL retomar donde quedó.
+
+Las de Bill's Archive SHALL cumplir las mismas reglas de cuándo, ritmo, lo ya pedido y respuestas de error que PokeCottage, sobre su sitio y su almacenamiento de imágenes. Además:
+- **Cruce:** se leen de la página de cada expansión, que se guarda 30 días. Una imagen SHALL corresponder a una carta solo si su expansión y su número existen en el catálogo.
+- **Control de la página:** si la cantidad de cartas de la página no calza con la de la expansión en el catálogo, la expansión SHALL saltarse y anotarse en el avance.
 
 #### Scenario: Abrir una expansión japonesa sin fotos
 - **WHEN** el interruptor está encendido y el usuario abre VMAX Climax en Cargar por primera vez
@@ -61,8 +66,12 @@ Las de PokeCottage SHALL cumplir estas reglas:
 - **WHEN** Limitless no tiene una carta de una expansión
 - **THEN** las demás se bajan igual, y esa carta queda para el paso de PokeCottage
 
+#### Scenario: Un Entrenador antiguo
+- **WHEN** el administrador baja las fotos del catálogo japonés y la Poké Ball (#048) de Pokémon Jungle no tiene foto de ninguna otra fuente
+- **THEN** queda con la foto de Bill's Archive de Jungle #048, con la marca violeta, y aparece en "Por reemplazar" con la fuente Bill's Archive
+
 #### Scenario: Una carta que ninguna fuente tiene
-- **WHEN** ni Limitless ni el álbum de PokeCottage tienen una carta
+- **WHEN** ni Limitless, ni el álbum de PokeCottage, ni Bill's Archive tienen una carta
 - **THEN** esa carta sigue sin foto solo local y las demás se bajan igual
 
 #### Scenario: PokeCottage pide esperar
