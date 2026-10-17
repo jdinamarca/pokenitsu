@@ -5,6 +5,7 @@ import { basename, join } from 'node:path';
 import { normNumber, photoShows } from '@pokenitsu/core';
 import { pool, tx } from './db.ts';
 import { LOCAL_IMAGE_DIR, localPhotosOn } from './local.ts';
+import { limitlessFile, limitlessUrl } from './limitless.ts';
 import { intlSetByName, loadCatalog, nameKey } from './sources/catalog.ts';
 import { downloadOnce, fetchJson, mapLimit } from './sources/http.ts';
 import { speciesNames } from './sources/tcgdex.ts';
@@ -76,18 +77,10 @@ async function pokecottage(dex: number, species: string, targets: Holder[], all:
 /** Limitless: Japanese set code + number with 3 digits (SV2a 133 → SV2a_133_R_JP_LG.png); only the Japanese printing,
  *  since the Chinese, Thai or Indonesian ones of the same set carry other text */
 function limitless(targets: Target[]): Found[] {
-  return targets
-    .filter(t => t.lang === 'JA' && t.set_key.startsWith('ja-') && /^\d+$/.test(normNumber(t.number)))
-    .map(t => {
-      const set = t.set_key.slice(3);
-      const n = normNumber(t.number).padStart(3, '0');
-      return {
-        code: t.code,
-        source: 'limitless',
-        url: `https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/tpc/${set}/${set}_${n}_R_JP_LG.png`,
-        file: '',
-      };
-    });
+  return targets.flatMap(t => {
+    const f = t.lang === 'JA' ? limitlessFile(t.set_key, t.number) : null;
+    return f ? [{ code: t.code, source: 'limitless', url: limitlessUrl(f), file: '' }] : [];
+  });
 }
 
 /** Bulbagarden Archives: the scan of each card of Bulbapedia's list ("Eevee (Jungle 51)"), for its English printing */

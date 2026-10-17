@@ -5,6 +5,7 @@ import { searchSetsLang } from '@pokenitsu/core';
 import { CARD_COLS, createInventory, getFx, ownClp, priceSettings, type RowBody } from '@pokenitsu/inventory';
 import { pool, tx } from './db.ts';
 import { requireViewer } from './session.ts';
+import { ensureLocalCardPhotos } from './catalogPhotos.ts';
 import { asViewer } from './viewerTx.ts';
 
 // catalog downloads (cards, exchange rate) are shared by every account: plain connections
@@ -77,6 +78,8 @@ export function inventoryRoutes(app: FastifyInstance) {
     const { rows: set } = await pool.query('SELECT 1 FROM sets WHERE id = $1', [sid]);
     if (!set.length) throw Object.assign(new Error('Esa expansión no existe'), { statusCode: 404 });
     await inv.ensureSetCards(sid);
+    // a Japanese expansion's photos for local use only download in the background: the case never waits for them
+    void ensureLocalCardPhotos(sid).catch(() => {});
     const [fx, labels] = await Promise.all([getFx(pool), variantLabels()]);
     return asViewer(
       v,

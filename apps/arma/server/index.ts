@@ -5,7 +5,7 @@ import { pool } from './db.ts';
 import { importDex } from './importer.ts';
 import { importLocalPhotos } from './localPhotos.ts';
 import { LOCAL_IMAGE_DIR, localPhotosOn } from './local.ts';
-import { ownedCopies, requireViewer, viewerOf } from './session.ts';
+import { isOwner, ownedCopies, requireViewer, viewerOf } from './session.ts';
 import { authRoutes, initAuth } from './auth.ts';
 import { inventoryRoutes } from './inventory.ts';
 import { auditPrintings, FULL_RULES, type ArmaFinish, type ArmaRules, type AuditReason } from '@pokenitsu/core';
@@ -132,7 +132,11 @@ app.get<{ Params: { dex: string } }>('/api/audit/:dex', async req => {
 });
 
 // who is asking (null without a Nitsu session)
-app.get('/api/me', async req => ({ viewer: await viewerOf(req) }));
+app.get('/api/me', async req => {
+  const viewer = await viewerOf(req);
+  // owner: the administrator sees "Por reemplazar" (fotos-solo-local-en-catalogo)
+  return { viewer, owner: await isOwner(viewer) };
+});
 
 // the viewer's copies of a Pokémon's printings (read-only, with their own Row Level Security)
 app.get<{ Params: { dex: string } }>('/api/owned/:dex', async req => {

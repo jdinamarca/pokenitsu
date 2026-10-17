@@ -2,13 +2,13 @@
 
 ## 1. Base
 
-- [ ] 1.1 Migración `007` del esquema `arma`: la nota de `pokecottage-fotos` pasa a "Solo uso local: PokeCottage autorizó sus fotos solo para uso local, nunca producción", y se crea la tabla `arma.card_photos (card_id, source_id → arma.sources, src, ref, by_name, saved_at)` con clave `(card_id, source_id)`. Verificar en una copia de la base que la migración corre y que una segunda vez no hace nada.
-- [ ] 1.2 `limitlessFile(setKey, number)`: alias de promos y número sin ceros a la izquierda; `null` para las expansiones no japonesas o los números con letras. El importador del Full pasa a usarla. Pruebas para `SV2a 133 → SV2a_133`, `S8b 001 → S8b_1`, `SV-P 001 → SVP_1`, `M-P 012 → MP_12` y `TG05 → null`. Verificar con `pnpm --filter @pokenitsu/arma test`.
-- [ ] 1.3 `isOwner` / `requireOwner` en `session.ts` (la primera cuenta creada), y `/api/me` con `owner`. Verificar con `curl` en la copia de la base: el dueño recibe `owner: true` y una segunda cuenta, `false`.
+- [x] 1.1 Migración `007` del esquema `arma`: la nota de `pokecottage-fotos` pasa a "Solo uso local: PokeCottage autorizó sus fotos solo para uso local, nunca producción", y se crea la tabla `arma.card_photos (card_id, source_id → arma.sources, src, ref, by_name, saved_at)` con clave `(card_id, source_id)`. Verificar en una copia de la base que la migración corre y que una segunda vez no hace nada.
+- [x] 1.2 `limitlessFile(setKey, number)`: alias de promos y número sin ceros a la izquierda; `null` para las expansiones no japonesas o los números con letras. El importador del Full pasa a usarla. Pruebas para `SV2a 133 → SV2a_133`, `S8b 001 → S8b_1`, `SV-P 001 → SVP_1`, `M-P 012 → MP_12` y `TG05 → null`. Verificar con `pnpm --filter @pokenitsu/arma test`.
+- [x] 1.3 `isOwner` / `requireOwner` en `session.ts` (la primera cuenta creada), y `/api/me` con `owner`. Verificar con `curl` en la copia de la base: el dueño recibe `owner: true` y una segunda cuenta, `false`.
 
 ## 2. Fotos del catálogo
 
-- [ ] 2.1 `ensureLocalCardPhotos(setId)`:
+- [x] 2.1 `ensureLocalCardPhotos(setId)`:
   - solo con el interruptor encendido y para expansiones japonesas;
   - toma las cartas sin `image_small` ni fila en `arma.card_photos`;
   - las baja de a 2, con pausa, con `downloadOnce` a `LOCAL_IMAGE_DIR/limitless/`;
