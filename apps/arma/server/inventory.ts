@@ -2,7 +2,7 @@
 // always inside asViewer. Prices are only read: what Nitsu has stored, never downloaded here.
 import type { FastifyInstance } from 'fastify';
 import { searchSetsLang } from '@pokenitsu/core';
-import { CARD_COLS, createInventory, getFx, ownClp, priceSettings, type RowBody } from '@pokenitsu/inventory';
+import { CARD_COLS, createInventory, createLocations, getFx, ownClp, priceSettings, type RowBody } from '@pokenitsu/inventory';
 import { pool, tx } from './db.ts';
 import { requireViewer } from './session.ts';
 import { ensureLocalCardPhotos, PRINTED_PHOTOS } from './catalogPhotos.ts';
@@ -12,6 +12,8 @@ import { asViewer } from './viewerTx.ts';
 
 // catalog downloads (cards, exchange rate) are shared by every account: plain connections
 const inv = createInventory({ query: (text, params) => pool.query(text, params) as Promise<never>, tx });
+// boxes and binders (cajas-y-carpetas-en-arma): the same operations as Nitsu's Ubicaciones
+const locs = createLocations(inv);
 
 interface SetRow {
   id: string;
@@ -207,6 +209,7 @@ export function inventoryRoutes(app: FastifyInstance) {
           c.query<Pictured & { card_id: string }>(
             `SELECT i.card_id, i.variant, i.lang, i.cond, i.loc, i.qty, i.personal, (extract(epoch FROM i.added_at) * 1000)::bigint AS added,
                     ${CARD_COLS}, coalesce(s.name_en, s.name) AS set_name, coalesce(s.code, '') AS set_code,
+                    s.series AS set_series, s.source AS set_source, s.lang AS set_lang,
                     p.usd AS price_usd, p.eur AS price_eur, vi.img AS own_img
              FROM inventory i JOIN cards c ON c.id = i.card_id JOIN sets s ON s.id = c.set_id
              LEFT JOIN card_prices p ON p.card_id = c.id
@@ -247,5 +250,23 @@ export function inventoryRoutes(app: FastifyInstance) {
   );
   app.put<{ Body: Parameters<typeof inv.ownPrice>[1] }>('/api/prices/own', async req =>
     asViewer(await requireViewer(req), c => inv.ownPrice(c, req.body || {})),
+  );
+
+  // boxes and binders: the same contract as Nitsu's
+  app.post('/api/locations', async req => asViewer(await requireViewer(req), c => locs.create(c, req.body)));
+  app.put<{ Params: { id: string } }>('/api/locations/:id', async req =>
+    asViewer(await requireViewer(req), c => locs.update(c, req.params.id, req.body)),
+  );
+  // order = which rule wins a tie: ids in the new order
+  app.put<{ Body: { ids?: unknown } }>('/api/locations-order', async req =>
+    asViewer(await requireViewer(req), c => locs.reorder(c, req.body?.ids)),
+  );
+  // its copies are left without location
+  app.delete<{ Params: { id: string } }>('/api/locations/:id', async req =>
+    asViewer(await requireViewer(req), c => locs.remove(c, req.params.id)),
+  );
+  // auto-assign: several whole rows to their location, in one transaction
+  app.post<{ Body: { moves?: unknown } }>('/api/inventory/move-locs', { bodyLimit: 20 * 1024 * 1024 }, async req =>
+    asViewer(await requireViewer(req), c => locs.moveMany(c, req.body?.moves)),
   );
 }

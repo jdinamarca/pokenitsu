@@ -27,3 +27,4 @@ Por qué el sistema es como es. El **qué** hace está en [`openspec/specs/`](..
 | [0021](0021-arma-tu-coleccion-reemplaza-a-nitsu.md) | "Arma tu colección" pasa a ser la app que reemplaza a Nitsu, por etapas | Aceptado |
 | [0022](0022-cuentas-en-arma-tu-coleccion.md) | Las cuentas se atienden en "Arma tu colección", con su configuración compartida | Aceptado |
 | [0023](0023-arma-escribe-el-inventario-compartido.md) | "Arma tu colección" escribe el inventario compartido, con las operaciones de un paquete | Aceptado |
+| [0024](0024-arma-gestiona-las-ubicaciones.md) | "Arma tu colección" gestiona las ubicaciones con las operaciones del paquete | Aceptado |

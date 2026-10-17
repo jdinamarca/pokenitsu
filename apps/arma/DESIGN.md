@@ -252,6 +252,23 @@ La pantalla del administrador (`/reemplazar`), sin ficha lateral: el riel lleva 
 - **Al reemplazar,** la carta sale de la vitrina y el contador sube en uno.
 - **En el riel,** "Por reemplazar" (icono ImageUp) aparece solo para el administrador.
 
+### Estante de cajas y carpetas
+
+La pantalla `/cajas` (icono Boxes en el riel) trae el estante de Ubicaciones de Nitsu a la vitrina:
+
+- **La vitrina de fieltro** lleva repisas de madera. Cada fila mide 300px (236px las vacías) y tiene su tabla al pie, así una fila que se parte tiene su propia tabla. Bajo cada repisa va una etiqueta en versalitas apagadas: "Con cartas" o "Vacías por ahora".
+- **Carpeta:** un lomo de pie de 70×200px, del color de lo que recibe (morado si es personal, dorado si es de especiales o tiene precio, y si no un color de la paleta según su posición). Lleva una etiqueta de cartulina con el nombre vertical y la cantidad en cifras condensadas.
+- **Caja:** de cartón (156×118px), con la tapa aparte y una etiqueta crema con un filete de color a la izquierda: el nombre, y debajo "N cartas · $valor".
+- **Movimiento:**
+  - con el mouse, la carpeta se inclina 3° y sube, la tapa gira 24°, y asoman hasta 3 cartas abiertas en abanico (ease-out de 350 a 450 ms);
+  - la elegida queda en esa pose, con un filete de luz cálida bajo ella;
+  - al abrir, las ubicaciones entran escalonadas cada 40 ms;
+  - las vacías van apagadas, con poca saturación;
+  - con "reducir movimiento" no se mueve nada.
+- **Ficha de la ubicación:** "📦 Caja · #4 en la lista" en cifras condensadas de luz, el nombre, y tres cifras grandes: cartas, expansiones y valor. Debajo van 6 miniaturas, "Recibe" con chips de fieltro y la frase completa, los avisos ⚠️ en ámbar, y la nota en un recuadro punteado. Las acciones son "Ver las N cartas" (botón principal), Editar, ↑, ↓ y Borrar en rojo suave.
+- **Diálogos:** el formulario, la confirmación de borrar y el detalle de la asignación son `<dialog>` modales de grafito alzado, con 14px de esquinas. El fondo se oscurece al 60 % y la entrada dura 220 ms. Los campos son de grafito con borde de sala, y las casillas usan el color de la luz.
+- **En el teléfono** la ficha va debajo del estante, y al elegir una ubicación la página baja hasta ella.
+
 ### Ficha
 
 Columna de grafito alzado: código de catálogo en cifras condensadas, foto grande, nombre y datos, una franja de estado ("Cuenta para tu colección" / "Fuera de tu colección por…"), la caja de fieltro con tus copias, y "De dónde sale cada dato", una lista de definiciones con una fuente y su sticker por línea.

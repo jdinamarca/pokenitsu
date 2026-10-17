@@ -6,6 +6,7 @@ import { toLogin } from './auth.ts';
 import { Gate } from './Cargar.tsx';
 import { CardPicture } from './components/CardPicture.tsx';
 import { Shell } from './components/Shell.tsx';
+import { navigate } from './router.ts';
 import { clp, LANG_LABEL, setVariantLabels, rowFor, rowMatches, shelvesOf, VARIANT_LABEL, variantName, type ForFilter } from './load.ts';
 
 const keyOf = (r: InvRow) => `${r.card_id}|${r.variant}|${r.lang}|${r.cond}|${r.loc}`;
@@ -17,7 +18,11 @@ type Load = { state: 'loading' } | { state: 'error'; message: string } | { state
 /** Mi inventario (canvas AR): one shelf per real box or binder, in the order they are kept */
 export function Inventario() {
   const [load, setLoad] = useState<Load>({ state: 'loading' });
-  const [loc, setLoc] = useState<'all' | number>('all');
+  // a location already chosen when coming from Cajas y carpetas (?ubicacion=3, 0 = without one)
+  const [loc, setLoc] = useState<'all' | number>(() => {
+    const u = new URLSearchParams(location.search).get('ubicacion');
+    return u != null && /^\d+$/.test(u) ? Number(u) : 'all';
+  });
   const [q, setQ] = useState('');
   const [para, setPara] = useState<ForFilter>('all');
   const [sel, setSel] = useState<string | null>(null);
@@ -59,14 +64,16 @@ export function Inventario() {
   const valueOf = useCallback((rows: InvRow[]) => rows.reduce((n, r) => n + (priceOf(r)?.clp || 0) * (r.qty - r.personal), 0), [priceOf]);
   const all = useMemo(() => (data ? shelvesOf(data.rows, data.locations) : []), [data]);
   const filtering = !!q.trim() || para !== 'all';
+  // a location that isn't the account's (or has no shelf) opens "Todas"
+  const at = loc !== 'all' && all.some(s => s.id === loc) ? loc : 'all';
   const shelves = useMemo(
     () =>
       all
-        .filter(s => loc === 'all' || s.id === loc)
+        .filter(s => at === 'all' || s.id === at)
         .map(s => ({ ...s, rows: s.rows.filter(r => rowMatches(r, q) && rowFor(r, para)) }))
         // with a filter on, the shelves left empty hide; without one, an empty location still shows its shelf
-        .filter(s => s.rows.length || (!filtering && loc !== 'all') || (!filtering && s.id !== 0)),
-    [all, loc, q, para, filtering],
+        .filter(s => s.rows.length || (!filtering && at !== 'all') || (!filtering && s.id !== 0)),
+    [all, at, q, para, filtering],
   );
   const visible = useMemo(() => shelves.flatMap(s => s.rows), [shelves]);
   const selRow = (sel && visible.find(r => keyOf(r) === sel)) || visible[0] || null;
@@ -83,7 +90,7 @@ export function Inventario() {
     );
   const d = load.data;
   const n = visible.reduce((a, r) => a + r.qty, 0);
-  const cur = loc === 'all' ? null : all.find(s => s.id === loc) || null;
+  const cur = at === 'all' ? null : all.find(s => s.id === at) || null;
   const locName = (id: number) => d.locations.find(l => l.id === id)?.name || 'Sin ubicación';
 
   // after a change: the next card of the same shelf when this one leaves it
@@ -111,8 +118,8 @@ export function Inventario() {
               <li key={s.id}>
                 <button
                   type="button"
-                  className={'pick' + (loc === s.id ? ' on' : '')}
-                  aria-pressed={loc === s.id}
+                  className={'pick' + (at === s.id ? ' on' : '')}
+                  aria-pressed={at === s.id}
                   onClick={() => setLoc(s.id)}
                 >
                   <span>{s.name}</span>
@@ -122,7 +129,22 @@ export function Inventario() {
               </li>
             ))}
           </ul>
-          {!d.locations.length && <p className="rail-empty">Tus cajas y carpetas se crean en Nitsu, en Ubicaciones.</p>}
+          {!d.locations.length && (
+            <p className="rail-empty">
+              Tus cajas y carpetas se crean en{' '}
+              <a
+                href="/cajas"
+                onClick={e => {
+                  if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+                  e.preventDefault();
+                  navigate('/cajas');
+                }}
+              >
+                Cajas y carpetas
+              </a>
+              .
+            </p>
+          )}
         </section>
       }
     >

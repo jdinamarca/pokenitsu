@@ -1,5 +1,5 @@
 // The app's own API (server/index.ts), through Vite's proxy
-import type { ArmaFinish, ArmaRules, CardPrices, LocationRule } from '@pokenitsu/core';
+import type { ArmaFinish, ArmaRules, CardPrices, LocationRule, NewLocation } from '@pokenitsu/core';
 
 export type Permission = 'ok' | 'text_only' | 'review' | 'none' | 'own' | 'local';
 export interface Source {
@@ -123,6 +123,8 @@ export interface LocalPhoto {
 export interface PriceCfg {
   source: string;
   cond: Record<string, number>;
+  /** the account's alert price in CLP: the suggested binder of special cards takes from it */
+  alert?: number;
 }
 export interface Fx {
   usd: number;
@@ -157,6 +159,10 @@ export interface InvRow extends CopyRow {
   supertype: string | null;
   set_name: string;
   set_code: string;
+  /** the expansion's series, source and language: for its era (eraOf) and region (INT when null) */
+  set_series: string | null;
+  set_source: string;
+  set_lang: string | null;
   price_usd: CardPrices['usd'];
   price_eur: CardPrices['eur'];
   /** the account's own photo of this variant */
@@ -267,6 +273,12 @@ export const api = {
     call<{ moved: number }>('POST', '/inventory/move', row),
   personal: (row: RowKey & { personal: number }) => call<{ personal: number }>('POST', '/inventory/personal', row),
   ownPrice: (b: { sid: string; num: string; variant: string; usd: number | '' }) => call<{ ok: true }>('PUT', '/prices/own', b),
+  // boxes and binders (cajas-y-carpetas-en-arma)
+  createLocation: (l: NewLocation) => call<{ id: number }>('POST', '/locations', l),
+  updateLocation: (id: number, l: NewLocation) => call<{ ok: true }>('PUT', `/locations/${id}`, l),
+  orderLocations: (ids: number[]) => call<{ ok: true }>('PUT', '/locations-order', { ids }),
+  deleteLocation: (id: number) => call<{ ok: true; moved: number }>('DELETE', `/locations/${id}`),
+  moveLocs: (moves: (RowKey & { to: number })[]) => call<{ moved: number }>('POST', '/inventory/move-locs', { moves }),
   me: () => call<{ viewer: { id: string; name: string } | null; owner: boolean }>('GET', '/me'),
   full: (dex: number) => call<Full>('GET', `/full/${dex}`),
   owned: (dex: number) => call<{ copies: Copy[] }>('GET', `/owned/${dex}`),

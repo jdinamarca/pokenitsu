@@ -1,4 +1,4 @@
-// The app's few addresses (/, /cargar, /inventario, /entrar) without a router library: history.pushState and popstate
+// The app's few addresses (/, /cargar, /inventario, /cajas, /entrar) without a router library: history.pushState and popstate
 import { useSyncExternalStore } from 'react';
 
 const listeners = new Set<() => void>();
