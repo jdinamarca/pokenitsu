@@ -41,5 +41,5 @@
 
 ## 4. Documentación y cierre
 
-- [ ] 4.1 Documentación: ADR 0023 ("Arma escribe el inventario compartido") y su índice; README (Cargar, Mi inventario, qué sigue en Nitsu); DESIGN.md de arma (riel de navegación, vitrina de carga y estantería). Verificar que lo explican.
+- [x] 4.1 Documentación: ADR 0023 ("Arma escribe el inventario compartido") y su índice; README (Cargar, Mi inventario, qué sigue en Nitsu); DESIGN.md de arma (riel de navegación, vitrina de carga y estantería). Verificar que lo explican.
 - [ ] 4.2 `pnpm build && pnpm typecheck && pnpm lint && pnpm test` en verde. Comprobar que la base real no cambió y borrar la copia, las cuentas de prueba y el worktree (confirmar que la carpeta desapareció).
