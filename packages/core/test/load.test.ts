@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { addToCopies, expandRange, indexNumbers, moveSplit, removalLocation, resolveEntry, undoCopies } from '../src/index.js';
+import {
+  addToCopies,
+  expandRange,
+  indexNumbers,
+  moveSplit,
+  removalLocation,
+  resolveEntry,
+  searchSets,
+  searchSetsLang,
+  undoCopies,
+} from '../src/index.js';
 
 describe('cuenta de copias', () => {
   it('sumar copias para vender', () => expect(addToCopies({ qty: 2, personal: 1 }, 3, false)).toEqual({ qty: 5, personal: 1, real: 3 }));
@@ -55,4 +65,22 @@ describe('de dónde sale "-25"', () => {
   it('si no, la que tiene más copias para vender', () =>
     expect(removalLocation({ 1: { qty: 3, personal: 3 }, 2: { qty: 1, personal: 0 } }, null)).toBe(2));
   it('sin copias: ninguna', () => expect(removalLocation({}, null)).toBe(0));
+});
+
+describe('carga-en-la-vitrina: elegir la expansión', () => {
+  const sets = [
+    { id: 'sv3pt5', code: 'MEW', name: '151', series: 'Scarlet & Violet', source: 'pokemontcg' },
+    { id: 'sv1', code: 'SVI', name: 'Scarlet & Violet', series: 'Scarlet & Violet', source: 'pokemontcg' },
+    { id: 'base2', code: '', name: 'Jungle', series: 'Base', source: 'pokemontcg' },
+    { id: 'ja-SV2a', code: 'SV2a', name: 'Pokémon Card 151', name_ja: 'ポケモンカード151', series: null, source: 'tcgdex-ja' },
+  ];
+  it('código exacto primero', () => expect(searchSets(sets, 'mew')[0]!.id).toBe('sv3pt5'));
+  it('nombre que empieza antes que el que lo contiene', () =>
+    expect(searchSets(sets, '151').map(s => s.id)).toEqual(['sv3pt5', 'ja-SV2a']));
+  it('por serie, también la deducida del código', () =>
+    expect(searchSets(sets, 'scarlet').map(s => s.id)).toEqual(['sv1', 'sv3pt5', 'ja-SV2a']));
+  it('nombre japonés', () => expect(searchSets(sets, 'ポケモン')[0]!.id).toBe('ja-SV2a'));
+  it('vacío no busca', () => expect(searchSets(sets, '  ')).toEqual([]));
+  it('sufijo de idioma', () => expect(searchSetsLang(sets, 'MEW ES')).toMatchObject({ lang: 'ES', sets: [{ id: 'sv3pt5' }] }));
+  it('sin sufijo', () => expect(searchSetsLang(sets, 'jungle')).toMatchObject({ lang: null, sets: [{ id: 'base2' }] }));
 });

@@ -1,6 +1,7 @@
 // Copy arithmetic of an inventory row and what an entry in Cargar resolves to. Shared by Nitsu and Arma tu colección
 // (cargar-e-inventario-en-arma), so both apps count copies the same way.
 import { condCode, langCode, normNumber, parseEntry, type Cond, type Entry, type Lang } from './entry.js';
+import { eraOf, type SetLike } from './era.js';
 
 /** a row's copies: qty in total, personal of them in my collection (0..qty) */
 export interface Copies {
@@ -97,4 +98,46 @@ export function removalLocation(byLoc: Record<number, Copies>, fixed: number | n
     .filter(l => byLoc[l]!.qty > 0)
     .sort((a, b) => sale(b) - sale(a) || byLoc[b]!.qty - byLoc[a]!.qty)[0];
   return best ?? 0;
+}
+
+export interface SearchableSet extends SetLike {
+  name: string;
+  name_ja?: string | null;
+}
+/**
+ * The expansion picker's search, as Nitsu's: exact code first, then exact name, names that start with it, names that
+ * contain it, and the series (or a code that starts with it). At most 14.
+ */
+export function searchSets<S extends SearchableSet>(sets: readonly S[], q: string, limit = 14): S[] {
+  q = q.trim().toLowerCase();
+  if (!q) return [];
+  const score = (s: S) => {
+    const code = (s.code || '').toLowerCase(),
+      id = s.id.toLowerCase(),
+      name = s.name.toLowerCase(),
+      ja = (s.name_ja || '').toLowerCase();
+    if (code === q || id === q) return 0;
+    if (name === q || ja === q) return 1;
+    if (name.startsWith(q) || (ja && ja.startsWith(q))) return 2;
+    if (name.includes(q) || (ja && ja.includes(q))) return 3;
+    if ((s.series || '').toLowerCase().includes(q) || eraOf(s).toLowerCase().includes(q) || code.startsWith(q) || id.startsWith(q))
+      return 4;
+    return 99;
+  };
+  return sets
+    .map(s => [score(s), s] as const)
+    .filter(x => x[0] < 99)
+    .sort((a, b) => a[0] - b[0])
+    .slice(0, limit)
+    .map(x => x[1]);
+}
+/** "MEW ES": search "MEW" and say the language, when the search finds something without it */
+export function searchSetsLang<S extends SearchableSet>(sets: readonly S[], q: string): { sets: S[]; lang: Lang | null } {
+  const m = q.trim().match(/^(.*\S)\s+([a-z]{2})$/i);
+  const lang = m ? langCode(m[2]) : null;
+  if (m && lang) {
+    const r = searchSets(sets, m[1]!);
+    if (r.length) return { sets: r, lang };
+  }
+  return { sets: searchSets(sets, q), lang: null };
 }

@@ -207,6 +207,9 @@ importers:
       '@pokenitsu/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@pokenitsu/inventory':
+        specifier: workspace:*
+        version: link:../../packages/inventory
       fastify:
         specifier: ^5.12.7
         version: 5.12.7

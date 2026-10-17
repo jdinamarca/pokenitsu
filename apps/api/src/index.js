@@ -15,7 +15,7 @@ import { fillDetails, startDetailsJob, detailsJob, startVariantsJob, variantsJob
 import { ensureCardPrice, ensureSetPrices, refreshPrices, staleCount, getSetting, putSetting, getFx } from './prices.js';
 import { inv } from './inventory.js';
 import { pickPrice } from '@pokenitsu/core';
-import { writeRow, lockRow, ownClp, bad, checkVariant, checkCond, checkLang, checkLoc } from '@pokenitsu/inventory';
+import { writeRow, lockRow, ownClp, bad, checkVariant, checkCond, checkLang, checkLoc, PRICE_CFG as INV_PRICE_CFG } from '@pokenitsu/inventory';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const LANGS = ['ES', 'EN', 'PT', 'FR', 'DE', 'IT', 'JA', 'KO', 'ZH'];
@@ -209,7 +209,8 @@ app.post('/api/catalog/sync', async () => {
 });
 
 // ---------- prices ----------
-const PRICE_CFG = { source: 'tcgplayer', cond: { NM: 1, LP: 0.85, MP: 0.7, HP: 0.5, DMG: 0.3 }, alert: 5000, ownDays: 7 };
+// default price settings, shared with Arma tu colección
+const PRICE_CFG = INV_PRICE_CFG;
 const PRICE_COLS = `c.set_id || '|' || c.number AS k, p.usd, p.eur, p.url, to_char(p.fetched_at, 'YYYY-MM-DD"T"HH24:MI:SSOF') AS at`;
 let priceJob = null;
 function startPriceJob(force) {
