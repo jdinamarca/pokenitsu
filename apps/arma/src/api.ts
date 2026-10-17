@@ -109,6 +109,14 @@ export interface SetCard {
   photos: Record<string, string>;
   /** without a picture: one of the same Pokémon from another expansion, shown as a reference */
   ref: string | null;
+  /** the card's own photo (production-ready) and its photo for local use only (fotos-solo-local-en-catalogo) */
+  own_card: string | null;
+  local: LocalPhoto | null;
+}
+export interface LocalPhoto {
+  src: string;
+  /** the source's name: "Limitless TCG" */
+  source: string;
 }
 export interface PriceCfg {
   source: string;
@@ -152,6 +160,8 @@ export interface InvRow extends CopyRow {
   /** the account's own photo of this variant */
   own_img: string | null;
   ref: string | null;
+  own_card: string | null;
+  local: LocalPhoto | null;
 }
 export interface Inventory {
   labels: Record<string, string>;
@@ -176,6 +186,37 @@ export interface Undone extends Partial<RowResult> {
   undone: number | null;
   batch?: string | null;
   rows: RowResult[];
+}
+// ---------- "Por reemplazar" (fotos-solo-local-en-catalogo) ----------
+export interface ReplaceCard {
+  card_id: string;
+  sid: string;
+  num: string;
+  name: string;
+  set_name: string;
+  set_code: string;
+  source_id: string;
+  source: string;
+  src: string;
+}
+export interface ReplaceCards {
+  localPhotos: boolean;
+  cards: ReplaceCard[];
+  /** catalog cards with a photo for local use only, and how many of them have one that can go to production */
+  total: number;
+  ready: number;
+}
+export interface CatalogJob {
+  running: boolean;
+  sets: number;
+  done: number;
+  current: string | null;
+  fetched: number;
+  existing: number;
+  missing: number;
+  failed: number;
+  skipped: string[];
+  error?: string;
 }
 type RowKey = Pick<RowResult, 'sid' | 'num' | 'variant' | 'lang' | 'cond' | 'loc'>;
 
@@ -209,7 +250,7 @@ export const api = {
     call<{ moved: number }>('POST', '/inventory/move', row),
   personal: (row: RowKey & { personal: number }) => call<{ personal: number }>('POST', '/inventory/personal', row),
   ownPrice: (b: { sid: string; num: string; variant: string; usd: number | '' }) => call<{ ok: true }>('PUT', '/prices/own', b),
-  me: () => call<{ viewer: { id: string; name: string } | null }>('GET', '/me'),
+  me: () => call<{ viewer: { id: string; name: string } | null; owner: boolean }>('GET', '/me'),
   full: (dex: number) => call<Full>('GET', `/full/${dex}`),
   owned: (dex: number) => call<{ copies: Copy[] }>('GET', `/owned/${dex}`),
   views: () => call<{ views: SavedView[] }>('GET', '/views'),
@@ -237,6 +278,28 @@ export const api = {
         r.status,
       );
     return j as { code: string; src: string };
+  },
+  replaceCards: () => call<ReplaceCards>('GET', '/replace/cards'),
+  catalogJob: () => call<{ localPhotos: boolean; job: CatalogJob | null }>('GET', '/local-photos/catalog'),
+  startCatalogJob: () => call<CatalogJob>('POST', '/local-photos/catalog', {}),
+  // your own photo of a catalog card (the administrator's; JPEG, PNG or WebP up to 8 MB)
+  uploadCardPhoto: async (cardId: string, file: File) => {
+    const r = await fetch(`/api/card-photos/${encodeURIComponent(cardId)}`, {
+      method: 'POST',
+      headers: { 'content-type': file.type },
+      body: file,
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok)
+      throw new ApiError(
+        r.status === 413
+          ? 'La foto pesa más de 8 MB'
+          : r.status === 415
+            ? 'La foto debe ser JPEG, PNG o WebP'
+            : j.message || `HTTP ${r.status}`,
+        r.status,
+      );
+    return j as { cardId: string; src: string };
   },
   removePhoto: (code: string) => call<{ removed: number }>('DELETE', `/photos/${encodeURIComponent(code)}`),
 };

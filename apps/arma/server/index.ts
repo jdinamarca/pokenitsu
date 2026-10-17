@@ -4,8 +4,9 @@ import { migrate } from './migrate.ts';
 import { pool } from './db.ts';
 import { importDex } from './importer.ts';
 import { importLocalPhotos } from './localPhotos.ts';
+import { catalogJob, startCatalogPhotos } from './catalogPhotos.ts';
 import { LOCAL_IMAGE_DIR, localPhotosOn } from './local.ts';
-import { ownedCopies, requireViewer, viewerOf } from './session.ts';
+import { isOwner, ownedCopies, requireOwner, requireViewer, viewerOf } from './session.ts';
 import { authRoutes, initAuth } from './auth.ts';
 import { inventoryRoutes } from './inventory.ts';
 import { auditPrintings, FULL_RULES, type ArmaFinish, type ArmaRules, type AuditReason } from '@pokenitsu/core';
@@ -132,7 +133,11 @@ app.get<{ Params: { dex: string } }>('/api/audit/:dex', async req => {
 });
 
 // who is asking (null without a Nitsu session)
-app.get('/api/me', async req => ({ viewer: await viewerOf(req) }));
+app.get('/api/me', async req => {
+  const viewer = await viewerOf(req);
+  // owner: the administrator sees "Por reemplazar" (fotos-solo-local-en-catalogo)
+  return { viewer, owner: await isOwner(viewer) };
+});
 
 // the viewer's copies of a Pokémon's printings (read-only, with their own Row Level Security)
 app.get<{ Params: { dex: string } }>('/api/owned/:dex', async req => {
@@ -241,6 +246,78 @@ app.delete<{ Params: { code: string } }>('/api/photos/:code', async req => {
     req.params.code,
   ]);
   return { removed: rowCount };
+});
+
+// your own photo of a catalog card (fotos-solo-local-en-catalogo): the administrator's, kept in IMAGE_DIR/arma/cartas
+// (ours, production-ready), shown before the catalog's and the ones for local use only, for every account
+const cardFileName = (cardId: string) => cardId.replace(/[^\w.-]+/g, '_');
+async function removeCardUpload(cardId: string) {
+  const dir = join(IMAGE_DIR, 'arma', 'cartas');
+  const base = cardFileName(cardId);
+  for (const f of await readdir(dir).catch(() => [] as string[])) if (f.startsWith(base + '.')) await unlink(join(dir, f));
+}
+app.post<{ Params: { cardId: string } }>('/api/card-photos/:cardId', async req => {
+  const v = await requireOwner(req);
+  const ext = UPLOAD_EXT[(req.headers['content-type'] || '').split(';')[0]!.trim()];
+  const body = req.body as Buffer | undefined;
+  if (!ext || !Buffer.isBuffer(body) || !body.length)
+    throw Object.assign(new Error('La foto debe ser JPEG, PNG o WebP'), { statusCode: 415 });
+  const { rowCount } = await pool.query('SELECT 1 FROM cards WHERE id = $1', [req.params.cardId]);
+  if (!rowCount) throw Object.assign(new Error('No existe esa carta'), { statusCode: 404 });
+  await removeCardUpload(req.params.cardId);
+  await mkdir(join(IMAGE_DIR, 'arma', 'cartas'), { recursive: true });
+  const file = cardFileName(req.params.cardId) + ext;
+  await writeFile(join(IMAGE_DIR, 'arma', 'cartas', file), body);
+  // ?v=: a new upload is a new address, so no browser keeps the old one
+  const src = `/img/arma/cartas/${file}?v=${Date.now()}`;
+  await pool.query(
+    `INSERT INTO arma.card_photos (card_id, source_id, src, ref, by_name) VALUES ($1, 'own', $2, $3, $4)
+     ON CONFLICT (card_id, source_id) DO UPDATE SET src = EXCLUDED.src, ref = EXCLUDED.ref, by_name = EXCLUDED.by_name, saved_at = now()`,
+    [req.params.cardId, src, `Subida por ${v.name}`, v.name],
+  );
+  return { cardId: req.params.cardId, src };
+});
+app.delete<{ Params: { cardId: string } }>('/api/card-photos/:cardId', async req => {
+  await requireOwner(req);
+  await removeCardUpload(req.params.cardId);
+  const { rowCount } = await pool.query(`DELETE FROM arma.card_photos WHERE card_id = $1 AND source_id = 'own'`, [req.params.cardId]);
+  return { removed: rowCount };
+});
+
+// ---------- "Por reemplazar" (fotos-solo-local-en-catalogo): the administrator's gallery ----------
+// the catalog cards shown with a photo for local use only (no own photo, no catalog photo), and the progress: of the
+// cards that have one, how many already have a photo that can go to production
+app.get('/api/replace/cards', async req => {
+  await requireOwner(req);
+  const [cards, totals] = await Promise.all([
+    localPhotosOn()
+      ? pool.query(
+          `SELECT p.card_id, c.set_id AS sid, c.number AS num, c.name, coalesce(st.name_en, st.name) AS set_name, coalesce(st.code, '') AS set_code,
+                  s.id AS source_id, s.name AS source, p.src
+           FROM arma.card_photos p JOIN arma.sources s ON s.id = p.source_id AND s.permission = 'local'
+           JOIN cards c ON c.id = p.card_id JOIN sets st ON st.id = c.set_id
+           WHERE c.image_small IS NULL AND NOT EXISTS (SELECT 1 FROM arma.card_photos o WHERE o.card_id = p.card_id AND o.source_id = 'own')
+           ORDER BY st.release_date NULLS LAST, c.set_id, c.number_norm ~ '^[0-9]+$' DESC,
+                    nullif(regexp_replace(c.number_norm, '[^0-9]', '', 'g'), '')::int NULLS LAST, c.number`,
+        )
+      : Promise.resolve({ rows: [] }),
+    pool.query<{ total: number; ready: number }>(
+      `SELECT count(DISTINCT p.card_id)::int AS total,
+              count(DISTINCT p.card_id) FILTER (WHERE c.image_small IS NOT NULL
+                OR EXISTS (SELECT 1 FROM arma.card_photos o WHERE o.card_id = p.card_id AND o.source_id = 'own'))::int AS ready
+       FROM arma.card_photos p JOIN arma.sources s ON s.id = p.source_id AND s.permission = 'local' JOIN cards c ON c.id = p.card_id`,
+    ),
+  ]);
+  return { localPhotos: localPhotosOn(), cards: cards.rows, ...totals.rows[0]! };
+});
+// the whole Japanese catalog's photos for local use only: one expansion after the other, never two runs at once
+app.post('/api/local-photos/catalog', async req => {
+  await requireOwner(req);
+  return startCatalogPhotos();
+});
+app.get('/api/local-photos/catalog', async req => {
+  await requireOwner(req);
+  return { localPhotos: localPhotosOn(), job: catalogJob() };
 });
 
 // photos for local use only: downloaded once to LOCAL_IMAGE_DIR, only with ARMA_FOTOS_LOCALES=1 (403 otherwise)

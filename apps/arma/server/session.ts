@@ -19,6 +19,18 @@ export async function requireViewer(req: FastifyRequest): Promise<Viewer> {
   return v;
 }
 
+/** the administrator: the first account created, as in Nitsu (isOwner) */
+export async function isOwner(v: Viewer | null): Promise<boolean> {
+  if (!v) return false;
+  const { rows } = await pool.query<{ id: string }>('SELECT id FROM "user" ORDER BY "createdAt" LIMIT 1');
+  return rows[0]?.id === v.id;
+}
+export async function requireOwner(req: FastifyRequest): Promise<Viewer> {
+  const v = await requireViewer(req);
+  if (!(await isOwner(v))) throw Object.assign(new Error('Solo el administrador puede hacer esto.'), { statusCode: 403 });
+  return v;
+}
+
 export interface OwnedCopy {
   code: string;
   qty: number;

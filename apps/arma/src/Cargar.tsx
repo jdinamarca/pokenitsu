@@ -613,7 +613,15 @@ export function Cargar() {
               {set.printed ? `/${set.printed}` : ''} · {variantName(autoVariant(focus.rarity))}
             </p>
             <div className="big sheet-big">
-              <CardPicture own={focus.photos[autoVariant(focus.rarity)]} img={focus.img} reference={focus.ref} name={focus.name} big />
+              <CardPicture
+                own={focus.photos[autoVariant(focus.rarity)]}
+                ownCard={focus.own_card}
+                img={focus.img}
+                local={focus.local}
+                reference={focus.ref}
+                name={focus.name}
+                big
+              />
             </div>
             <h2 className="card-name">
               {focus.name}
@@ -721,7 +729,14 @@ const LoadItem = memo(function LoadItem({
         onClick={() => onPick(card)}
       >
         <span className="art">
-          <CardPicture own={card.photos[autoVariant(card.rarity)]} img={card.img} reference={card.ref} name={card.name} />
+          <CardPicture
+            own={card.photos[autoVariant(card.rarity)]}
+            ownCard={card.own_card}
+            img={card.img}
+            local={card.local}
+            reference={card.ref}
+            name={card.name}
+          />
           {qty > 1 && <span className="owned">×{qty}</span>}
         </span>
         <span className="tag">

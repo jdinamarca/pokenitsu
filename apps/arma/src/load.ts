@@ -178,10 +178,22 @@ export type ForFilter = 'all' | 'sale' | 'personal';
 /** "Para": the rows with copies for sale, or with personal ones */
 export const rowFor = (r: InvRow, f: ForFilter) => f === 'all' || (f === 'personal' ? r.personal > 0 : r.qty - r.personal > 0);
 
-/** what a card shows: your own photo of the variant, the catalog's, or a reference of the same Pokémon (dimmed) */
-export function pictureOf(own: string | null | undefined, img: string | null, ref: string | null): { src: string | null; isRef: boolean } {
-  if (own || img) return { src: own || img, isRef: false };
-  return { src: ref, isRef: !!ref };
+export type CardPictureKind = 'photo' | 'local' | 'ref' | 'none';
+/**
+ * What a card shows (fotos-solo-local-en-catalogo), the first it has: your photo of the variant, the card's own photo,
+ * the catalog's, the one for local use only (marked), or a reference of the same Pokémon (dimmed)
+ */
+export function pictureOf(
+  own: string | null | undefined,
+  ownCard: string | null | undefined,
+  img: string | null,
+  local: { src: string; source: string } | null | undefined,
+  ref: string | null,
+): { src: string | null; kind: CardPictureKind; source?: string } {
+  const photo = own || ownCard || img;
+  if (photo) return { src: photo, kind: 'photo' };
+  if (local) return { src: local.src, kind: 'local', source: local.source };
+  return ref ? { src: ref, kind: 'ref' } : { src: null, kind: 'none' };
 }
 export const REF_NOTE = 'Foto de referencia: esta carta no tiene foto';
 

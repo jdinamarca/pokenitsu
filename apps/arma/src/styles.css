@@ -1326,10 +1326,54 @@ button {
   overflow-wrap: anywhere;
 }
 
+/* ---------- "Por reemplazar" (fotos-solo-local-en-catalogo) ---------- */
+.app.wide {
+  grid-template-columns: 284px minmax(0, 1fr);
+}
+.replace-item {
+  width: 112px;
+  display: grid;
+  gap: 4px;
+  align-content: start;
+}
+.replace-item .print {
+  cursor: default;
+}
+.replace-item .print:hover {
+  transform: none;
+}
+.replace-line {
+  font-size: 11.5px;
+  line-height: 1.3;
+  color: var(--felt-ink);
+}
+.replace-line + .replace-line {
+  color: var(--felt-mute);
+}
+.replace-up {
+  justify-content: center;
+  margin-top: 2px;
+  padding: 7px 6px;
+  font-size: 12.5px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.replace-up:focus-within {
+  outline: 2px solid var(--light);
+  outline-offset: 2px;
+}
+.replace-up.busy {
+  opacity: 0.6;
+  cursor: progress;
+}
+
 /* narrower desktops: the detail tightens before anything else */
 @media (max-width: 1360px) {
   .app {
     grid-template-columns: 264px minmax(0, 1fr) 316px;
+  }
+  .app.wide {
+    grid-template-columns: 264px minmax(0, 1fr);
   }
 }
 /* ---------- the way in: "Mostrador" (login-en-arma, canvas AK) ---------- */
