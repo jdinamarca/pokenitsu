@@ -109,6 +109,14 @@ export interface SetCard {
   photos: Record<string, string>;
   /** without a picture: one of the same Pokémon from another expansion, shown as a reference */
   ref: string | null;
+  /** the card's own photo (production-ready) and its photo for local use only (fotos-solo-local-en-catalogo) */
+  own_card: string | null;
+  local: LocalPhoto | null;
+}
+export interface LocalPhoto {
+  src: string;
+  /** the source's name: "Limitless TCG" */
+  source: string;
 }
 export interface PriceCfg {
   source: string;
@@ -152,6 +160,8 @@ export interface InvRow extends CopyRow {
   /** the account's own photo of this variant */
   own_img: string | null;
   ref: string | null;
+  own_card: string | null;
+  local: LocalPhoto | null;
 }
 export interface Inventory {
   labels: Record<string, string>;
@@ -209,7 +219,7 @@ export const api = {
     call<{ moved: number }>('POST', '/inventory/move', row),
   personal: (row: RowKey & { personal: number }) => call<{ personal: number }>('POST', '/inventory/personal', row),
   ownPrice: (b: { sid: string; num: string; variant: string; usd: number | '' }) => call<{ ok: true }>('PUT', '/prices/own', b),
-  me: () => call<{ viewer: { id: string; name: string } | null }>('GET', '/me'),
+  me: () => call<{ viewer: { id: string; name: string } | null; owner: boolean }>('GET', '/me'),
   full: (dex: number) => call<Full>('GET', `/full/${dex}`),
   owned: (dex: number) => call<{ copies: Copy[] }>('GET', `/owned/${dex}`),
   views: () => call<{ views: SavedView[] }>('GET', '/views'),

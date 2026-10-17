@@ -192,7 +192,14 @@ export function Inventario() {
                             onClick={() => setSel(k)}
                           >
                             <span className="art">
-                              <CardPicture own={r.own_img} img={r.img} reference={r.ref} name={r.name} />
+                              <CardPicture
+                                own={r.own_img}
+                                ownCard={r.own_card}
+                                img={r.img}
+                                local={r.local}
+                                reference={r.ref}
+                                name={r.name}
+                              />
                               {r.qty > 1 && <span className="owned">×{r.qty}</span>}
                             </span>
                             <span className="tag">
@@ -270,7 +277,7 @@ function Sheet({
         {(r.set_code || r.sid).toUpperCase()} · {r.num} · {r.set_name}
       </p>
       <div className="big sheet-big">
-        <CardPicture own={r.own_img} img={r.img} reference={r.ref} name={r.name} big />
+        <CardPicture own={r.own_img} ownCard={r.own_card} img={r.img} local={r.local} reference={r.ref} name={r.name} big />
       </div>
       <h2 className="card-name">{r.name}</h2>
       <div className="own">

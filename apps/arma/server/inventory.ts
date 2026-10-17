@@ -6,6 +6,7 @@ import { CARD_COLS, createInventory, getFx, ownClp, priceSettings, type RowBody 
 import { pool, tx } from './db.ts';
 import { requireViewer } from './session.ts';
 import { ensureLocalCardPhotos } from './catalogPhotos.ts';
+import { localPhotosOn } from './local.ts';
 import { asViewer } from './viewerTx.ts';
 
 // catalog downloads (cards, exchange rate) are shared by every account: plain connections
@@ -49,6 +50,26 @@ async function refImages(dexes: number[]): Promise<Map<number, string>> {
   );
   return new Map(rows.map(r => [r.dex, r.img]));
 }
+// a catalog card's own photo (anyone's, production-ready) and its photo for local use only (only with the switch on)
+type CardPhotos = { own_card: string | null; local: { src: string; source: string } | null };
+async function cardPhotos(ids: string[]): Promise<Map<string, CardPhotos>> {
+  const out = new Map<string, CardPhotos>();
+  if (!ids.length) return out;
+  const { rows } = await pool.query<{ card_id: string; source_id: string; src: string; name: string; permission: string }>(
+    `SELECT p.card_id, p.source_id, p.src, s.name, s.permission FROM arma.card_photos p JOIN arma.sources s ON s.id = p.source_id
+     WHERE p.card_id = ANY ($1)`,
+    [ids],
+  );
+  for (const r of rows) {
+    const cur = out.get(r.card_id) || { own_card: null, local: null };
+    if (r.source_id === 'own') cur.own_card = r.src;
+    else if (r.permission === 'local' && localPhotosOn()) cur.local = { src: r.src, source: r.name };
+    out.set(r.card_id, cur);
+  }
+  return out;
+}
+const NO_PHOTOS: CardPhotos = { own_card: null, local: null };
+
 type Pictured = { img: string | null; dex: number[] | null };
 const loneDex = (r: Pictured) => (!r.img && r.dex?.length === 1 ? r.dex[0]! : null);
 // the reference picture of each card without its own
@@ -114,6 +135,7 @@ export function inventoryRoutes(app: FastifyInstance) {
         ]);
         const photosOf = new Map<string, Record<string, string>>();
         for (const p of photos.rows) photosOf.set(p.card_id, { ...photosOf.get(p.card_id), [p.variant]: p.img });
+        const photosOfCard = await cardPhotos(cards.rows.map(r => r.id));
         const priceOf = new Map(prices.rows.map(({ card_id, ...p }) => [card_id, p]));
         const copiesOf = new Map<string, unknown[]>();
         for (const { card_id, ...r } of copies.rows) copiesOf.set(card_id, [...(copiesOf.get(card_id) || []), r]);
@@ -124,6 +146,7 @@ export function inventoryRoutes(app: FastifyInstance) {
           own: ownMap(own.rows, fx),
           cards: (await withRefs(cards.rows)).map(r => ({
             ...r,
+            ...(photosOfCard.get(r.id) || NO_PHOTOS),
             photos: photosOf.get(r.id) || {},
             prices: priceOf.get(r.id) || null,
             copies: copiesOf.get(r.id) || [],
@@ -142,7 +165,7 @@ export function inventoryRoutes(app: FastifyInstance) {
       v,
       async c => {
         const [rows, locations, own, cfg] = await Promise.all([
-          c.query<Pictured>(
+          c.query<Pictured & { card_id: string }>(
             `SELECT i.card_id, i.variant, i.lang, i.cond, i.loc, i.qty, i.personal, (extract(epoch FROM i.added_at) * 1000)::bigint AS added,
                     ${CARD_COLS}, coalesce(s.name_en, s.name) AS set_name, coalesce(s.code, '') AS set_code,
                     p.usd AS price_usd, p.eur AS price_eur, vi.img AS own_img
@@ -156,7 +179,15 @@ export function inventoryRoutes(app: FastifyInstance) {
           c.query<OwnRow>('SELECT o.card_id, o.variant, o.clp, o.usd::float AS usd FROM price_overrides o'),
           priceSettings(c),
         ]);
-        return { cfg, fx, labels, own: ownMap(own.rows, fx), rows: await withRefs(rows.rows), locations: locations.rows };
+        const photosOfCard = await cardPhotos([...new Set(rows.rows.map(r => r.card_id))]);
+        return {
+          cfg,
+          fx,
+          labels,
+          own: ownMap(own.rows, fx),
+          rows: (await withRefs(rows.rows)).map(r => ({ ...r, ...(photosOfCard.get(r.card_id) || NO_PHOTOS) })),
+          locations: locations.rows,
+        };
       },
       true,
     );

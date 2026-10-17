@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { CardSet, InvLocation, InvRow, SetCard } from './api.ts';
-import { litCount, planRow, rowFor, rowMatches, shelvesOf, withRow, type Session, type SetContext } from './load.ts';
+import { litCount, pictureOf, planRow, rowFor, rowMatches, shelvesOf, withRow, type Session, type SetContext } from './load.ts';
 
 const set: CardSet = {
   id: 'sv3pt5',
@@ -32,6 +32,8 @@ const card = (num: string, rarity: string | null, copies: SetCard['copies'] = []
   copies,
   photos: {},
   ref: null,
+  own_card: null,
+  local: null,
 });
 const loc = (id: number, pos: number, rule: InvLocation['rule'], name = `Ubicación ${id}`): InvLocation => ({
   id,
@@ -126,6 +128,8 @@ const row = (loc: number, extra: Partial<InvRow> = {}): InvRow => ({
   price_eur: null,
   own_img: null,
   ref: null,
+  own_card: null,
+  local: null,
   ...extra,
 });
 describe('inventario-por-ubicacion', () => {
@@ -146,4 +150,17 @@ describe('inventario-por-ubicacion', () => {
     const r = row(1, { qty: 2, personal: 2 });
     expect([rowFor(r, 'all'), rowFor(r, 'sale'), rowFor(r, 'personal')]).toEqual([true, false, true]);
   });
+});
+
+describe('fotos-del-catalogo-en-arma: qué foto muestra una carta', () => {
+  const L = { src: '/img-local/limitless/S8b_1_R_JP_LG.png', source: 'Limitless TCG' };
+  it('tu foto de la variante primero', () =>
+    expect(pictureOf('/v.jpg', '/own.jpg', '/cat.webp', L, '/ref.webp')).toMatchObject({ src: '/v.jpg', kind: 'photo' }));
+  it('después la foto propia de la carta', () =>
+    expect(pictureOf(null, '/own.jpg', '/cat.webp', L, null)).toMatchObject({ src: '/own.jpg' }));
+  it('después la del catálogo', () => expect(pictureOf(null, null, '/cat.webp', L, null)).toMatchObject({ src: '/cat.webp' }));
+  it('después la solo local, con su fuente', () =>
+    expect(pictureOf(null, null, null, L, '/ref.webp')).toEqual({ src: L.src, kind: 'local', source: 'Limitless TCG' }));
+  it('después la de referencia', () => expect(pictureOf(null, null, null, null, '/ref.webp')).toEqual({ src: '/ref.webp', kind: 'ref' }));
+  it('sin nada', () => expect(pictureOf(null, null, null, null, null)).toEqual({ src: null, kind: 'none' }));
 });
