@@ -16,6 +16,6 @@
     "lint": "pnpm -r --if-present lint",
     "imagenes:descargar": "pnpm --filter @pokenitsu/api imagenes:descargar",
     "imagenes:estado": "pnpm --filter @pokenitsu/api imagenes:estado",
-    "arma": "pnpm --filter @pokenitsu/core --filter @pokenitsu/auth build && pnpm --filter @pokenitsu/arma dev"
+    "arma": "pnpm --filter @pokenitsu/core --filter @pokenitsu/auth --filter @pokenitsu/inventory build && pnpm --filter @pokenitsu/arma dev"
   }
 }

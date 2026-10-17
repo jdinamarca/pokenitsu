@@ -12,7 +12,7 @@
 ## 2. API de arma
 
 - [x] 2.1 `server/viewerTx.ts`: transacción con `app.user_id`. Rutas `GET /api/sets`, `GET /api/sets/:id/cards` (con copias de la cuenta y precio guardado), `GET /api/inventory` (filas y ubicaciones), `POST /api/inventory/add`, `/undo`, `/move`, `/personal` y `PUT /api/prices/own`. Verificar con `curl` en la copia de la base: sin sesión da 401, y con dos cuentas, cada una ve y cambia solo lo suyo.
-- [ ] 2.2 El script raíz `arma` y el CI compilan `@pokenitsu/inventory`. Verificar que `pnpm arma` arranca desde cero.
+- [x] 2.2 El script raíz `arma` y el CI compilan `@pokenitsu/inventory`. Verificar que `pnpm arma` arranca desde cero.
 
 ## 3. Pantallas
 
