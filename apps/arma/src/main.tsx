@@ -10,6 +10,7 @@ import { App } from './App.tsx';
 import { Login } from './Login.tsx';
 import { Cargar } from './Cargar.tsx';
 import { Inventario } from './Inventario.tsx';
+import { Reemplazar } from './Reemplazar.tsx';
 import { usePath } from './router.ts';
 import './styles.css';
 
@@ -19,6 +20,7 @@ function Root() {
   if (path.startsWith('/entrar')) return <Login />;
   if (path === '/cargar') return <Cargar />;
   if (path === '/inventario') return <Inventario />;
+  if (path === '/reemplazar') return <Reemplazar />;
   return <App />;
 }
 

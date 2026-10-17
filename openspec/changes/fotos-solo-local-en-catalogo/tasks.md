@@ -29,7 +29,7 @@
   - `POST /api/local-photos/catalog` y `GET` del avance: todas las expansiones japonesas, una por una, sin dos descargas a la vez.
 
   Todo solo para el administrador. Verificar con `curl` en la copia de la base: 403 para otra cuenta y avance coherente.
-- [ ] 3.2 Pantalla `/reemplazar`:
+- [x] 3.2 Pantalla `/reemplazar`:
   - enlace en el riel solo para el administrador, y aviso para otra cuenta;
   - galería con carta, fuente y "Subir la mía", con cartas del catálogo e impresiones del Full (usando `pictureOf`);
   - filtros por fuente y por tipo, con sus cantidades;
