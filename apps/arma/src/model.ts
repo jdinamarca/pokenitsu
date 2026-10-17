@@ -1,5 +1,5 @@
 // What the screen derives from the Full: labels, the permission sticker of each printing, shelves and pictures
-import { normNumber, photoShows, STAMP_LABEL, variantLabel, type ArmaRules, type RuleId } from '@pokenitsu/core';
+import { normNumber, photoShows, STAMP_LABEL, variantLabel, type ArmaRules, type RuleId, type RuleResult } from '@pokenitsu/core';
 import type { Copy, FactValue, Permission, Printing, Source } from './api.ts';
 
 export const LANG_NAME: Record<string, string> = {
@@ -238,3 +238,31 @@ export function shelvesBySet(printings: Printing[], sources: Map<string, Source>
       a.title.localeCompare(b.title),
   );
 }
+
+// ---------- what you have and what you miss (eevee-lo-que-tienes) ----------
+export type Ownership = {
+  /** the printings the rules leave visible, and how many of them you have */
+  visible: { total: number; have: number };
+  /** per rule, the printings it leaves out, and how many of those you have */
+  hidden: Partial<Record<RuleId, { total: number; have: number }>>;
+};
+/** Counts by exact printing: a copy in another language of the same equivalence never counts for this one */
+export function ownership(printings: Pick<Printing, 'code'>[], result: Map<string, RuleResult>, owned: Map<string, Copy[]>): Ownership {
+  const out: Ownership = { visible: { total: 0, have: 0 }, hidden: {} };
+  for (const p of printings) {
+    const r = result.get(p.code);
+    const have = (owned.get(p.code) || []).some(c => c.qty > 0) ? 1 : 0;
+    if (!r || r.in) {
+      out.visible.total++;
+      out.visible.have += have;
+    } else if (r.by) {
+      const h = (out.hidden[r.by] ||= { total: 0, have: 0 });
+      h.total++;
+      h.have += have;
+    }
+  }
+  return out;
+}
+export type Seeing = 'all' | 'have' | 'miss';
+/** "Todas · Las que tengo · Me faltan" */
+export const keepFor = (seeing: Seeing, have: boolean) => seeing === 'all' || (seeing === 'have' ? have : !have);
