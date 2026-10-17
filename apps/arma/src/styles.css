@@ -1349,17 +1349,84 @@ button {
   font-size: 13px;
   color: #cbc4b4;
 }
-.session div {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
+.session-sum {
+  margin: 0;
+  font: 700 14px 'Archivo Narrow';
+  color: var(--light);
+  font-variant-numeric: tabular-nums;
 }
-.session em {
-  font: 700 13px 'Archivo Narrow';
+/* what was loaded in the session, newest first: only the first one can be undone (cargar-deshacer-y-quitar) */
+.session-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+.session-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 7px;
+  line-height: 1.35;
+}
+.session-list li:first-child {
+  background: var(--room-2);
+  box-shadow: inset 2px 0 0 var(--light);
+  color: var(--ink);
+}
+.session-list li.out span {
+  color: var(--review);
+}
+.session-list li:not(:first-child) {
+  color: var(--ink-mute);
+}
+.session-list button {
+  gap: 4px;
+  white-space: nowrap;
+}
+.session-note,
+.session-more {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ink-mute);
+}
+/* the marked card's rows, each with its −1 */
+.my-copies {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.my-copies li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--room-line);
+  border-radius: 8px;
+  font-size: 13px;
+}
+.my-copies small {
+  color: var(--ink-mute);
+  font-size: 12px;
+}
+.my-copies em {
+  font: 700 14px 'Archivo Narrow';
   font-style: normal;
   color: var(--light);
   font-variant-numeric: tabular-nums;
-  text-align: right;
+}
+.my-copies button {
+  min-width: 40px;
+  justify-content: center;
+  font: 700 14px 'Archivo Narrow';
 }
 .detail .big.sheet-big {
   width: 220px;

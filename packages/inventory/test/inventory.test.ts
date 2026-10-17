@@ -120,6 +120,48 @@ describe('deshacer', () => {
     expect(log.filter(q => q.sql.startsWith('DELETE FROM inventory WHERE')).length).toBe(2);
     expect(log.filter(q => q.sql.startsWith('DELETE FROM inventory_log')).map(q => q.params[0])).toEqual([9, 8]);
   });
+
+  // cargar-deshacer-y-quitar: arma's session undoes exactly its own load
+  const one = { id: 5, card_id: 'a', variant: 'normal', lang: 'JA', cond: 'NM', loc: 4, delta: 1, personal: 0, sid: 's', num: '47' };
+  const answering = (found: { id: number; batch: string | null } | null) =>
+    fakeDb(sql =>
+      sql.includes('SELECT id, batch FROM inventory_log')
+        ? found
+          ? [found]
+          : []
+        : sql.includes('FROM inventory_log l')
+          ? [one]
+          : sql.includes('FOR UPDATE')
+            ? [{ qty: 2, personal: 0 }]
+            : [],
+    );
+  it('con logId revierte esa carga aunque haya otra más nueva', async () => {
+    const { db, c, log } = answering({ id: 5, batch: null });
+    const r = await createInventory(db).undo(c, { logId: 5 });
+    const pick = log.find(q => q.sql.startsWith('SELECT id, batch FROM inventory_log'))!;
+    expect(pick.sql).toContain('WHERE id = $1');
+    expect(pick.params).toEqual([5]);
+    expect(r.rows.map(x => [x.num, x.qty])).toEqual([['47', 1]]);
+    expect(log.filter(q => q.sql.startsWith('DELETE FROM inventory_log')).map(q => q.params[0])).toEqual([5]);
+  });
+  it('con batch revierte ese grupo', async () => {
+    const g = '0b9c6a3e-6a8d-4a59-9a0c-2a7c8f1d2e3f';
+    const { db, c, log } = answering({ id: 5, batch: g });
+    await createInventory(db).undo(c, { batch: g });
+    expect(log.find(q => q.sql.startsWith('SELECT id, batch FROM inventory_log'))!.params).toEqual([g]);
+    expect(log.find(q => q.sql.includes('FROM inventory_log l'))!.params).toEqual([g]);
+  });
+  it('una carga que ya no existe no cambia nada', async () => {
+    const { db, c, log } = answering(null);
+    const r = await createInventory(db).undo(c, { logId: 99 });
+    expect(r.undone).toBeNull();
+    expect(log.some(q => /^(DELETE|INSERT|UPDATE)/.test(q.sql))).toBe(false);
+  });
+  it('un id o un grupo inválido da error', async () => {
+    const { db, c } = answering(null);
+    await expect(createInventory(db).undo(c, { logId: 'x' })).rejects.toMatchObject({ statusCode: 400 });
+    await expect(createInventory(db).undo(c, { batch: 'x' })).rejects.toMatchObject({ statusCode: 400 });
+  });
 });
 
 describe('cartas de una expansión', () => {

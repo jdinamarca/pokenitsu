@@ -258,7 +258,8 @@ export const api = {
   inventory: () => call<Inventory>('GET', '/inventory'),
   add: (row: RowKey & { delta: number; personal?: boolean; batch?: string }) =>
     call<RowResult & { real: number; logId: number | null }>('POST', '/inventory/add', row),
-  undo: () => call<Undone>('POST', '/inventory/undo', {}),
+  // a load of this session (its logId, or the batch of a range); without it, the account's last load
+  undo: (target: { logId?: number; batch?: string } = {}) => call<Undone>('POST', '/inventory/undo', target),
   move: (row: RowKey & { to: Partial<Pick<RowResult, 'variant' | 'lang' | 'cond' | 'loc'>>; n?: number }) =>
     call<{ moved: number }>('POST', '/inventory/move', row),
   personal: (row: RowKey & { personal: number }) => call<{ personal: number }>('POST', '/inventory/personal', row),

@@ -148,11 +148,25 @@ export function createInventory(db: Db) {
     return { personal: Math.min(n, cur.qty) };
   }
 
-  /** Undoes the account's last load; when it was part of a range (batch), the whole range at once */
-  async function undo(c: Queryable) {
+  /**
+   * Undoes the account's last load; when it was part of a range (batch), the whole range at once. With a target, exactly
+   * that load (logId) or range (batch), whatever came after (arma's session undoes only its own loads); gone → nothing.
+   */
+  async function undo(c: Queryable, target: { logId?: unknown; batch?: unknown } = {}) {
+    const logId = target.logId == null ? null : Number(target.logId);
+    const batch = target.batch == null ? null : String(target.batch);
+    if (logId != null && !(Number.isInteger(logId) && logId > 0)) throw bad('Carga inválida');
+    if (batch != null && !UUID_RE.test(batch)) throw bad('Grupo inválido');
     const {
       rows: [last],
-    } = await c.query<{ id: number; batch: string | null }>('SELECT id, batch FROM inventory_log ORDER BY id DESC LIMIT 1 FOR UPDATE');
+    } = await c.query<{ id: number; batch: string | null }>(
+      batch != null
+        ? 'SELECT id, batch FROM inventory_log WHERE batch = $1 ORDER BY id DESC LIMIT 1 FOR UPDATE'
+        : logId != null
+          ? 'SELECT id, batch FROM inventory_log WHERE id = $1 FOR UPDATE'
+          : 'SELECT id, batch FROM inventory_log ORDER BY id DESC LIMIT 1 FOR UPDATE',
+      batch != null ? [batch] : logId != null ? [logId] : [],
+    );
     if (!last) return { undone: null, rows: [] };
     const { rows: entries } = await c.query(
       `SELECT l.*, ${CARD_COLS} FROM inventory_log l JOIN cards c ON c.id = l.card_id
