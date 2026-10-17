@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('../db.ts', () => ({ pool: { query: async () => ({ rows: [] }) } }));
-const { matchPokecottage } = await import('./pokecottage.ts');
+const { dataUrl, matchPokecottage, pcSlug } = await import('./pokecottage.ts');
 
 const jaByName = new Map([['pokemonjungle', 'ja-PMCG2']]);
 const jungle = { id: 'jpn_b02', name: 'Pokémon Jungle' };
@@ -41,4 +41,25 @@ describe('fotos-pokecottage-en-catalogo: el cruce con el álbum', () => {
       ).size,
     ).toBe(1));
   it('número con total impreso', () => expect(matchPokecottage([entry({ cardNumber: '037/048' })], [eevee], jaByName).size).toBe(1));
+});
+
+describe('el nombre del álbum en PokeCottage', () => {
+  // each one checked against pokecottagecdn.com (200)
+  const cases: [string, string][] = [
+    ['Eevee', 'eevee'],
+    ['Nidoran♀', 'nidoran-female'],
+    ['Nidoran ♂', 'nidoran-male'],
+    ['Mr. Mime', 'mr-mime'],
+    ['Ho-Oh', 'ho-oh'],
+    ["Farfetch'd", 'farfetchd'],
+    ['Type: Null', 'type-null'],
+    ['Mime Jr.', 'mime-jr'],
+    ['Tapu Koko', 'tapu-koko'],
+    ['Porygon-Z', 'porygon-z'],
+    ['Flabébé', 'flabebe'],
+    ['Wo-Chien', 'wo-chien'],
+    ['Great Tusk', 'great-tusk'],
+  ];
+  for (const [name, slug] of cases) it(name, () => expect(pcSlug(name)).toBe(slug));
+  it('la dirección', () => expect(dataUrl(29, 'Nidoran♀')).toBe('https://pokecottagecdn.com/mastersets/data/29-nidoran-female.json'));
 });

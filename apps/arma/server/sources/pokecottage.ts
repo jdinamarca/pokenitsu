@@ -35,8 +35,23 @@ const withoutPictures = (x: unknown): unknown =>
         )
       : x;
 
-/** the data file of a Pokémon's master set: 133 → 133-eevee */
-export const dataUrl = (dex: number, name: string) => `https://pokecottagecdn.com/mastersets/data/${dex}-${nameKey(name)}.json`;
+/**
+ * PokeCottage's name of a Pokémon in its URLs: lower case without accents, ♀/♂ as -female/-male, no apostrophes, dots
+ * or colons, and a hyphen for spaces and hyphens (checked against its CDN: nidoran-female, mr-mime, ho-oh, farfetchd,
+ * type-null, mime-jr, tapu-koko, porygon-z, flabebe)
+ */
+export const pcSlug = (name: string) =>
+  name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s*♀/g, '-female')
+    .replace(/\s*♂/g, '-male')
+    .replace(/['’.:]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+/** the data file of a Pokémon's master set: 133 → 133-eevee, 29 → 29-nidoran-female */
+export const dataUrl = (dex: number, name: string) => `https://pokecottagecdn.com/mastersets/data/${dex}-${pcSlug(name)}.json`;
 
 export async function pokecottageClaims(
   cat: Catalog,
