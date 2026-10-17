@@ -4,6 +4,7 @@ import { RefreshCw } from 'lucide-react';
 import { api, ApiError, type Inventory as InvData, type InvRow } from './api.ts';
 import { toLogin } from './auth.ts';
 import { Gate } from './Cargar.tsx';
+import { CardPicture } from './components/CardPicture.tsx';
 import { Shell } from './components/Shell.tsx';
 import { clp, LANG_LABEL, setVariantLabels, rowFor, rowMatches, shelvesOf, VARIANT_LABEL, variantName, type ForFilter } from './load.ts';
 
@@ -191,7 +192,7 @@ export function Inventario() {
                             onClick={() => setSel(k)}
                           >
                             <span className="art">
-                              {r.img ? <img src={r.img} alt="" loading="lazy" decoding="async" /> : <span className="blank">{r.name}</span>}
+                              <CardPicture own={r.own_img} img={r.img} reference={r.ref} name={r.name} />
                               {r.qty > 1 && <span className="owned">×{r.qty}</span>}
                             </span>
                             <span className="tag">
@@ -268,7 +269,9 @@ function Sheet({
       <p className="code">
         {(r.set_code || r.sid).toUpperCase()} · {r.num} · {r.set_name}
       </p>
-      <div className="big sheet-big">{r.img ? <img src={r.img} alt="" /> : <span className="blank">{r.name}</span>}</div>
+      <div className="big sheet-big">
+        <CardPicture own={r.own_img} img={r.img} reference={r.ref} name={r.name} big />
+      </div>
       <h2 className="card-name">{r.name}</h2>
       <div className="own">
         <strong>{copies(r.qty)}</strong>

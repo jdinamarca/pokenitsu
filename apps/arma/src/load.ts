@@ -178,4 +178,11 @@ export type ForFilter = 'all' | 'sale' | 'personal';
 /** "Para": the rows with copies for sale, or with personal ones */
 export const rowFor = (r: InvRow, f: ForFilter) => f === 'all' || (f === 'personal' ? r.personal > 0 : r.qty - r.personal > 0);
 
+/** what a card shows: your own photo of the variant, the catalog's, or a reference of the same Pokémon (dimmed) */
+export function pictureOf(own: string | null | undefined, img: string | null, ref: string | null): { src: string | null; isRef: boolean } {
+  if (own || img) return { src: own || img, isRef: false };
+  return { src: ref, isRef: !!ref };
+}
+export const REF_NOTE = 'Foto de referencia: esta carta no tiene foto';
+
 export const clp = (n: number) => '$' + Math.round(n).toLocaleString('es-CL');

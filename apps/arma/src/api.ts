@@ -105,6 +105,10 @@ export interface SetCard {
   vguess: boolean | null;
   prices: CardPrices | null;
   copies: CopyRow[];
+  /** the account's own photo of some variants: { variant: img } */
+  photos: Record<string, string>;
+  /** without a picture: one of the same Pokémon from another expansion, shown as a reference */
+  ref: string | null;
 }
 export interface PriceCfg {
   source: string;
@@ -145,6 +149,9 @@ export interface InvRow extends CopyRow {
   set_code: string;
   price_usd: CardPrices['usd'];
   price_eur: CardPrices['eur'];
+  /** the account's own photo of this variant */
+  own_img: string | null;
+  ref: string | null;
 }
 export interface Inventory {
   labels: Record<string, string>;

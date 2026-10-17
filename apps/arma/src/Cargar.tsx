@@ -15,6 +15,7 @@ import {
 import { Plus, RefreshCw, Search, Undo2 } from 'lucide-react';
 import { api, ApiError, type CardSet, type InvLocation, type SetCard, type SetCards } from './api.ts';
 import { toLogin } from './auth.ts';
+import { CardPicture } from './components/CardPicture.tsx';
 import { Shell } from './components/Shell.tsx';
 import {
   cardQty,
@@ -611,7 +612,9 @@ export function Cargar() {
               {set.code || set.id} · {focus.num}
               {set.printed ? `/${set.printed}` : ''} · {variantName(autoVariant(focus.rarity))}
             </p>
-            <div className="big sheet-big">{focus.img ? <img src={focus.img} alt="" /> : <span className="blank">{focus.name}</span>}</div>
+            <div className="big sheet-big">
+              <CardPicture own={focus.photos[autoVariant(focus.rarity)]} img={focus.img} reference={focus.ref} name={focus.name} big />
+            </div>
             <h2 className="card-name">
               {focus.name}
               {freshNum === focus.num && <span className="fresh">Nueva</span>}
@@ -718,7 +721,7 @@ const LoadItem = memo(function LoadItem({
         onClick={() => onPick(card)}
       >
         <span className="art">
-          {card.img ? <img src={card.img} alt="" loading="lazy" decoding="async" /> : <span className="blank">{card.name}</span>}
+          <CardPicture own={card.photos[autoVariant(card.rarity)]} img={card.img} reference={card.ref} name={card.name} />
           {qty > 1 && <span className="owned">×{qty}</span>}
         </span>
         <span className="tag">

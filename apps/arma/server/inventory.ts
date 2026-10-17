@@ -34,6 +34,28 @@ const variantLabels = () =>
     .query<{ slug: string; label: string }>('SELECT slug, label FROM variant_labels')
     .then(r => Object.fromEntries(r.rows.map(x => [x.slug, x.label])));
 
+// for a card without a picture: one of the same Pokémon from an international expansion, as Nitsu's /api/dex
+// (shown dimmed, as a reference, never as the card's own)
+async function refImages(dexes: number[]): Promise<Map<number, string>> {
+  if (!dexes.length) return new Map();
+  const { rows } = await pool.query<{ dex: number; img: string }>(
+    `SELECT DISTINCT ON (d) d AS dex, c.image_small AS img
+     FROM cards c JOIN sets s ON s.id = c.set_id, unnest(c.dex) d
+     WHERE d = ANY ($1) AND s.source = 'ptcg' AND c.supertype = 'Pokémon' AND cardinality(c.dex) = 1 AND c.image_small IS NOT NULL
+     ORDER BY d, (s.id ~ '^(mcd|ru1|tk|bp|fut20)' OR s.name ~* 'promo') ASC,
+              (position(' ' in c.name) = 0 OR c.name LIKE 'Nidoran%' OR c.name LIKE 'Mr. %') DESC, (c.rarity = 'Common') DESC, length(c.name), s.release_date DESC NULLS LAST`,
+    [dexes],
+  );
+  return new Map(rows.map(r => [r.dex, r.img]));
+}
+type Pictured = { img: string | null; dex: number[] | null };
+const loneDex = (r: Pictured) => (!r.img && r.dex?.length === 1 ? r.dex[0]! : null);
+// the reference picture of each card without its own
+async function withRefs<T extends Pictured>(rows: T[]): Promise<(T & { ref: string | null })[]> {
+  const refs = await refImages([...new Set(rows.map(loneDex).filter((d): d is number => d != null))]);
+  return rows.map(r => ({ ...r, ref: refs.get(loneDex(r) ?? -1) ?? null }));
+}
+
 export function inventoryRoutes(app: FastifyInstance) {
   // every expansion, or the ones a search finds (Nitsu's criteria; "MEW ES" also says the language)
   app.get<{ Querystring: { q?: string } }>('/api/sets', async req => {
@@ -59,8 +81,8 @@ export function inventoryRoutes(app: FastifyInstance) {
     return asViewer(
       v,
       async c => {
-        const [cards, prices, copies, own, cfg] = await Promise.all([
-          c.query(
+        const [cards, prices, copies, own, cfg, photos] = await Promise.all([
+          c.query<Pictured & { id: string }>(
             `SELECT c.id, ${CARD_COLS}, c.variants, c.variants_guessed AS vguess FROM cards c WHERE c.set_id = $1
              ORDER BY c.number_norm ~ '^[0-9]+$' DESC, nullif(regexp_replace(c.number_norm, '[^0-9]', '', 'g'), '')::int NULLS LAST, c.number`,
             [sid],
@@ -81,7 +103,14 @@ export function inventoryRoutes(app: FastifyInstance) {
             [sid],
           ),
           priceSettings(c),
+          // the account's own photos of a variant (variant_images, set in Nitsu)
+          c.query<{ card_id: string; variant: string; img: string }>(
+            `SELECT v.card_id, v.variant, v.img FROM variant_images v JOIN cards k ON k.id = v.card_id WHERE k.set_id = $1`,
+            [sid],
+          ),
         ]);
+        const photosOf = new Map<string, Record<string, string>>();
+        for (const p of photos.rows) photosOf.set(p.card_id, { ...photosOf.get(p.card_id), [p.variant]: p.img });
         const priceOf = new Map(prices.rows.map(({ card_id, ...p }) => [card_id, p]));
         const copiesOf = new Map<string, unknown[]>();
         for (const { card_id, ...r } of copies.rows) copiesOf.set(card_id, [...(copiesOf.get(card_id) || []), r]);
@@ -90,7 +119,12 @@ export function inventoryRoutes(app: FastifyInstance) {
           fx,
           labels,
           own: ownMap(own.rows, fx),
-          cards: cards.rows.map(r => ({ ...r, prices: priceOf.get(r.id) || null, copies: copiesOf.get(r.id) || [] })),
+          cards: (await withRefs(cards.rows)).map(r => ({
+            ...r,
+            photos: photosOf.get(r.id) || {},
+            prices: priceOf.get(r.id) || null,
+            copies: copiesOf.get(r.id) || [],
+          })),
         };
       },
       true,
@@ -105,12 +139,13 @@ export function inventoryRoutes(app: FastifyInstance) {
       v,
       async c => {
         const [rows, locations, own, cfg] = await Promise.all([
-          c.query(
+          c.query<Pictured>(
             `SELECT i.card_id, i.variant, i.lang, i.cond, i.loc, i.qty, i.personal, (extract(epoch FROM i.added_at) * 1000)::bigint AS added,
                     ${CARD_COLS}, coalesce(s.name_en, s.name) AS set_name, coalesce(s.code, '') AS set_code,
-                    p.usd AS price_usd, p.eur AS price_eur
+                    p.usd AS price_usd, p.eur AS price_eur, vi.img AS own_img
              FROM inventory i JOIN cards c ON c.id = i.card_id JOIN sets s ON s.id = c.set_id
              LEFT JOIN card_prices p ON p.card_id = c.id
+             LEFT JOIN variant_images vi ON vi.card_id = i.card_id AND vi.variant = i.variant
              ORDER BY s.release_date NULLS LAST, s.id, c.number_norm ~ '^[0-9]+$' DESC,
                       nullif(regexp_replace(c.number_norm, '[^0-9]', '', 'g'), '')::int NULLS LAST, c.number, i.variant, i.lang, i.cond`,
           ),
@@ -118,7 +153,7 @@ export function inventoryRoutes(app: FastifyInstance) {
           c.query<OwnRow>('SELECT o.card_id, o.variant, o.clp, o.usd::float AS usd FROM price_overrides o'),
           priceSettings(c),
         ]);
-        return { cfg, fx, labels, own: ownMap(own.rows, fx), rows: rows.rows, locations: locations.rows };
+        return { cfg, fx, labels, own: ownMap(own.rows, fx), rows: await withRefs(rows.rows), locations: locations.rows };
       },
       true,
     );

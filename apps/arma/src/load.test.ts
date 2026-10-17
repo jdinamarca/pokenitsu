@@ -30,6 +30,8 @@ const card = (num: string, rarity: string | null, copies: SetCard['copies'] = []
   vguess: null,
   prices: usd ? { usd: { holofoil: usd, normal: usd } } : null,
   copies,
+  photos: {},
+  ref: null,
 });
 const loc = (id: number, pos: number, rule: InvLocation['rule'], name = `Ubicación ${id}`): InvLocation => ({
   id,
@@ -122,6 +124,8 @@ const row = (loc: number, extra: Partial<InvRow> = {}): InvRow => ({
   set_code: 'MEW',
   price_usd: null,
   price_eur: null,
+  own_img: null,
+  ref: null,
   ...extra,
 });
 describe('inventario-por-ubicacion', () => {
