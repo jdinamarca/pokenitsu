@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Printing, Source } from './api.ts';
-import { cardOf, expansionOf, LANG_NAME, regionOf, shelvesBySet, withPhotoShows } from './model.ts';
+import { cardOf, expansionOf, keepFor, LANG_NAME, ownership, regionOf, shelvesBySet, withPhotoShows } from './model.ts';
+import { applyRules, FULL_RULES } from '@pokenitsu/core';
+import type { Copy } from './api.ts';
 
 let n = 0;
 const pr = (o: Partial<Printing> & Pick<Printing, 'set_key' | 'number' | 'lang'>): Printing => ({
@@ -108,4 +110,38 @@ describe('neerlandés', () => {
     );
     expect(shelf!.printings.map(p => p.lang)).toEqual(['EN', 'NL', 'FR']);
   });
+});
+
+describe('eevee-lo-que-tienes: lo que tengo y lo que me falta', () => {
+  const en = pr({ set_key: 'sv3pt5', number: '133', lang: 'EN', equiv_id: 'e133' });
+  const es = pr({ set_key: 'sv3pt5', number: '133', lang: 'ES', equiv_id: 'e133' });
+  const rev = pr({ set_key: 'sv3pt5', number: '133', lang: 'EN', finish: 'reverse', equiv_id: 'e133r' });
+  const jumbo = pr({ set_key: 'sv3pt5', number: '133', lang: 'EN', stamp: 'jumbo', equiv_id: 'e133j' });
+  const all = [en, es, rev, jumbo];
+  const rules = (o: Partial<typeof FULL_RULES>) =>
+    applyRules(
+      all.map(p => ({ key: p.code, lang: p.lang, stamp: p.stamp, equivId: p.equiv_id })),
+      { ...FULL_RULES, ...o },
+    );
+  const copy = (code: string, qty: number): Copy => ({ code, qty, personal: 0, lang: 'EN', cond: 'NM', loc: null });
+  const owned = (...cs: Copy[]) => new Map(cs.map(c => [c.code, [c]]));
+
+  it('cuenta las visibles y cuántas tengo', () =>
+    expect(ownership(all, rules({}), owned(copy(en.code, 2)))).toEqual({ visible: { total: 4, have: 1 }, hidden: {} }));
+  it('una que me falta no cuenta', () => expect(ownership(all, rules({}), owned()).visible.have).toBe(0));
+  it('la ES que tengo no marca la EN visible; la regla la cuenta entre las ocultas', () =>
+    expect(ownership(all, rules({ onlyEnglish: true }), owned(copy(es.code, 1)))).toEqual({
+      visible: { total: 3, have: 0 },
+      hidden: { onlyEnglish: { total: 1, have: 1 } },
+    }));
+  it('un jumbo propio que la regla oculta', () =>
+    expect(ownership(all, rules({ jumbo: false }), owned(copy(jumbo.code, 1))).hidden).toEqual({ jumbo: { total: 1, have: 1 } }));
+  it('una fila con 0 copias no cuenta como tenida', () => expect(ownership([en], rules({}), owned(copy(en.code, 0))).visible.have).toBe(0));
+  it('el filtro', () =>
+    expect([keepFor('all', false), keepFor('have', true), keepFor('have', false), keepFor('miss', false)]).toEqual([
+      true,
+      true,
+      false,
+      true,
+    ]));
 });

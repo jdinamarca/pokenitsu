@@ -3,7 +3,20 @@ import { applyRules, type ArmaRules, type RuleId } from '@pokenitsu/core';
 import { CircleHelp, RefreshCw } from 'lucide-react';
 import { toLogin } from './auth.ts';
 import { api, ApiError, type Copy, type Full, type SavedView, type Source } from './api.ts';
-import { copiesByCode, REDUCES, RULES, shelvesBySet, shelvesOf, STICKER, withPhotoShows, cardOf, type Order } from './model.ts';
+import {
+  copiesByCode,
+  keepFor,
+  ownership,
+  REDUCES,
+  RULES,
+  shelvesBySet,
+  shelvesOf,
+  STICKER,
+  withPhotoShows,
+  cardOf,
+  type Order,
+  type Seeing,
+} from './model.ts';
 import { Rail } from './components/Rail.tsx';
 import { Shell } from './components/Shell.tsx';
 import { Showcase } from './components/Showcase.tsx';
@@ -49,6 +62,23 @@ export function App() {
       return 'design';
     }
   });
+  // "Todas · Las que tengo · Me faltan", remembered like the order
+  const [seeing, setSeeing] = useState<Seeing>(() => {
+    try {
+      const v = localStorage.getItem('arma.ver');
+      return v === 'have' || v === 'miss' ? v : 'all';
+    } catch {
+      return 'all';
+    }
+  });
+  const chooseSeeing = (v: Seeing) => {
+    setSeeing(v);
+    try {
+      localStorage.setItem('arma.ver', v);
+    } catch {
+      /* private window: only for this visit */
+    }
+  };
   const chooseOrder = (o: Order) => {
     setOrder(o);
     try {
@@ -115,17 +145,28 @@ export function App() {
     [printings, rules],
   );
   const audit = useMemo(() => full?.audit || {}, [full]);
-  const doubtful = Object.keys(audit).length;
+  const owned = useMemo(() => copiesByCode(copies), [copies]);
+  const has = useCallback((code: string) => (owned.get(code) || []).some(c => c.qty > 0), [owned]);
+  const visible = useCallback((code: string) => result.get(code)?.in ?? true, [result]);
+  const doubtful = useMemo(() => printings.filter(p => audit[p.code] && visible(p.code)).length, [printings, audit, visible]);
   // "Por verificar": only the doubtful printings, to go through them one by one (a view filter: the count stays)
   const [onlyDoubtful, setOnlyDoubtful] = useState(false);
+  // shelves are built with every printing (each keeps its design's picture), then what a rule leaves out, the doubtful
+  // filter and "tengo · me faltan" take printings off; a shelf left empty goes away (eevee-lo-que-tienes)
   const shelves = useMemo(() => {
     const all = order === 'set' ? shelvesBySet(printings, sources) : shelvesOf(printings, sources);
-    return onlyDoubtful ? all.map(s => ({ ...s, printings: s.printings.filter(p => audit[p.code]) })).filter(s => s.printings.length) : all;
-  }, [order, printings, sources, onlyDoubtful, audit]);
-  const owned = useMemo(() => copiesByCode(copies), [copies]);
-  const lit = useMemo(() => [...result.values()].filter(r => r.in).length, [result]);
-  const missing = useMemo(() => printings.filter(p => result.get(p.code)?.in && !owned.has(p.code)).length, [printings, result, owned]);
-  const outBy = useMemo(() => (active ? [...result.values()].filter(r => r.by === active).length : 0), [result, active]);
+    return all
+      .map(s => ({
+        ...s,
+        printings: s.printings.filter(p => visible(p.code) && (!onlyDoubtful || audit[p.code]) && keepFor(seeing, has(p.code))),
+      }))
+      .filter(s => s.printings.length);
+  }, [order, printings, sources, onlyDoubtful, audit, seeing, visible, has]);
+  const own = useMemo(() => ownership(printings, result, owned), [printings, result, owned]);
+  const hidden = useMemo(
+    () => Object.values(own.hidden).reduce((a, h) => ({ total: a.total + h.total, have: a.have + h.have }), { total: 0, have: 0 }),
+    [own],
+  );
 
   const toggle = (id: RuleId) => {
     setRules(r => ({ ...r, [id]: !r[id] }));
@@ -187,7 +228,12 @@ export function App() {
       </Gate>
     );
 
-  const sel = printings.find(p => p.code === selected) || null;
+  // what a rule or a filter takes off the case can't stay chosen
+  const sel = shelves.flatMap(s => s.printings).find(p => p.code === selected) || null;
+  const outOf = (n: { total: number; have: number }) =>
+    `${n.total.toLocaleString('es-CL')} ${n.total === 1 ? 'impresión' : 'impresiones'}; ${
+      n.have ? `${n.have.toLocaleString('es-CL')} de ellas las tienes` : 'no tienes ninguna de ellas'
+    }.`;
   const activeRule = RULES.find(r => r.id === active);
   const shelfPicture = sel ? (shelves.find(s => s.printings.includes(sel))?.fallback(sel) ?? null) : null;
   return (
@@ -213,22 +259,24 @@ export function App() {
       <main className="main">
         <header className="top">
           <p className="count" aria-live="polite">
-            <span className="n">{lit.toLocaleString('es-CL')}</span>
-            <span className="of"> / {printings.length.toLocaleString('es-CL')} bajo luz</span>
+            <span className="n">{own.visible.have.toLocaleString('es-CL')}</span>
+            <span className="of"> / {own.visible.total.toLocaleString('es-CL')} tienes</span>
           </p>
           <p className="note">
             {activeRule ? (
               REDUCES(activeRule.id, rules) ? (
                 <>
-                  «{activeRule.label}» apagó {outBy.toLocaleString('es-CL')}. Siguen en la vitrina, fuera de tu colección.
+                  «{activeRule.label}» dejó fuera {outOf(own.hidden[activeRule.id] || { total: 0, have: 0 })}
                 </>
               ) : (
-                <>«{activeRule.label}» está desactivada: sus impresiones vuelven a la luz.</>
+                <>«{activeRule.label}» está desactivada: sus impresiones vuelven a la vitrina.</>
               )
+            ) : hidden.total ? (
+              <>Esta vista deja fuera {outOf(hidden)}</>
             ) : (
-              <>{viewId === 'full' ? 'El Full completo: todo bajo luz.' : 'Vista guardada aplicada.'}</>
+              <>El Full completo: no queda nada fuera.</>
             )}{' '}
-            Te faltan {missing.toLocaleString('es-CL')}.
+            Te faltan {(own.visible.total - own.visible.have).toLocaleString('es-CL')}.
           </p>
           <ul className="legend" aria-label="Permiso de las fuentes">
             {(['ok', 'review', 'none', 'own', ...(full?.localPhotos ? (['local'] as const) : [])] as const).map(k => (
@@ -257,6 +305,26 @@ export function App() {
               </button>
             ))}
           </div>
+          <div className="order seeing" role="group" aria-label="Ver">
+            <span>Ver</span>
+            {(
+              [
+                ['all', 'Todas', own.visible.total],
+                ['have', 'Las que tengo', own.visible.have],
+                ['miss', 'Me faltan', own.visible.total - own.visible.have],
+              ] as const
+            ).map(([v, label, n]) => (
+              <button
+                key={v}
+                type="button"
+                className={'view' + (seeing === v ? ' sel' : '')}
+                aria-pressed={seeing === v}
+                onClick={() => chooseSeeing(v)}
+              >
+                {label} <em>{n.toLocaleString('es-CL')}</em>
+              </button>
+            ))}
+          </div>
           {doubtful > 0 && (
             <div className="audit-filter">
               <button
@@ -271,20 +339,11 @@ export function App() {
             </div>
           )}
         </header>
-        <Showcase
-          shelves={shelves}
-          result={result}
-          sources={sources}
-          copies={owned}
-          audit={audit}
-          selected={selected}
-          onSelect={setSelected}
-        />
+        <Showcase shelves={shelves} sources={sources} copies={owned} audit={audit} selected={selected} onSelect={setSelected} />
       </main>
       <Detail
         p={sel}
         fallback={shelfPicture}
-        result={sel ? result.get(sel.code) : undefined}
         copies={sel ? owned.get(sel.code) || [] : []}
         sources={sources}
         siblings={sel ? printings.filter(x => cardOf(x) === cardOf(sel)) : []}

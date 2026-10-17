@@ -2,18 +2,18 @@
 
 ## 1. Cuentas
 
-- [ ] 1.1 En `apps/arma/src/model.ts`, `ownership(printings, result, owned)`: visibles (total y cuántas tengo) y ocultas por regla (total y cuántas tengo), contando solo la impresión exacta. Con pruebas en `model.test.ts` para los escenarios de la spec: una impresión que tengo, una que me falta, la ES que tengo mientras la EN queda visible y un jumbo propio oculto. Verificar con `pnpm --filter @pokenitsu/arma test`.
+- [x] 1.1 En `apps/arma/src/model.ts`, `ownership(printings, result, owned)`: visibles (total y cuántas tengo) y ocultas por regla (total y cuántas tengo), contando solo la impresión exacta. Con pruebas en `model.test.ts` para los escenarios de la spec: una impresión que tengo, una que me falta, la ES que tengo mientras la EN queda visible y un jumbo propio oculto. Verificar con `pnpm --filter @pokenitsu/arma test`.
 
 ## 2. Vitrina
 
-- [ ] 2.1 `App.tsx`:
+- [x] 2.1 `App.tsx`:
   - repisas filtradas en este orden: visibles, "Por verificar" y luego "Todas · Las que tengo · Me faltan" (recordado en `arma.ver`), quitando las repisas vacías y conservando la foto de respaldo de cada diseño;
   - contador "N / total tienes" y nota con lo que dejó fuera la regla activa (o la vista) y cuántas de esas tengo;
   - la impresión elegida se deselecciona si queda oculta.
 
   Verificar con `pnpm --filter @pokenitsu/arma typecheck` y lint.
-- [ ] 2.2 `Showcase.tsx` y `styles.css`: lo que tengo a color y lo que me falta en blanco y negro (`.miss`, sin oscurecer; transición de 450 ms, instantánea con "reducir movimiento"), y el sello de inventario (✓ N) en la esquina de la foto en lugar de la pastilla "×N". La foto pasa a recortarse ella misma para que el sello sobresalga. Se quita la penumbra `.off` de esta pantalla. Verificar con typecheck y lint.
-- [ ] 2.3 `Detail.tsx`: "Tienes N copias", con idioma, estado y ubicación, o "Te falta"; se quita la franja "Cuenta / Fuera de tu colección". Verificar con typecheck y lint.
+- [x] 2.2 `Showcase.tsx` y `styles.css`: lo que tengo a color y lo que me falta en blanco y negro (`.miss`, sin oscurecer; transición de 450 ms, instantánea con "reducir movimiento"), y el sello de inventario (✓ N) en la esquina de la foto en lugar de la pastilla "×N". La foto pasa a recortarse ella misma para que el sello sobresalga. Se quita la penumbra `.off` de esta pantalla. Verificar con typecheck y lint.
+- [x] 2.3 `Detail.tsx`: "Tienes N copias", con idioma, estado y ubicación, o "Te falta"; se quita la franja "Cuenta / Fuera de tu colección". Verificar con typecheck y lint.
 
 ## 3. Prueba en el navegador
 

@@ -366,6 +366,20 @@ button {
   color: var(--stock-ink);
   border-color: var(--stock);
 }
+/* "Ver: Todas · Las que tengo · Me faltan" (eevee-lo-que-tienes): the same buttons, with their counts */
+.order.seeing {
+  grid-column: 1 / -1;
+}
+.order .view em {
+  font: 700 12.5px 'Archivo Narrow';
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-mute);
+  margin-left: 2px;
+}
+.order .view.sel em {
+  color: #4d473c;
+}
 .legend li {
   display: flex;
   align-items: center;
@@ -542,7 +556,34 @@ button {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-/* the signature move: out of the collection = the light goes off, in place */
+/* eevee-lo-que-tienes: what you miss in grey (not darkened), what you have in colour with its inventory seal */
+.print.miss img {
+  filter: grayscale(1);
+}
+.case .art:has(.seal) {
+  overflow: visible;
+}
+.case .art:has(.seal) > img {
+  border-radius: 5px;
+}
+.seal {
+  position: absolute;
+  right: -8px;
+  bottom: -8px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 30px;
+  padding: 0 9px 0 7px;
+  border-radius: 99px;
+  background: var(--felt);
+  color: var(--light);
+  border: 2px solid var(--stock);
+  box-shadow: 0 6px 14px -4px rgba(0, 0, 0, 0.8);
+  font: 700 15px/1 'Archivo Narrow';
+  font-variant-numeric: tabular-nums;
+}
+/* the signature move: out of the collection = the light goes off, in place (Cargar's case) */
 .print.off img {
   filter: grayscale(1) brightness(0.32);
 }

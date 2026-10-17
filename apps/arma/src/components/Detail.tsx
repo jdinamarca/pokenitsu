@@ -1,6 +1,5 @@
-import type { RuleResult } from '@pokenitsu/core';
 import type { Copy, Facts, Printing, Source } from '../api.ts';
-import { LANG_NAME, pictureOf, RULES, STICKER, variantName, type Picture } from '../model.ts';
+import { LANG_NAME, pictureOf, STICKER, variantName, type Picture } from '../model.ts';
 import { PhotoTools } from './PhotoTools.tsx';
 
 const FIELDS: { key: keyof Facts; label: string }[] = [
@@ -17,7 +16,6 @@ const FIELDS: { key: keyof Facts; label: string }[] = [
 interface Props {
   p: Printing | null;
   fallback: Picture | null;
-  result: RuleResult | undefined;
   copies: Copy[];
   sources: Map<string, Source>;
   /** why the classification check marked it (empty when it did not) */
@@ -31,7 +29,7 @@ interface Props {
 }
 
 /** the selected printing: what it is, whether it counts, my copies and where every fact came from */
-export function Detail({ p, fallback, result, copies, sources, reasons, siblings, marks, onMark, onUpload, onRemovePhoto }: Props) {
+export function Detail({ p, fallback, copies, sources, reasons, siblings, marks, onMark, onUpload, onRemovePhoto }: Props) {
   if (!p)
     return (
       <aside className="detail empty-detail" aria-label="Ficha">
@@ -40,13 +38,11 @@ export function Detail({ p, fallback, result, copies, sources, reasons, siblings
     );
   const picture = pictureOf(p, sources);
   const img = picture || fallback;
-  const out = result && !result.in;
-  const rule = out ? RULES.find(r => r.id === result.by) : null;
   const owned = copies.reduce((n, c) => n + c.qty, 0);
   return (
     <aside className="detail" aria-label="Ficha de la impresión">
       <p className="code">{p.code}</p>
-      <div className={'big' + (out ? ' off' : '')}>
+      <div className="big">
         {img ? (
           <img
             src={img.src.replace('/low.webp', '/high.webp')}
@@ -86,26 +82,23 @@ export function Detail({ p, fallback, result, copies, sources, reasons, siblings
           {p.artist ? ` · ${p.artist}` : ''}
         </p>
       </div>
-      <div className={'status' + (out ? ' out' : '')} role="status">
-        {out ? <>Fuera de tu colección por «{rule?.label}»</> : <>Cuenta para tu colección</>}
-      </div>
       <div className="own">
         {owned ? (
           <>
             <strong>
-              {owned} {owned === 1 ? 'copia' : 'copias'}
+              Tienes {owned} {owned === 1 ? 'copia' : 'copias'}
             </strong>
             <ul>
               {copies.map((c, i) => (
                 <li key={i}>
-                  {c.qty} × {c.cond} · {c.loc || 'sin ubicación'}
+                  {c.qty} × {LANG_NAME[c.lang] || c.lang} · {c.cond} · {c.loc || 'sin ubicación'}
                   {c.personal ? ` · ${c.personal} personal${c.personal === 1 ? '' : 'es'}` : ''}
                 </li>
               ))}
             </ul>
           </>
         ) : (
-          <strong className="none">No la tienes</strong>
+          <strong className="none">Te falta</strong>
         )}
       </div>
       {reasons.length > 0 && (
