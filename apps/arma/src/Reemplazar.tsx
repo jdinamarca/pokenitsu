@@ -311,23 +311,32 @@ const counts = (s: SourceCount, lacks: string) =>
   `${n(s.fetched)} fotos nuevas · ${n(s.missing)} que ${lacks} no tiene${s.failed ? ` · ${n(s.failed)} fallaron` : ''}`;
 /** the download's progress: a line per step (Limitless, then PokeCottage), and when PokeCottage asked to wait */
 function JobNotice({ job }: { job: CatalogJob }) {
-  const pc = job.phase === 'pokecottage';
+  const step = ['limitless', 'pokecottage', 'billsarchive'].indexOf(job.phase);
+  const doing = (i: number) => (job.running && step === i ? `Bajando ${job.current || '…'} · ` : '');
+  const shown = (i: number) => step >= i || !job.running;
+  const who = ['Limitless', 'PokeCottage', "Bill's Archive"][step] || '';
   const wait = job.waitingUntil && new Date(job.waitingUntil);
   return (
     <div className="notice" style={{ margin: '14px 28px 0' }} role="status">
       <p>
-        {job.running ? (pc ? '' : `Bajando ${job.current || '…'} · `) : 'Última descarga · '}
-        Limitless: {n(job.done)} de {n(job.sets)} expansiones · {counts(job.bySource.limitless, 'Limitless')}
+        {job.running ? '' : 'Última descarga · '}
+        {doing(0)}Limitless: {n(job.done)} de {n(job.sets)} expansiones · {counts(job.bySource.limitless, 'Limitless')}
       </p>
-      {(pc || !job.running) && (
+      {shown(1) && (
         <p>
-          {job.running ? `Bajando ${job.current || '…'} · ` : ''}
-          PokeCottage: {n(job.pokemonDone)} de {n(job.pokemon)} Pokémon · {counts(job.bySource.pokecottage, 'PokeCottage')}
+          {doing(1)}PokeCottage: {n(job.pokemonDone)} de {n(job.pokemon)} Pokémon · {counts(job.bySource.pokecottage, 'PokeCottage')}
+        </p>
+      )}
+      {shown(2) && job.bySource.billsarchive && (
+        <p>
+          {doing(2)}Bill&apos;s Archive: {n(job.billsDone)} de {n(job.billsSets)} expansiones ·{' '}
+          {counts(job.bySource.billsarchive, "Bill's Archive")}
+          {job.billsSkipped?.length ? ` · sin usar: ${job.billsSkipped.join(', ')}` : ''}
         </p>
       )}
       {wait && job.running && (
         <p>
-          Esperando a PokeCottage hasta las {wait.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}.
+          Esperando a {who} hasta las {wait.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}.
         </p>
       )}
       {job.error && <p>Error: {job.error}</p>}

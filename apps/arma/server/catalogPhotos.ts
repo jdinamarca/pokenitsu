@@ -9,6 +9,7 @@ import { limitlessFile, limitlessUrl } from './limitless.ts';
 import { fileOf } from './localPhotos.ts';
 import { loadCatalog } from './sources/catalog.ts';
 import { downloadOnce, SourceBusy, stats } from './sources/http.ts';
+import { billsPage, billsSlug, matchBills, type BillsCard } from './sources/billsarchive.ts';
 import { matchPokecottage, pokecottageAlbum, type PcCard } from './sources/pokecottage.ts';
 import { speciesNames } from './sources/tcgdex.ts';
 
@@ -124,15 +125,23 @@ export interface PcIo {
 }
 class Stopped extends Error {}
 const FAILED = Symbol('failed');
+type Ask = <T>(fn: () => Promise<T>) => Promise<T | typeof FAILED>;
+type Photo = (cardId: string, url: string, folder: string, record: PcIo['record']) => Promise<boolean>;
 
-/** each Pokémon's album and the photos of its cards; never two requests at once, the progress in j */
-export async function pokecottageStep(groups: PcGroup[], io: PcIo, j: CatalogJob, polite: Polite = POLITE): Promise<void> {
-  const s = j.bySource.pokecottage;
-  const done = new Set<string>();
+/**
+ * One source's step, polite: ask() makes one request, waits what a 429/503 asks and asks again, and gives up on any other
+ * failure after a pause; photo() downloads once, records it and pauses when it was asked. Several failures in a row stop
+ * the step (j.stopped); asking again later goes on with what's left.
+ */
+async function politeStep(
+  source: string,
+  j: CatalogJob,
+  count: SourceCount,
+  polite: Polite,
+  body: (ask: Ask, photo: Photo) => Promise<void>,
+): Promise<void> {
   let fails = 0;
-  // one request: on "wait" (429/503) waits and asks again; any other failure gives up on it after a pause.
-  // Several failures in a row stop the whole step
-  const ask = async <T>(fn: () => Promise<T>): Promise<T | typeof FAILED> => {
+  const ask: Ask = async fn => {
     for (;;) {
       try {
         const r = await fn();
@@ -140,7 +149,7 @@ export async function pokecottageStep(groups: PcGroup[], io: PcIo, j: CatalogJob
         return r;
       } catch (e) {
         if (++fails >= polite.maxFails)
-          throw new Stopped(`PokeCottage respondió con errores ${fails} veces seguidas (${e instanceof Error ? e.message : String(e)})`);
+          throw new Stopped(`${source} respondió con errores ${fails} veces seguidas (${e instanceof Error ? e.message : String(e)})`);
         const ms = e instanceof SourceBusy ? e.retryAfterMs : polite.errorPause;
         j.waitingUntil = new Date(Date.now() + ms).toISOString();
         await sleep(ms);
@@ -149,7 +158,32 @@ export async function pokecottageStep(groups: PcGroup[], io: PcIo, j: CatalogJob
       }
     }
   };
+  const photo: Photo = async (cardId, url, folder, record) => {
+    const file = join(folder, fileOf(url));
+    const got = await ask(() => downloadOnce(url, join(LOCAL_IMAGE_DIR, file)));
+    if (got === FAILED) {
+      count.failed++;
+      return false;
+    }
+    count[got]++;
+    if (got === 'missing') return false;
+    await record(cardId, file, url);
+    if (got === 'fetched') await sleep(polite.photoPause);
+    return true;
+  };
   try {
+    await body(ask, photo);
+  } catch (e) {
+    if (!(e instanceof Stopped)) throw e;
+    j.stopped = e.message;
+  }
+}
+
+/** each Pokémon's album and the photos of its cards; never two requests at once, the progress in j */
+export async function pokecottageStep(groups: PcGroup[], io: PcIo, j: CatalogJob, polite: Polite = POLITE): Promise<void> {
+  const s = j.bySource.pokecottage;
+  const done = new Set<string>();
+  await politeStep('PokeCottage', j, s, polite, async (ask, photo) => {
     for (const g of groups) {
       j.current = `#${g.dex}`;
       const cards = g.cards.filter(c => !done.has(c.id));
@@ -161,27 +195,51 @@ export async function pokecottageStep(groups: PcGroup[], io: PcIo, j: CatalogJob
         else {
           const found = album ? matchPokecottage(album, cards, io.jaByName) : new Map<string, string>();
           s.missing += cards.length - found.size;
-          for (const [id, url] of found) {
-            const file = join('pokecottage-fotos', fileOf(url));
-            const got = await ask(() => downloadOnce(url, join(LOCAL_IMAGE_DIR, file)));
-            if (got === FAILED) s.failed++;
-            else {
-              s[got]++;
-              if (got === 'missing') continue;
-              await io.record(id, file, url);
-              done.add(id);
-              if (got === 'fetched') await sleep(polite.photoPause);
-            }
-          }
+          for (const [id, url] of found) if (await photo(id, url, 'pokecottage-fotos', io.record)) done.add(id);
         }
       }
       j.pokemonDone++;
     }
-  } catch (e) {
-    if (!(e instanceof Stopped)) throw e;
-    j.stopped = e.message;
-  }
+  });
 }
+
+// ---------- Bill's Archive, per expansion (fotos-billsarchive-japonesas) ----------
+export interface BillsGroup {
+  setId: string;
+  /** its English name: the page's address (Leaders' Stadium → /leaders-stadium-jp.html) */
+  name: string;
+  /** cards of the expansion in the catalog: the page must have as many */
+  total: number;
+  cards: BillsCard[];
+}
+/** each expansion's page and the photos of its cards still without one; the same pace and stops as PokeCottage */
+export async function billsStep(groups: BillsGroup[], record: PcIo['record'], j: CatalogJob, polite: Polite = POLITE): Promise<void> {
+  const s = j.bySource.billsarchive;
+  await politeStep("Bill's Archive", j, s, polite, async (ask, photo) => {
+    for (const g of groups) {
+      j.current = g.name;
+      const before = stats.fetched;
+      const page = await ask(() => billsPage(billsSlug(g.name)));
+      if (stats.fetched > before) await sleep(polite.albumPause);
+      if (page === FAILED) s.failed += g.cards.length;
+      else if (!page) {
+        s.missing += g.cards.length;
+        j.billsSkipped.push(`${g.name} (no la tiene)`);
+      } else {
+        const { mismatch, found } = matchBills(page, g.setId, g.total, g.cards);
+        if (mismatch) {
+          s.missing += g.cards.length;
+          j.billsSkipped.push(`${g.name} (su página no calza con el catálogo)`);
+        } else {
+          s.missing += g.cards.length - found.size;
+          for (const [id, url] of found) await photo(id, url, 'billsarchive', record);
+        }
+      }
+      j.billsDone++;
+    }
+  });
+}
+
 // ---------- the whole Japanese catalog, asked by the administrator from the gallery ----------
 export interface SourceCount {
   fetched: number;
@@ -191,15 +249,19 @@ export interface SourceCount {
 }
 export interface CatalogJob {
   running: boolean;
-  /** Limitless per expansion first, then PokeCottage per Pokémon for what's still without a photo */
-  phase: 'limitless' | 'pokecottage';
+  /** Limitless per expansion first, then PokeCottage per Pokémon and Bill's Archive per expansion for what's left */
+  phase: 'limitless' | 'pokecottage' | 'billsarchive';
   sets: number;
   done: number;
   pokemon: number;
   pokemonDone: number;
+  billsSets: number;
+  billsDone: number;
+  /** expansions Bill's Archive doesn't have, or whose page doesn't match the catalog */
+  billsSkipped: string[];
   /** the expansion or Pokémon (#133) being asked */
   current: string | null;
-  bySource: { limitless: SourceCount; pokecottage: SourceCount };
+  bySource: { limitless: SourceCount; pokecottage: SourceCount; billsarchive: SourceCount };
   /** expansions Limitless doesn't have */
   skipped: string[];
   /** PokeCottage asked to wait (or failed): the next request after this */
@@ -209,13 +271,24 @@ export interface CatalogJob {
   error?: string;
 }
 const count = (): SourceCount => ({ fetched: 0, existing: 0, missing: 0, failed: 0 });
+/** a photo found for a catalog card, kept with its source */
+const recordAs =
+  (source: string): PcIo['record'] =>
+  async (id, file, url) => {
+    await pool.query(
+      `INSERT INTO arma.card_photos (card_id, source_id, src, ref) VALUES ($1, $2, $3, $4)
+       ON CONFLICT (card_id, source_id) DO UPDATE SET src = EXCLUDED.src, ref = EXCLUDED.ref, saved_at = now()`,
+      [id, source, `/img-local/${file}`, url],
+    );
+  };
 let job: CatalogJob | null = null;
 export const catalogJob = () => job;
-/** dex: only the cards of those Pokémon (and, for Limitless, their expansions); to try it without the whole catalog */
-export function startCatalogPhotos({ dex }: { dex?: number[] } = {}): CatalogJob {
+/** dex / sets: only the cards of those Pokémon or expansions, in every step; to try it without the whole catalog */
+export function startCatalogPhotos({ dex, sets }: { dex?: number[]; sets?: string[] } = {}): CatalogJob {
   if (!localPhotosOn()) throw Object.assign(new Error('Las fotos solo locales están apagadas (ARMA_FOTOS_LOCALES=1)'), { statusCode: 403 });
   if (job?.running) return job;
   const only = dex?.length ? dex : null;
+  const onlySets = sets?.length ? sets : null;
   const j: CatalogJob = (job = {
     running: true,
     phase: 'limitless',
@@ -223,17 +296,20 @@ export function startCatalogPhotos({ dex }: { dex?: number[] } = {}): CatalogJob
     done: 0,
     pokemon: 0,
     pokemonDone: 0,
+    billsSets: 0,
+    billsDone: 0,
+    billsSkipped: [],
     current: null,
-    bySource: { limitless: count(), pokecottage: count() },
+    bySource: { limitless: count(), pokecottage: count(), billsarchive: count() },
     skipped: [],
   });
   (async () => {
     const { rows } = await pool.query<{ set_id: string }>(
       `SELECT DISTINCT c.set_id FROM cards c
        WHERE c.set_id LIKE 'ja-%' AND c.image_small IS NULL AND NOT EXISTS (SELECT 1 FROM arma.card_photos p WHERE p.card_id = c.id)
-         AND ($1::int[] IS NULL OR c.dex && $1)
+         AND ($1::int[] IS NULL OR c.dex && $1) AND ($2::text[] IS NULL OR c.set_id = ANY ($2))
        ORDER BY 1`,
-      [only],
+      [only, onlySets],
     );
     j.sets = rows.length;
     const l = j.bySource.limitless;
@@ -258,8 +334,8 @@ export function startCatalogPhotos({ dex }: { dex?: number[] } = {}): CatalogJob
        WHERE s.lang = 'JA' AND c.image_small IS NULL AND cardinality(c.dex) > 0
          AND NOT EXISTS (SELECT 1 FROM arma.card_photos p WHERE p.card_id = c.id)
          AND NOT EXISTS (SELECT 1 FROM ${PRINTED_PHOTOS} x WHERE x.card_id = c.id)
-         AND ($1::int[] IS NULL OR c.dex && $1)`,
-      [only],
+         AND ($1::int[] IS NULL OR c.dex && $1) AND ($2::text[] IS NULL OR c.set_id = ANY ($2))`,
+      [only, onlySets],
     );
     const byDex = new Map<number, PcCard[]>();
     for (const c of cards) for (const d of c.dex) if (!only || only.includes(d)) byDex.set(d, [...(byDex.get(d) || []), c]);
@@ -271,16 +347,34 @@ export function startCatalogPhotos({ dex }: { dex?: number[] } = {}): CatalogJob
       {
         species: async d => (await speciesNames(d)).en,
         jaByName,
-        record: async (id, file, url) => {
-          await pool.query(
-            `INSERT INTO arma.card_photos (card_id, source_id, src, ref) VALUES ($1, 'pokecottage-fotos', $2, $3)
-           ON CONFLICT (card_id, source_id) DO UPDATE SET src = EXCLUDED.src, ref = EXCLUDED.ref, saved_at = now()`,
-            [id, `/img-local/${file}`, url],
-          );
-        },
+        record: recordAs('pokecottage-fotos'),
       },
       j,
     );
+    if (j.stopped) return;
+
+    // Bill's Archive: what's still without any photo (Trainers and Energies, mostly), per expansion
+    j.phase = 'billsarchive';
+    j.current = null;
+    const { rows: left } = await pool.query<BillsCard & { name: string; total: number }>(
+      `SELECT c.id, c.set_id, c.number, coalesce(s.name_en, s.name) AS name,
+              (SELECT count(*)::int FROM cards k WHERE k.set_id = c.set_id) AS total
+       FROM cards c JOIN sets s ON s.id = c.set_id
+       WHERE s.lang = 'JA' AND c.image_small IS NULL
+         AND NOT EXISTS (SELECT 1 FROM arma.card_photos p WHERE p.card_id = c.id)
+         AND NOT EXISTS (SELECT 1 FROM ${PRINTED_PHOTOS} x WHERE x.card_id = c.id)
+         AND ($1::int[] IS NULL OR c.dex && $1) AND ($2::text[] IS NULL OR c.set_id = ANY ($2))
+       ORDER BY s.release_date NULLS LAST, c.set_id`,
+      [only, onlySets],
+    );
+    const bySet = new Map<string, BillsGroup>();
+    for (const c of left) {
+      const g = bySet.get(c.set_id) || { setId: c.set_id, name: c.name, total: c.total, cards: [] };
+      g.cards.push(c);
+      bySet.set(c.set_id, g);
+    }
+    j.billsSets = bySet.size;
+    await billsStep([...bySet.values()], recordAs('billsarchive'), j);
   })()
     .catch(e => (j.error = e instanceof Error ? e.message : String(e)))
     .finally(() => {

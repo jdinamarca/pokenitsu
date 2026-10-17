@@ -11,7 +11,13 @@ const UA = 'NitsuCollectibles/0.1 (+https://github.com/jdinamarca/pokenitsu)';
 const DAY = 24 * 3600 * 1000;
 const slots = new Map<string, { busy: number; queue: (() => void)[] }>();
 // PokeCottage: never two requests at once, from anywhere in the app (fotos-pokecottage-en-catalogo)
-const LIMIT: Record<string, number> = { 'api.tcgdex.net': 4, 'pokecottagecdn.com': 1 };
+// and Bill's Archive, its pages and its images (fotos-billsarchive-japonesas)
+const LIMIT: Record<string, number> = {
+  'api.tcgdex.net': 4,
+  'pokecottagecdn.com': 1,
+  'billsarchive.com': 1,
+  'bills-archive.nyc3.cdn.digitaloceanspaces.com': 1,
+};
 
 /** a source answered 429 or 503: wait retryAfterMs before asking it again */
 export class SourceBusy extends Error {
@@ -99,6 +105,35 @@ export async function fetchJson<T = unknown>(
   // the source is down: an old cached answer is better than nothing
   if (rows[0]) return rows[0].body;
   throw last instanceof Error ? last : new Error(String(last));
+}
+
+/**
+ * A page from a source, read into what is kept (parse), with fetchJson's cache: one try, SourceBusy on 429/503, 404 →
+ * null. Only parse's result is cached, never the page.
+ */
+export async function fetchText<T>(url: string, parse: (html: string) => T, { ttl = DAY } = {}): Promise<T | null> {
+  const { rows } = await pool.query<{ body: T; fresh: boolean }>(
+    `SELECT body, fetched_at > now() - ($2 || ' milliseconds')::interval AS fresh FROM arma.source_cache WHERE url = $1`,
+    [url, String(ttl)],
+  );
+  if (rows[0]?.fresh) {
+    stats.cached++;
+    return rows[0].body;
+  }
+  const r = await withSlot(new URL(url).host, () =>
+    fetch(url, { headers: { 'user-agent': UA, accept: 'text/html' }, signal: AbortSignal.timeout(30000) }),
+  );
+  if (r.status === 404) return null;
+  const wait = busy(r, url);
+  if (wait) throw wait;
+  if (!r.ok) throw new Error(`HTTP ${r.status} en ${url}`);
+  const body = parse(await r.text());
+  stats.fetched++;
+  await pool.query(
+    `INSERT INTO arma.source_cache (url, body) VALUES ($1, $2) ON CONFLICT (url) DO UPDATE SET body = EXCLUDED.body, fetched_at = now()`,
+    [url, JSON.stringify(body)],
+  );
+  return body;
 }
 
 /** a few at a time over a list */

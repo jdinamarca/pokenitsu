@@ -9,7 +9,7 @@ const dir = await mkdtemp(join(tmpdir(), 'arma-pc-'));
 process.env.LOCAL_IMAGE_DIR = dir;
 afterAll(() => rm(dir, { recursive: true }));
 afterEach(() => vi.unstubAllGlobals());
-const { pokecottageStep } = await import('./catalogPhotos.ts');
+const { billsStep, pokecottageStep } = await import('./catalogPhotos.ts');
 type Job = Parameters<typeof pokecottageStep>[2];
 
 const POLITE = { albumPause: 40, photoPause: 40, errorPause: 10, maxFails: 3 };
@@ -20,10 +20,14 @@ const job = (): Job => ({
   done: 0,
   pokemon: 2,
   pokemonDone: 0,
+  billsSets: 0,
+  billsDone: 0,
+  billsSkipped: [],
   current: null,
   bySource: {
     limitless: { fetched: 0, existing: 0, missing: 0, failed: 0 },
     pokecottage: { fetched: 0, existing: 0, missing: 0, failed: 0 },
+    billsarchive: { fetched: 0, existing: 0, missing: 0, failed: 0 },
   },
   skipped: [],
 });
@@ -115,5 +119,73 @@ describe('fotos-pokecottage-en-catalogo: el ritmo con PokeCottage', () => {
     expect(pc.log.map(x => x.url.match(/data\/(\d+)/)![1])).toEqual(['133', '134', '135']);
     expect(j.bySource.pokecottage.failed).toBe(2);
     expect(pc.most()).toBe(1);
+  });
+});
+
+describe("fotos-billsarchive-japonesas: el ritmo con Bill's Archive", () => {
+  const CDN = 'https://bills-archive.nyc3.cdn.digitaloceanspaces.com/tcgdex_cards_jp';
+  const html = (code: string, ns: number[]) => ns.map(n => `<img src="${CDN}/${code}/${code}-${n}_x.webp">`).join('');
+  const jungle = {
+    setId: 'ja-PMCG2',
+    name: 'Pokémon Jungle',
+    total: 3,
+    cards: [{ id: 'ja-PMCG2-048', set_id: 'ja-PMCG2', number: '048' }],
+  };
+  const fake = (pages: Record<string, string>) => {
+    const log: { url: string; at: number; end: number }[] = [];
+    vi.stubGlobal('fetch', async (u: string) => {
+      const url = String(u);
+      const at = Date.now();
+      await new Promise(r => setTimeout(r, 5));
+      log.push({ url, at, end: Date.now() });
+      if (url.endsWith('.html')) {
+        const slug = /\/([a-z0-9-]+)-jp\.html$/.exec(url)![1]!;
+        return pages[slug] ? new Response(pages[slug], { status: 200 }) : new Response(null, { status: 404 });
+      }
+      return new Response(new Uint8Array([1, 2, 3]), { status: 200, headers: { 'content-type': 'image/webp' } });
+    });
+    return log;
+  };
+
+  it('la página de la expansión, después la foto, con pausa, y la foto registrada', async () => {
+    const log = fake({ 'pokemon-jungle': html('pmcg2', [1, 2, 48]) });
+    const record = vi.fn(async () => {});
+    const j = job();
+    await billsStep([jungle], record, j, POLITE);
+    expect(log.map(x => x.url.replace(/.*\//, ''))).toEqual(['pokemon-jungle-jp.html', 'pmcg2-48_x.webp']);
+    expect(log[1]!.at - log[0]!.end).toBeGreaterThanOrEqual(POLITE.albumPause - 2);
+    expect(record).toHaveBeenCalledWith(
+      'ja-PMCG2-048',
+      expect.stringMatching(/^billsarchive\/pmcg2-48_x\.webp$/),
+      expect.stringContaining('pmcg2-48_x'),
+    );
+    expect(j.bySource.billsarchive.fetched).toBe(1);
+    expect(j.billsDone).toBe(1);
+  });
+
+  it('una página que no calza con el catálogo no baja nada y se anota', async () => {
+    const log = fake({ 'pokemon-jungle': html('pmcg2', [1, 48]) });
+    const j = job();
+    await billsStep(
+      [jungle],
+      vi.fn(async () => {}),
+      j,
+      POLITE,
+    );
+    expect(log).toHaveLength(1);
+    expect(j.billsSkipped).toEqual(['Pokémon Jungle (su página no calza con el catálogo)']);
+  });
+
+  it('una expansión que no tiene se anota y sigue', async () => {
+    fake({});
+    const j = job();
+    await billsStep(
+      [{ ...jungle, name: 'Holon Research Tower' }],
+      vi.fn(async () => {}),
+      j,
+      POLITE,
+    );
+    expect(j.billsSkipped).toEqual(['Holon Research Tower (no la tiene)']);
+    expect(j.stopped).toBeUndefined();
   });
 });

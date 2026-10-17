@@ -28,6 +28,8 @@
 ## Decisions
 
 ### 1. Encontrar la página de cada expansión
+*Al implementar:* el slug deducido del nombre en inglés alcanzó para todas las expansiones con cartas sin foto que Bill's Archive tiene: Jungle, Rocket Gang, Leaders' Stadium, The Town on No Map, Split Earth, Crossing the Ruins y Golden Sky, Silvery Ocean. Por eso no se implementó el índice. Una expansión cuya página da 404 (Holon Research Tower) se anota como "no la tiene", sin pedir nada más.
+
 - **El índice:** se pide **una** página conocida (`/expansion-pack-jp.html`) y se leen de su navegación los enlaces `/<slug>-jp.html`. Eso da la lista de expansiones de Bill's Archive.
 - **Su código:** para saber qué código tiene cada página, se pide la página solo cuando hace falta y se lee el código de la carpeta de sus imágenes (`tcgdex_cards_jp/<código>/`).
 - **Primero, las que tocan:** el slug que se deduce del nombre en inglés de la expansión (`Rocket Gang` → `rocket-gang`) se prueba antes. Así, una expansión del catálogo con cartas sin foto pide su página y nada más.
