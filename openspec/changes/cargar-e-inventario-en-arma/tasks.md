@@ -7,7 +7,7 @@
   - el reparto al mover n copias;
   - `expandRange(index, entry)`, que se salta los números que no existen y marca cuándo hay que confirmar (más de 50).
 - [x] 1.2 `packages/inventory`: `addCopies`, `undoLast`, `moveCopies`, `setPersonal`, `setOwnPrice`, `resolveCard`, `ensureSetCards` (pokemontcg.io y TCGdex) y `getFx`, con el SQL movido sin cambios desde `apps/api`. Lleva compilación, typecheck, lint y pruebas con un cliente falso (consultas y parámetros esperados). Verificar que compila y que las pruebas pasan.
-- [ ] 1.3 `apps/api` pasa a usar el paquete, con `index.js`, `catalog.js` y `prices.js` como adaptadores y las mismas rutas y respuestas. Verificar contra una copia de la base que en Nitsu funcionan cargar, quitar, un rango con su deshacer, mover, personales, mi precio y una expansión sin descargar, y que las filas quedan iguales que antes del cambio.
+- [x] 1.3 `apps/api` pasa a usar el paquete, con `index.js`, `catalog.js` y `prices.js` como adaptadores y las mismas rutas y respuestas. Verificar contra una copia de la base que en Nitsu funcionan cargar, quitar, un rango con su deshacer, mover, personales, mi precio y una expansión sin descargar, y que las filas quedan iguales que antes del cambio.
 
 ## 2. API de arma
 
