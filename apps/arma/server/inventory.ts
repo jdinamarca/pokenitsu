@@ -60,14 +60,29 @@ async function cardPhotos(ids: string[]): Promise<Map<string, CardPhotos>> {
      WHERE p.card_id = ANY ($1)`,
     [ids],
   );
-  for (const r of rows) {
+  const { rows: printed } = await pool.query<{ card_id: string; source_id: string; src: string; name: string; permission: string }>(
+    `SELECT DISTINCT ON (p.card_id, p.source_id) p.card_id, p.source_id, p.src, s.name, s.permission
+     FROM ${PRINTED_PHOTOS} p JOIN arma.sources s ON s.id = p.source_id
+     WHERE p.card_id = ANY ($1)
+     ORDER BY p.card_id, p.source_id, p.stamp IS NOT NULL, p.finish <> 'normal', p.code`,
+    [ids],
+  );
+  // the card's own photo wins over its printing's; a printing's photo for local use only, over Limitless by expansion
+  for (const r of [...rows, ...printed]) {
     const cur = out.get(r.card_id) || { own_card: null, local: null };
-    if (r.source_id === 'own') cur.own_card = r.src;
-    else if (r.permission === 'local' && localPhotosOn()) cur.local = { src: r.src, source: r.name };
+    if (r.source_id === 'own') cur.own_card ||= r.src;
+    else if (r.permission === 'local' && localPhotosOn() && (!cur.local || printed.includes(r))) cur.local = { src: r.src, source: r.name };
     out.set(r.card_id, cur);
   }
   return out;
 }
+/** the photos of the Full's printings of a catalog card (card_id, source_id, src, stamp, finish, code): only in the
+ *  card's language (a Taiwanese printing tied to a Japanese card isn't its photo) and not one marked as showing another variant */
+export const PRINTED_PHOTOS = `(SELECT p.card_id, f.source_id, f.value AS src, p.stamp, p.finish, p.code
+  FROM arma.printings p JOIN cards c ON c.id = p.card_id JOIN sets k ON k.id = c.set_id
+  JOIN arma.facts f ON f.printing_code = p.code AND f.field = 'image' AND f.value IS NOT NULL
+  LEFT JOIN arma.photo_marks m ON m.src = f.value
+  WHERE p.lang = CASE WHEN k.lang = 'JA' THEN 'JA' ELSE 'EN' END AND coalesce(m.shows, '') = coalesce(p.stamp, ''))`;
 const NO_PHOTOS: CardPhotos = { own_card: null, local: null };
 
 type Pictured = { img: string | null; dex: number[] | null };
