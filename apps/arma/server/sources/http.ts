@@ -10,7 +10,26 @@ import { pool } from '../db.ts';
 const UA = 'NitsuCollectibles/0.1 (+https://github.com/jdinamarca/pokenitsu)';
 const DAY = 24 * 3600 * 1000;
 const slots = new Map<string, { busy: number; queue: (() => void)[] }>();
-const LIMIT: Record<string, number> = { 'api.tcgdex.net': 4 };
+// PokeCottage: never two requests at once, from anywhere in the app (fotos-pokecottage-en-catalogo)
+const LIMIT: Record<string, number> = { 'api.tcgdex.net': 4, 'pokecottagecdn.com': 1 };
+
+/** a source answered 429 or 503: wait retryAfterMs before asking it again */
+export class SourceBusy extends Error {
+  constructor(
+    readonly retryAfterMs: number,
+    url: string,
+  ) {
+    super(`La fuente pidió esperar ${Math.round(retryAfterMs / 1000)} s (${url})`);
+  }
+}
+/** Retry-After in seconds or as a date; 60 s when it's missing or unreadable, never more than 10 minutes */
+export function retryAfterMs(header: string | null, now = Date.now()): number {
+  const s = header?.trim() ? Number(header) : NaN;
+  const ms = Number.isFinite(s) ? s * 1000 : header ? Date.parse(header) - now : NaN;
+  return Number.isFinite(ms) ? Math.min(10 * 60_000, Math.max(0, ms)) : 60_000;
+}
+const busy = (r: Response, url: string) =>
+  r.status === 429 || r.status === 503 ? new SourceBusy(retryAfterMs(r.headers.get('retry-after')), url) : null;
 
 async function withSlot<T>(host: string, fn: () => Promise<T>): Promise<T> {
   const s = slots.get(host) || { busy: 0, queue: [] };
@@ -59,6 +78,8 @@ export async function fetchJson<T = unknown>(
         fetch(url, { headers: { 'user-agent': UA, accept: 'application/json' }, signal: AbortSignal.timeout(30000) }),
       );
       if (r.status === 404) return null;
+      const wait = busy(r, url);
+      if (wait) throw wait;
       if (!r.ok) throw new Error(`HTTP ${r.status} en ${url}`);
       const raw: unknown = await r.json();
       const body = (transform ? transform(raw) : raw) as T;
@@ -70,6 +91,8 @@ export async function fetchJson<T = unknown>(
       return body;
     } catch (e) {
       last = e;
+      // asked to wait: no quick retry
+      if (e instanceof SourceBusy) break;
       await new Promise(r => setTimeout(r, 800 * (i + 1)));
     }
   }
@@ -112,6 +135,8 @@ export async function downloadOnce(url: string, dest: string): Promise<'fetched'
   const host = new URL(url).host;
   const r = await withSlot(host, () => fetch(url, { headers: { 'user-agent': UA }, signal: AbortSignal.timeout(60000) }));
   if (r.status === 404 || r.status === 403) return 'missing';
+  const wait = busy(r, url);
+  if (wait) throw wait;
   if (!r.ok || !r.body) throw new Error(`HTTP ${r.status} en ${url}`);
   if (!(r.headers.get('content-type') || '').startsWith('image/')) throw new Error(`No es una imagen: ${url}`);
   if (Number(r.headers.get('content-length') || 0) > MAX_BYTES) throw new Error(`Más de 8 MB: ${url}`);

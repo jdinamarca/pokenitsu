@@ -206,16 +206,25 @@ export interface ReplaceCards {
   total: number;
   ready: number;
 }
-export interface CatalogJob {
-  running: boolean;
-  sets: number;
-  done: number;
-  current: string | null;
+export interface SourceCount {
   fetched: number;
   existing: number;
   missing: number;
   failed: number;
+}
+/** the Japanese catalog's photos for local use only: Limitless per expansion, then PokeCottage per Pokémon */
+export interface CatalogJob {
+  running: boolean;
+  phase: 'limitless' | 'pokecottage';
+  sets: number;
+  done: number;
+  pokemon: number;
+  pokemonDone: number;
+  current: string | null;
+  bySource: { limitless: SourceCount; pokecottage: SourceCount };
   skipped: string[];
+  waitingUntil?: string;
+  stopped?: string;
   error?: string;
 }
 type RowKey = Pick<RowResult, 'sid' | 'num' | 'variant' | 'lang' | 'cond' | 'loc'>;

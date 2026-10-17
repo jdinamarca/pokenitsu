@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Download, RefreshCw, Upload } from 'lucide-react';
-import { api, ApiError, type CatalogJob, type Full, type ReplaceCards, type Source } from './api.ts';
+import { api, ApiError, type CatalogJob, type Full, type ReplaceCards, type Source, type SourceCount } from './api.ts';
 import { toLogin } from './auth.ts';
 import { Gate } from './Cargar.tsx';
 import { isOwnerAccount, Shell } from './components/Shell.tsx';
@@ -252,13 +252,10 @@ export function Reemplazar() {
             <code>pnpm arma</code>.
           </p>
         )}
-        {job && (
-          <p className="notice" style={{ margin: '14px 28px 0' }} role="status">
-            {job.running ? `Bajando: ${job.current || '…'} · ` : 'Última descarga: '}
-            {job.done.toLocaleString('es-CL')} de {job.sets.toLocaleString('es-CL')} expansiones · {job.fetched.toLocaleString('es-CL')}{' '}
-            fotos nuevas · {job.missing.toLocaleString('es-CL')} que Limitless no tiene
-            {job.failed ? ` · ${job.failed.toLocaleString('es-CL')} fallaron` : ''}
-            {job.error ? ` · error: ${job.error}` : ''}
+        {job && <JobNotice job={job} />}
+        {job?.stopped && (
+          <p className="notice err" style={{ margin: '14px 28px 0' }} role="alert">
+            Se detuvo: {job.stopped}. Pídela otra vez para seguir con lo que falta.
           </p>
         )}
         {error && (
@@ -306,5 +303,34 @@ export function Reemplazar() {
         </div>
       </main>
     </Shell>
+  );
+}
+
+const n = (x: number) => x.toLocaleString('es-CL');
+const counts = (s: SourceCount, lacks: string) =>
+  `${n(s.fetched)} fotos nuevas · ${n(s.missing)} que ${lacks} no tiene${s.failed ? ` · ${n(s.failed)} fallaron` : ''}`;
+/** the download's progress: a line per step (Limitless, then PokeCottage), and when PokeCottage asked to wait */
+function JobNotice({ job }: { job: CatalogJob }) {
+  const pc = job.phase === 'pokecottage';
+  const wait = job.waitingUntil && new Date(job.waitingUntil);
+  return (
+    <div className="notice" style={{ margin: '14px 28px 0' }} role="status">
+      <p>
+        {job.running ? (pc ? '' : `Bajando ${job.current || '…'} · `) : 'Última descarga · '}
+        Limitless: {n(job.done)} de {n(job.sets)} expansiones · {counts(job.bySource.limitless, 'Limitless')}
+      </p>
+      {(pc || !job.running) && (
+        <p>
+          {job.running ? `Bajando ${job.current || '…'} · ` : ''}
+          PokeCottage: {n(job.pokemonDone)} de {n(job.pokemon)} Pokémon · {counts(job.bySource.pokecottage, 'PokeCottage')}
+        </p>
+      )}
+      {wait && job.running && (
+        <p>
+          Esperando a PokeCottage hasta las {wait.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}.
+        </p>
+      )}
+      {job.error && <p>Error: {job.error}</p>}
+    </div>
   );
 }

@@ -1,6 +1,7 @@
-// PokeCottage's master set of one Pokémon (https://pokecottage.com/pokemon-master-sets/…): text only.
-// PokeCottage authorized its text, also for production; never its pictures, so no image URL is ever kept.
-import { variantFromPokecottage, type Claim } from '@pokenitsu/core';
+// PokeCottage's master set of one Pokémon (https://pokecottage.com/pokemon-master-sets/…).
+// Its text is authorized, also for production: the claims never keep an image URL. Its pictures only for local use
+// (fotos-pokecottage-en-catalogo): the album with its picture URLs is cached apart, under its own key.
+import { normNumber, variantFromPokecottage, type Claim } from '@pokenitsu/core';
 import { cardIdOf, intlSetByName, nameKey, type Catalog } from './catalog.ts';
 import { fetchJson } from './http.ts';
 
@@ -35,7 +36,7 @@ const withoutPictures = (x: unknown): unknown =>
       : x;
 
 /** the data file of a Pokémon's master set: 133 → 133-eevee */
-const dataUrl = (dex: number, name: string) => `https://pokecottagecdn.com/mastersets/data/${dex}-${nameKey(name)}.json`;
+export const dataUrl = (dex: number, name: string) => `https://pokecottagecdn.com/mastersets/data/${dex}-${nameKey(name)}.json`;
 
 export async function pokecottageClaims(
   cat: Catalog,
@@ -78,4 +79,79 @@ export async function pokecottageClaims(
     });
   }
   return { claims, entries: data.cards.length, unmatched };
+}
+
+// ---------- its pictures, for local use only ----------
+/** an album entry, with only what the local photos use */
+export interface PcPhotoEntry {
+  id: string;
+  url: string | null;
+  pokemonNumber: number | null;
+  cardNumber: string;
+  variantType: string;
+  set: { id: string; name: string };
+}
+const DAYS_30 = 30 * 24 * 3600 * 1000;
+/** a Pokémon's album with its picture URLs, kept 30 days so it is asked once; null when PokeCottage hasn't it */
+export async function pokecottageAlbum(dex: number, speciesEn: string): Promise<PcPhotoEntry[] | null> {
+  const url = dataUrl(dex, speciesEn);
+  const data = await fetchJson<{ cards: PcPhotoEntry[] }>(url, {
+    ttl: DAYS_30,
+    // one try: whoever calls decides when to ask again (never a quick retry to PokeCottage)
+    tries: 1,
+    cacheKey: url + '#fotos-v2',
+    transform: raw => ({
+      cards: ((raw as { cards?: Record<string, unknown>[] }).cards || []).map(c => {
+        const set = (c.set || {}) as { id?: string; name?: string };
+        return {
+          id: String(c.id ?? ''),
+          url: (c.imageUrl || c.originalImageUrl || null) as string | null,
+          pokemonNumber: Number(c.pokemonNumber) || null,
+          cardNumber: String(c.cardNumber ?? ''),
+          variantType: String(c.variantType ?? ''),
+          set: { id: String(set.id ?? ''), name: String(set.name ?? '') },
+        };
+      }),
+    }),
+  });
+  return data ? data.cards : null;
+}
+
+/**
+ * PokeCottage's Japanese sets whose name isn't the catalog's English name: PokeCottage's set id → our set id (by id,
+ * since its names repeat: "Sun & Moon"). Each one checked against TCGdex and Bulbapedia before it goes here.
+ */
+export const PC_SET_ALIASES: Record<string, string> = {
+  // サン＆ムーン (SM1+), 51 cards, 2017-01-27: TCGdex's "Strength Expansion Pack Sun & Moon", Bulbapedia's
+  // "Enhanced Expansion Pack Sun & Moon"; PokeCottage calls it "Sun & Moon"
+  'jpn_sm1+': 'ja-SM1p',
+  // Neo Premium File 2: a set the catalog took from PokeCottage itself, with its id
+  jpn_neop2: 'pc-jpn_neop2',
+};
+
+export interface PcCard {
+  id: string;
+  set_id: string;
+  number: string;
+  dex: number[];
+}
+const plainNumber = (n: string) => normNumber(String(n).split('/')[0]!.replace(/^#/, ''));
+/**
+ * The photo of each catalog card in a Pokémon's album: a Japanese entry of the same expansion (by its English name or
+ * an alias), the same number and a Pokédex number of the card's (so a wrong set match can't give another Pokémon's
+ * photo). The standard entry wins over its variants. Card id → picture URL.
+ */
+export function matchPokecottage(entries: PcPhotoEntry[], cards: PcCard[], jaByName: Map<string, string>): Map<string, string> {
+  const want = new Map(cards.map(c => [`${c.set_id}|${plainNumber(c.number)}`, c]));
+  const out = new Map<string, { url: string; std: boolean }>();
+  for (const e of entries) {
+    if (!e.url || !e.set.id.startsWith('jpn_')) continue;
+    const setId = PC_SET_ALIASES[e.set.id] ?? jaByName.get(nameKey(e.set.name));
+    const card = setId && want.get(`${setId}|${plainNumber(e.cardNumber)}`);
+    if (!card || e.pokemonNumber == null || !card.dex.includes(e.pokemonNumber)) continue;
+    const std = e.variantType === 'default';
+    const had = out.get(card.id);
+    if (!had || (std && !had.std)) out.set(card.id, { url: e.url, std });
+  }
+  return new Map([...out].map(([id, x]) => [id, x.url]));
 }
