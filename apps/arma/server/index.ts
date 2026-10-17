@@ -8,7 +8,7 @@ import { catalogJob, startCatalogPhotos } from './catalogPhotos.ts';
 import { LOCAL_IMAGE_DIR, localPhotosOn } from './local.ts';
 import { isOwner, ownedCopies, requireOwner, requireViewer, viewerOf } from './session.ts';
 import { authRoutes, initAuth } from './auth.ts';
-import { inventoryRoutes } from './inventory.ts';
+import { inventoryRoutes, PRINTED_PHOTOS } from './inventory.ts';
 import { auditPrintings, FULL_RULES, type ArmaFinish, type ArmaRules, type AuditReason } from '@pokenitsu/core';
 import { createReadStream } from 'node:fs';
 import { mkdir, readdir, stat, unlink, writeFile } from 'node:fs/promises';
@@ -285,7 +285,8 @@ app.delete<{ Params: { cardId: string } }>('/api/card-photos/:cardId', async req
 });
 
 // ---------- "Por reemplazar" (fotos-solo-local-en-catalogo): the administrator's gallery ----------
-// the catalog cards shown with a photo for local use only (no own photo, no catalog photo), and the progress: of the
+// the catalog cards shown with a photo for local use only (no own photo, no catalog photo; those with a printing of the Full
+// are in the gallery as that printing), and the progress: of the
 // cards that have one, how many already have a photo that can go to production
 app.get('/api/replace/cards', async req => {
   await requireOwner(req);
@@ -297,6 +298,7 @@ app.get('/api/replace/cards', async req => {
            FROM arma.card_photos p JOIN arma.sources s ON s.id = p.source_id AND s.permission = 'local'
            JOIN cards c ON c.id = p.card_id JOIN sets st ON st.id = c.set_id
            WHERE c.image_small IS NULL AND NOT EXISTS (SELECT 1 FROM arma.card_photos o WHERE o.card_id = p.card_id AND o.source_id = 'own')
+             AND NOT EXISTS (SELECT 1 FROM ${PRINTED_PHOTOS} x WHERE x.card_id = p.card_id)
            ORDER BY st.release_date NULLS LAST, c.set_id, c.number_norm ~ '^[0-9]+$' DESC,
                     nullif(regexp_replace(c.number_norm, '[^0-9]', '', 'g'), '')::int NULLS LAST, c.number`,
         )
@@ -305,7 +307,8 @@ app.get('/api/replace/cards', async req => {
       `SELECT count(DISTINCT p.card_id)::int AS total,
               count(DISTINCT p.card_id) FILTER (WHERE c.image_small IS NOT NULL
                 OR EXISTS (SELECT 1 FROM arma.card_photos o WHERE o.card_id = p.card_id AND o.source_id = 'own'))::int AS ready
-       FROM arma.card_photos p JOIN arma.sources s ON s.id = p.source_id AND s.permission = 'local' JOIN cards c ON c.id = p.card_id`,
+       FROM arma.card_photos p JOIN arma.sources s ON s.id = p.source_id AND s.permission = 'local' JOIN cards c ON c.id = p.card_id
+       WHERE NOT EXISTS (SELECT 1 FROM ${PRINTED_PHOTOS} x WHERE x.card_id = p.card_id)`,
     ),
   ]);
   return { localPhotos: localPhotosOn(), cards: cards.rows, ...totals.rows[0]! };
