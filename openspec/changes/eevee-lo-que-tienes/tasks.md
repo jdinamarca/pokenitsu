@@ -30,8 +30,8 @@
 
 ## 4. Documentación y cierre
 
-- [ ] 4.1 `apps/arma/DESIGN.md`: la "Regla de la Penumbra" pasa a "Regla del color" (lo que una regla deja fuera no se muestra; lo que tienes a color y lo que te falta en blanco y negro), y se documentan el sello de inventario y el filtro. `README.md`: la sección de arma (la Vitrina y las reglas) dice lo mismo. Verificar leyendo ambas secciones.
-- [ ] 4.2 `pnpm build && pnpm typecheck && pnpm lint && pnpm test` en verde. Borrar la copia de la base y confirmar que se borró.
+- [x] 4.1 `apps/arma/DESIGN.md`: la "Regla de la Penumbra" pasa a "Regla del color" (lo que una regla deja fuera no se muestra; lo que tienes a color y lo que te falta en blanco y negro), y se documentan el sello de inventario y el filtro. `README.md`: la sección de arma (la Vitrina y las reglas) dice lo mismo. Verificar leyendo ambas secciones.
+- [x] 4.2 `pnpm build && pnpm typecheck && pnpm lint && pnpm test` en verde. Borrar la copia de la base y confirmar que se borró.
 
 ## Workflow follow-up
 

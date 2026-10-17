@@ -1,6 +1,6 @@
 ---
 name: Arma tu colección
-description: El Full de impresiones de un Pokémon en una vitrina de tienda; las reglas apagan la luz de lo que no cuenta.
+description: El Full de impresiones de un Pokémon en una vitrina de tienda; las reglas sacan lo que no cuenta, y lo que tienes se ve a color.
 colors:
   felt: '#0f3a31'
   felt-deep: '#0b2e27'
@@ -111,7 +111,7 @@ Es denso pero se lee sin cansar. Las cartas siempre se ven grandes y con su foto
 - Fieltro verde como cascarón y como fondo de la vitrina; grafito tibio como sala.
 - Una sola luz cálida, reservada para lo activo y para el borde del vidrio.
 - Etiquetas de cartulina con cifras condensadas y un sticker de color por fuente.
-- Lo que una regla deja fuera se apaga en su lugar: nunca desaparece.
+- Lo que una regla deja fuera sale de la vitrina, y la nota dice cuánto sacó. Lo que tienes, a color y con su sello; lo que te falta, en blanco y negro.
 - Cartas grandes, con su foto; nunca miniaturas perdidas entre controles.
 
 ## Colors
@@ -153,7 +153,7 @@ Un mundo nocturno y cálido: fieltro, grafito, cartulina y una sola luz, con sti
 
 ### Hierarchy
 
-- **Contador** (700, 66px, 0.9, cifras tabulares): "bajo luz / Full", la única cifra grande de la pantalla.
+- **Contador** (700, 66px, 0.9, cifras tabulares): "N / total tienes" en la vitrina de Eevee, la única cifra grande de la pantalla.
 - **Headline** (700, 30px, 1.15): título de las pantallas de entrada (sin sesión, vacío, error).
 - **Title** (700, 21px, 1.2): nombre de la carta en la ficha; el Pokémon en el riel (700, 26px).
 - **Body** (500, 14px, 1.45): texto corriente, reglas, notas; las notas largas no pasan de 62ch.
@@ -168,7 +168,7 @@ Un mundo nocturno y cálido: fieltro, grafito, cartulina y una sola luz, con sti
 
 Una herramienta de escritorio en tres columnas fijas que ocupan toda la ventana: riel de reglas (284px), zona de trabajo fluida y ficha lateral (352px). Bajo 1360px, el riel baja a 264px y la ficha a 316px. Bajo 900px las tres zonas se apilan y la página hace scroll.
 
-La zona de trabajo tiene arriba el contador con su nota y la leyenda de stickers, y debajo la vitrina, que hace scroll por dentro con su borde de luz pegado arriba. La vitrina se ordena en repisas por diseño (una ilustración y todas sus impresiones), de la más antigua a la más nueva; dentro de una repisa, por idioma (inglés primero), luego expansión, acabado y sello. Bajo la leyenda, "Ordenar: Por diseño · Por expansión" (dos botones como los chips de vista, en grafito; el elegido en cartulina) cambia a una repisa por expansión en una sola línea de tiempo que mezcla regiones (ロケット団, Japón 1997, antes que Team Rocket, 2000). Su subtítulo es "Región · AAAA-MM" o "Fecha por confirmar", y dentro va por número y luego idioma, acabado y sello.
+La zona de trabajo tiene arriba el contador con su nota y la leyenda de stickers, y debajo la vitrina, que hace scroll por dentro con su borde de luz pegado arriba. La vitrina se ordena en repisas por diseño (una ilustración y todas sus impresiones), de la más antigua a la más nueva; dentro de una repisa, por idioma (inglés primero), luego expansión, acabado y sello. Bajo la leyenda, "Ordenar: Por diseño · Por expansión" (dos botones como los chips de vista, en grafito; el elegido en cartulina) cambia a una repisa por expansión en una sola línea de tiempo que mezcla regiones (ロケット団, Japón 1997, antes que Team Rocket, 2000). Su subtítulo es "Región · AAAA-MM" o "Fecha por confirmar", y dentro va por número y luego idioma, acabado y sello. Debajo va "Ver: Todas · Las que tengo · Me faltan", con la cantidad de cada una en cifras condensadas (los mismos botones; el elegido en cartulina, recordado en el navegador), y al final de esa fila "Por verificar (N)". El contador no cambia con el filtro.
 
 **Riel de navegación:** bajo la marca, "Arma · Eevee", "Cargar" y "Mi inventario" con su icono de línea (Layers, Plus, Archive); la pantalla actual va en cartulina. Debajo, la zona propia de cada pantalla (reglas y vistas en Eevee, expansiones recientes en Cargar, ubicaciones en Mi inventario) y "Cerrar sesión" al pie. Las listas del riel (recientes, ubicaciones) son renglones con su cifra condensada a la derecha y una línea de ayuda; el elegido se ilumina con la luz cálida.
 
@@ -191,7 +191,9 @@ Profundidad por material y luz, no por tarjetas apiladas. La vitrina es un plano
 
 ### Named Rules
 
-**La Regla de la Penumbra.** Lo que una regla deja fuera no se oculta ni se mueve: se apaga en su lugar (escala de grises y brillo 0.32 en la foto, etiqueta al 38%) en 450ms con ease-out. Con "reducir movimiento" el cambio es instantáneo.
+**La Regla del Color** (elegida en el canvas, AV). En la vitrina de Eevee, lo que una regla deja fuera no se muestra: sale de la vitrina, una repisa sin impresiones se oculta y la nota dice cuántas sacó la regla y cuántas de ellas tienes. Lo que queda se ve a color si tienes esa impresión exacta, y en blanco y negro (escala de grises, sin oscurecer, con la etiqueta a plena tinta) si te falta. El cambio dura 450ms con ease-out; con "reducir movimiento" es instantáneo.
+
+**La Regla de la Penumbra** (Cargar). En la vitrina de carga, lo que te falta queda apagado en su lugar (escala de grises y brillo 0.32 en la foto, etiqueta al 38%), y se enciende al cargarlo.
 
 ## Shapes
 
@@ -217,8 +219,9 @@ Chips de fieltro hondo con borde de fieltro; la elegida pasa a cartulina. "Full"
 La carta a 112px con su foto real y, debajo, una etiqueta de cartulina con idioma y variante en Archivo Narrow y el sticker de su mejor permiso. Si la foto es solo para uso local, lleva un sticker violeta de 10px en la esquina inferior izquierda de la foto, con un anillo de grafito para separarlo de la ilustración; en la ficha, la foto lleva la nota "Foto solo para uso local · fuente". Una foto de otra variante (la 1st Edition en una unlimited) se ve atenuada como las de referencia, con la nota "Foto de la 1st Edition · falta esta variante". Bajo la foto de la ficha van las herramientas de foto en grafito: "Esta foto muestra" (un select) y "Subir tu foto" / "Quitar tu foto" (botones como los chips de vista).
 
 - **Sin foto propia:** usa la foto de otra impresión del mismo diseño, un poco atenuada.
-- **Copias:** una pastilla de luz cálida (×2) en la esquina.
-- **Fuera por una regla:** penumbra en su lugar.
+- **La tienes:** a color, con el **sello de inventario** en la esquina inferior derecha de la foto, sobresaliendo 8px: un círculo alargado de 30px de alto en fieltro, con borde de cartulina de 2px, un ✓ de lucide y la cantidad en Archivo Narrow 700 de 15px con cifras tabulares.
+- **Te falta:** en blanco y negro, sin sello.
+- **Fuera por una regla:** no se muestra.
 - **Elegida:** contorno de luz cálida a 3px.
 - **Hover:** sube 3px.
 - **Código de catálogo:** en su tooltip y en su etiqueta accesible.
@@ -244,7 +247,7 @@ La pantalla `/entrar` es el mostrador de la tienda, elegido en el canvas (AK):
 
 - **Izquierda:** el fieltro con el titular en Archivo 54px sobre luz cálida y una repisa de cinco cartas reales bajo la luz del vidrio. Dos están en penumbra.
 - **Derecha:** el formulario en grafito alzado: pestañas "Entrar · Crear cuenta" como chips de vista, campos con su etiqueta arriba, el botón principal en luz cálida y "Continuar con Google" en grafito.
-- **Al enfocar un campo** la luz del vidrio sube y las cartas en penumbra se encienden: el mismo lenguaje de la penumbra de las reglas, al revés. Es un cambio de luz, no de forma; con "reducir movimiento" es instantáneo.
+- **Al enfocar un campo** la luz del vidrio sube y las cartas en penumbra se encienden: el mismo lenguaje de la penumbra de Cargar, al revés. Es un cambio de luz, no de forma; con "reducir movimiento" es instantáneo.
 - **En pantallas angostas** el formulario va primero y la repisa abajo, con scroll horizontal.
 - **Al pie del riel**, "Cerrar sesión" como un chip con borde de fieltro.
 
@@ -253,7 +256,7 @@ La pantalla `/entrar` es el mostrador de la tienda, elegido en el canvas (AK):
 ### Do:
 
 - **Do** mostrar las cartas grandes (112px en la vitrina, ancho completo en la ficha) y con su foto real o la de su mismo diseño.
-- **Do** apagar en su lugar lo que una regla deja fuera, en 450ms con ease-out, e instantáneo con "reducir movimiento".
+- **Do** sacar de la vitrina lo que una regla deja fuera y decir en la nota cuánto sacó; mostrar a color lo que tienes y en blanco y negro lo que te falta, en 450ms con ease-out e instantáneo con "reducir movimiento".
 - **Do** reservar la luz cálida (#fff3dc) para una sola cosa activa por zona.
 - **Do** marcar la procedencia solo con los stickers de permiso (verde, ámbar, rojo, azul y, con las fotos solo locales, violeta).
 - **Do** usar cifras tabulares en todo número que cambia.
