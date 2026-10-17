@@ -1,25 +1,14 @@
 // Syncs sets and cards from pokemontcg.io into the database
-import { readFileSync } from 'node:fs';
 import { pool, tx } from './db.js';
+import { fetchJSON, norm, jaName, jaNameEn, jaImg, JA_NAMES, JA_HIDDEN, JA_SUPERTYPE, TCGDEX_JA as TCGDEX } from '@pokenitsu/inventory';
+import { inv } from './inventory.js';
+
+export { fetchJSON, norm };
+// an expansion's cards, downloaded the first time they're needed (shared with Arma tu colección)
+export const ensureSetCards = (setId, force) => inv.ensureSetCards(setId, force);
 
 const API = 'https://api.pokemontcg.io/v2';
 const SETS_MAX_AGE_MS = 3 * 24 * 3600 * 1000;
-
-export const norm = s => String(s).trim().toUpperCase().replace(/^([A-Z]*)0+(?=\d)/, '$1');
-
-// the API returns intermittent 502s, so retry with backoff
-export async function fetchJSON(url, tries = 5) {
-  let last;
-  for (let i = 0; i < tries; i++) {
-    try {
-      const r = await fetch(url, { signal: AbortSignal.timeout(30000) });
-      if (r.ok) return await r.json();
-      last = new Error(`HTTP ${r.status} en ${url}`);
-    } catch (e) { last = e; }
-    await new Promise(r => setTimeout(r, 700 * (i + 1)));
-  }
-  throw last;
-}
 
 export async function syncSets() {
   let page = 1, out = [], total = Infinity;
@@ -61,48 +50,6 @@ async function ensureJaSets() {
   jaChecked = true;
 }
 
-const syncing = new Map();
-async function syncSetCards(setId) {
-  let page = 1, got = 0, total = Infinity;
-  const all = [];
-  while (got < total) {
-    const j = await fetchJSON(`${API}/cards?q=set.id:${encodeURIComponent(setId)}&pageSize=250&page=${page}&select=id,name,number,nationalPokedexNumbers,artist,rarity,images,supertype`);
-    total = j.totalCount;
-    if (!j.data.length) break;
-    all.push(...j.data);
-    got += j.data.length;
-    page++;
-  }
-  if (!got || got < total) throw new Error(`descarga incompleta de la expansión ${setId} (${got}/${total})`);
-  // a few sets repeat a number (e.g. cel25c); keep the first card with each one
-  const seen = new Set();
-  const unique = all.filter(x => !seen.has(x.number) && seen.add(x.number));
-  await tx(async c => {
-    for (const x of unique) {
-      await c.query(
-        `INSERT INTO cards (id, set_id, number, number_norm, name, supertype, rarity, artist, dex, image_small, image_large)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
-         ON CONFLICT (id) DO UPDATE SET number=$3, number_norm=$4, name=$5, supertype=$6, rarity=$7, artist=$8, dex=$9,
-           -- a picture we already copied (/img/…, imagenes.js) stays
-           image_small=CASE WHEN cards.image_small LIKE '/img/%' THEN cards.image_small ELSE $10 END, image_large=CASE WHEN cards.image_large LIKE '/img/%' THEN cards.image_large ELSE $11 END`,
-        [x.id, setId, x.number, norm(x.number), x.name, x.supertype || null, x.rarity || null, x.artist || null,
-         x.nationalPokedexNumbers || [], x.images?.small || null, x.images?.large || null]);
-    }
-    await c.query('UPDATE sets SET cards_synced_at = now() WHERE id = $1', [setId]);
-  });
-}
-
-// Downloads a set's cards the first time they're needed (or when forced)
-export async function ensureSetCards(setId, force = false) {
-  const { rows } = await pool.query('SELECT cards_synced_at, source FROM sets WHERE id = $1', [setId]);
-  if (!rows.length) throw Object.assign(new Error(`La expansión ${setId} no existe`), { statusCode: 404 });
-  // typed by hand, or left from the old PokeCottage checklists (in use, so kept): nothing to download
-  if (['manual', 'pokecottage'].includes(rows[0].source) || (!force && rows[0].cards_synced_at)) return;
-  const sync = rows[0].source === 'tcgdex-ja' ? syncJaSet : syncSetCards;
-  if (!syncing.has(setId)) syncing.set(setId, sync(setId).finally(() => syncing.delete(setId)));
-  return syncing.get(setId);
-}
-
 // Downloads the cards of every set not yet synced (one set at a time, to be gentle with the API)
 export async function syncAllCards(onProgress = () => {}) {
   await ensureSets();
@@ -118,16 +65,7 @@ export async function syncAllCards(onProgress = () => {}) {
 // ---------- Japanese cards (TCGdex) ----------
 // Japanese prints have their own sets and numbers, so they are different cards from the international ones.
 // Ids are prefixed: set ja-SV2a, card ja-SV2a-133.
-const TCGDEX = 'https://api.tcgdex.net/v2/ja';
-const JA_SUPERTYPE = { Pokemon: 'Pokémon', Trainer: 'Trainer', Energy: 'Energy' };
-const jaImg = (base, size) => base ? `${base}/${size}.webp` : null;
-// English collector names of Japanese sets (TCGdex only has the Japanese one), Japanese names TCGdex has wrong, and junk entries
-// to leave out (by set code): the CS* sets are empty placeholders all named トリプレットビート, and SM1+ / sm2+ / SM3+ / SM4+ / SM5+
-// are empty duplicates of SM1p… SM5p, which have the cards
-const JA_NAMES = JSON.parse(readFileSync(new URL('./ja-sets.json', import.meta.url), 'utf8'));
-const jaName = (code, name) => JA_NAMES.fixJa[code] || name;
-const jaNameEn = code => JA_NAMES.en[code] || null;
-const JA_HIDDEN = new Set(JA_NAMES.hidden || []);
+
 
 // fills the names for sets already in the database, without waiting for the next sync
 export async function applyJaNames() {
@@ -157,24 +95,6 @@ export async function syncJaSets() {
     }
   });
   return list.length;
-}
-
-// Set details (date, series) and the basic data of all its cards; detailed card data comes from upsertJaCard
-async function syncJaSet(setId) {
-  const s = await fetchJSON(`${TCGDEX}/sets/${encodeURIComponent(setId.replace(/^ja-/, ''))}`);
-  await tx(async c => {
-    await c.query(
-      `INSERT INTO sets (id, name, series, code, release_date, total, printed_total, source, lang, cards_synced_at, name_en)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 'tcgdex-ja', 'JA', now(), $8)
-       ON CONFLICT (id) DO UPDATE SET name = $2, series = $3, release_date = $5, total = $6, printed_total = $7, cards_synced_at = now(), name_en = $8`,
-      ['ja-' + s.id, jaName(s.id, s.name), s.serie?.name || null, s.id, s.releaseDate || null, s.cardCount?.total || null, s.cardCount?.official || null, jaNameEn(s.id)]);
-    for (const x of s.cards || []) {
-      await c.query(
-        `INSERT INTO cards (id, set_id, number, number_norm, name, image_small, image_large)
-         VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT DO NOTHING`,
-        ['ja-' + x.id, 'ja-' + s.id, x.localId, norm(x.localId), x.name, jaImg(x.image, 'low'), jaImg(x.image, 'high')]);
-    }
-  });
 }
 
 async function upsertJaCard(x) {
