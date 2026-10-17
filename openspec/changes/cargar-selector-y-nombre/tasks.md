@@ -2,11 +2,11 @@
 
 ## 1. Reglas en core
 
-- [ ] 1.1 `groupSets(sets, 'ja' | 'intl')` en `packages/core` (series por `eraOf`, ordenadas por su expansión más nueva; dentro, de la más nueva a la más antigua y sin fecha al final). Pruebas:
+- [x] 1.1 `groupSets(sets, 'ja' | 'intl')` en `packages/core` (series por `eraOf`, ordenadas por su expansión más nueva; dentro, de la más nueva a la más antigua y sin fecha al final). Pruebas:
   - las japonesas `PMCG1–4` quedan juntas en "Base";
   - Scarlet & Violet va antes que Sword & Shield;
   - una sin fecha va al final de su serie.
-- [ ] 1.2 `nameQuery(raw)` y `matchesCardName(q, card)` en `packages/core`. Pruebas:
+- [x] 1.2 `nameQuery(raw)` y `matchesCardName(q, card)` en `packages/core`. Pruebas:
   - `meow` encuentra "Meowth" por `name_en`;
   - `ニャース` encuentra por `name`;
   - `nidoran` encuentra "Nidoran ♀";
@@ -17,18 +17,18 @@
 
 ## 2. API
 
-- [ ] 2.1 `GET /api/sets/progress` (con sesión y RLS de la cuenta): `{ setId: cartas distintas con copias }`. Verificar con `curl` en una copia de la base: el dueño ve su avance y una segunda cuenta, `{}`.
-- [ ] 2.2 `name_en` en `GET /api/sets/:id/cards`, con el mapa `dex → nombre` en memoria. Para varios Pokédex, los nombres van unidos por " & ". Verificar con `curl`: en `ja-PMCG4`, la #047 trae `name_en: "Meowth"` y los Entrenadores no lo traen.
+- [x] 2.1 `GET /api/sets/progress` (con sesión y RLS de la cuenta): `{ setId: cartas distintas con copias }`. Verificar con `curl` en una copia de la base: el dueño ve su avance y una segunda cuenta, `{}`.
+- [x] 2.2 `name_en` en `GET /api/sets/:id/cards`, con el mapa `dex → nombre` en memoria. Para varios Pokédex, los nombres van unidos por " & ". Verificar con `curl`: en `ja-PMCG4`, la #047 trae `name_en: "Meowth"` y los Entrenadores no lo traen.
 
 ## 3. Pantalla
 
-- [ ] 3.1 `components/SetPicker.tsx`:
+- [x] 3.1 `components/SetPicker.tsx`:
   - botón de la cabecera y panel con buscador, pestañas, recientes, series y avance;
   - teclado: ↑↓, Enter, Esc y `/`;
   - estilos en `styles.css` con los tokens del tema, y pantalla completa en el teléfono.
 
   `Cargar.tsx` sin `picking`: "Buscar otra expansión" y Esc con la caja vacía abren el panel. Verificar typecheck y lint.
-- [ ] 3.2 Filtro por nombre en `Cargar.tsx`:
+- [x] 3.2 Filtro por nombre en `Cargar.tsx`:
   - `shown` con `matchesCardName`;
   - contador "N cartas con «q»";
   - mensaje sin coincidencias;
@@ -36,7 +36,7 @@
   - ficha lateral con una o con varias.
 
   Verificar typecheck y lint.
-- [ ] 3.3 En Chrome sin interfaz, contra una copia de la base:
+- [x] 3.3 En Chrome sin interfaz, contra una copia de la base:
   - el botón abre el panel en "Japonesas" con la sesión en japonés;
   - la serie Base tiene PMCG1–4 con su avance;
   - buscar `MEW ES` y Enter elige 151 en español;
@@ -52,8 +52,8 @@
 
 ## 4. Documentación y cierre
 
-- [ ] 4.1 README (Cargar en arma: el selector, el avance, buscar por nombre) y DESIGN.md de arma (el botón y el panel). Verificar leyendo ambas secciones.
-- [ ] 4.2 `pnpm build && pnpm typecheck && pnpm lint && pnpm test` en verde. Borrar la copia de la base y confirmar que se borró.
+- [x] 4.1 README (Cargar en arma: el selector, el avance, buscar por nombre) y DESIGN.md de arma (el botón y el panel). Verificar leyendo ambas secciones.
+- [x] 4.2 `pnpm build && pnpm typecheck && pnpm lint && pnpm test` en verde. Borrar la copia de la base y confirmar que se borró.
 
 ## Workflow follow-up
 

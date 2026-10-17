@@ -112,6 +112,8 @@ export interface SetCard {
   /** the card's own photo (production-ready) and its photo for local use only (fotos-solo-local-en-catalogo) */
   own_card: string | null;
   local: LocalPhoto | null;
+  /** its Pokémon's English name ("Meowth" for ニャース), to find it by name; null without a Pokédex number */
+  name_en?: string | null;
 }
 export interface LocalPhoto {
   src: string;
@@ -251,6 +253,8 @@ export const api = {
   // Cargar and Mi inventario
   sets: (q?: string) => call<{ sets: CardSet[]; lang: string | null }>('GET', '/sets' + (q ? '?q=' + encodeURIComponent(q) : '')),
   setCards: (id: string) => call<SetCards>('GET', `/sets/${encodeURIComponent(id)}/cards`),
+  // the account's distinct cards with copies per expansion (the picker's progress)
+  setsProgress: () => call<Record<string, number>>('GET', '/sets/progress'),
   inventory: () => call<Inventory>('GET', '/inventory'),
   add: (row: RowKey & { delta: number; personal?: boolean; batch?: string }) =>
     call<RowResult & { real: number; logId: number | null }>('POST', '/inventory/add', row),

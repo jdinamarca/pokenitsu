@@ -70,6 +70,33 @@ async function cardPhotos(ids: string[]): Promise<Map<string, CardPhotos>> {
 }
 const NO_PHOTOS: CardPhotos = { own_card: null, local: null };
 
+// each Pokémon's English name, from the international catalog (the most common name of its single-Pokémon cards):
+// computed once while the server runs, since the catalog doesn't change in a session (cargar-selector-y-nombre)
+let species: Promise<Map<number, string>> | null = null;
+function speciesNamesEn(): Promise<Map<number, string>> {
+  species ||= pool
+    .query<{ dex: number; name: string }>(
+      `SELECT dex, mode() WITHIN GROUP (ORDER BY nm) AS name
+       FROM (SELECT unnest(c.dex) AS dex, c.name AS nm FROM cards c JOIN sets s ON s.id = c.set_id
+             WHERE s.lang <> 'JA' AND c.supertype = 'Pokémon' AND cardinality(c.dex) = 1) x
+       GROUP BY dex`,
+    )
+    .then(r => new Map(r.rows.map(x => [x.dex, x.name])))
+    .catch(e => {
+      species = null;
+      throw e;
+    });
+  return species;
+}
+/** a card's Pokémon in English ("Pikachu & Zekrom" for a TAG TEAM); null without a Pokédex number */
+const englishName = (dex: number[] | null, names: Map<number, string>) =>
+  dex?.length
+    ? dex
+        .map(d => names.get(d))
+        .filter(Boolean)
+        .join(' & ') || null
+    : null;
+
 type Pictured = { img: string | null; dex: number[] | null };
 const loneDex = (r: Pictured) => (!r.img && r.dex?.length === 1 ? r.dex[0]! : null);
 // the reference picture of each card without its own
@@ -91,6 +118,17 @@ export function inventoryRoutes(app: FastifyInstance) {
     const q = String(req.query.q ?? '');
     return q.trim() ? searchSetsLang(rows, q) : { sets: rows, lang: null };
   });
+
+  // the account's progress per expansion (cargar-selector-y-nombre): distinct cards with copies, as litCount lights them
+  app.get('/api/sets/progress', async req =>
+    asViewer(await requireViewer(req), async c => {
+      const { rows } = await c.query<{ set_id: string; have: number }>(
+        `SELECT k.set_id, count(DISTINCT k.number_norm)::int AS have
+         FROM inventory i JOIN cards k ON k.id = i.card_id WHERE i.qty > 0 GROUP BY 1`,
+      );
+      return Object.fromEntries(rows.map(r => [r.set_id, r.have]));
+    }),
+  );
 
   // an expansion's cards (downloaded the first time), with the account's copies and the stored prices
   app.get<{ Params: { id: string } }>('/api/sets/:id/cards', async req => {
@@ -135,7 +173,7 @@ export function inventoryRoutes(app: FastifyInstance) {
         ]);
         const photosOf = new Map<string, Record<string, string>>();
         for (const p of photos.rows) photosOf.set(p.card_id, { ...photosOf.get(p.card_id), [p.variant]: p.img });
-        const photosOfCard = await cardPhotos(cards.rows.map(r => r.id));
+        const [photosOfCard, speciesEn] = await Promise.all([cardPhotos(cards.rows.map(r => r.id)), speciesNamesEn()]);
         const priceOf = new Map(prices.rows.map(({ card_id, ...p }) => [card_id, p]));
         const copiesOf = new Map<string, unknown[]>();
         for (const { card_id, ...r } of copies.rows) copiesOf.set(card_id, [...(copiesOf.get(card_id) || []), r]);
@@ -146,6 +184,7 @@ export function inventoryRoutes(app: FastifyInstance) {
           own: ownMap(own.rows, fx),
           cards: (await withRefs(cards.rows)).map(r => ({
             ...r,
+            name_en: englishName(r.dex, speciesEn),
             ...(photosOfCard.get(r.id) || NO_PHOTOS),
             photos: photosOf.get(r.id) || {},
             prices: priceOf.get(r.id) || null,
