@@ -5,7 +5,7 @@ import { pool } from './db.ts';
 import { importDex } from './importer.ts';
 import { importLocalPhotos } from './localPhotos.ts';
 import { LOCAL_IMAGE_DIR, localPhotosOn } from './local.ts';
-import { isOwner, ownedCopies, requireViewer, viewerOf } from './session.ts';
+import { isOwner, ownedCopies, requireOwner, requireViewer, viewerOf } from './session.ts';
 import { authRoutes, initAuth } from './auth.ts';
 import { inventoryRoutes } from './inventory.ts';
 import { auditPrintings, FULL_RULES, type ArmaFinish, type ArmaRules, type AuditReason } from '@pokenitsu/core';
@@ -244,6 +244,42 @@ app.delete<{ Params: { code: string } }>('/api/photos/:code', async req => {
   const { rowCount } = await pool.query(`DELETE FROM arma.facts WHERE printing_code = $1 AND field = 'image' AND source_id = 'own'`, [
     req.params.code,
   ]);
+  return { removed: rowCount };
+});
+
+// your own photo of a catalog card (fotos-solo-local-en-catalogo): the administrator's, kept in IMAGE_DIR/arma/cartas
+// (ours, production-ready), shown before the catalog's and the ones for local use only, for every account
+const cardFileName = (cardId: string) => cardId.replace(/[^\w.-]+/g, '_');
+async function removeCardUpload(cardId: string) {
+  const dir = join(IMAGE_DIR, 'arma', 'cartas');
+  const base = cardFileName(cardId);
+  for (const f of await readdir(dir).catch(() => [] as string[])) if (f.startsWith(base + '.')) await unlink(join(dir, f));
+}
+app.post<{ Params: { cardId: string } }>('/api/card-photos/:cardId', async req => {
+  const v = await requireOwner(req);
+  const ext = UPLOAD_EXT[(req.headers['content-type'] || '').split(';')[0]!.trim()];
+  const body = req.body as Buffer | undefined;
+  if (!ext || !Buffer.isBuffer(body) || !body.length)
+    throw Object.assign(new Error('La foto debe ser JPEG, PNG o WebP'), { statusCode: 415 });
+  const { rowCount } = await pool.query('SELECT 1 FROM cards WHERE id = $1', [req.params.cardId]);
+  if (!rowCount) throw Object.assign(new Error('No existe esa carta'), { statusCode: 404 });
+  await removeCardUpload(req.params.cardId);
+  await mkdir(join(IMAGE_DIR, 'arma', 'cartas'), { recursive: true });
+  const file = cardFileName(req.params.cardId) + ext;
+  await writeFile(join(IMAGE_DIR, 'arma', 'cartas', file), body);
+  // ?v=: a new upload is a new address, so no browser keeps the old one
+  const src = `/img/arma/cartas/${file}?v=${Date.now()}`;
+  await pool.query(
+    `INSERT INTO arma.card_photos (card_id, source_id, src, ref, by_name) VALUES ($1, 'own', $2, $3, $4)
+     ON CONFLICT (card_id, source_id) DO UPDATE SET src = EXCLUDED.src, ref = EXCLUDED.ref, by_name = EXCLUDED.by_name, saved_at = now()`,
+    [req.params.cardId, src, `Subida por ${v.name}`, v.name],
+  );
+  return { cardId: req.params.cardId, src };
+});
+app.delete<{ Params: { cardId: string } }>('/api/card-photos/:cardId', async req => {
+  await requireOwner(req);
+  await removeCardUpload(req.params.cardId);
+  const { rowCount } = await pool.query(`DELETE FROM arma.card_photos WHERE card_id = $1 AND source_id = 'own'`, [req.params.cardId]);
   return { removed: rowCount };
 });
 

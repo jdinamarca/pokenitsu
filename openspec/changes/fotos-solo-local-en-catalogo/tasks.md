@@ -20,7 +20,7 @@
   - una segunda pasada no baja nada nuevo;
   - ningún archivo queda fuera de `LOCAL_IMAGE_DIR`.
 - [x] 2.2 `GET /api/sets/:id/cards` y `GET /api/inventory` entregan `own_card` y `local`, este último solo con el interruptor encendido. `CardPicture` aplica el orden: foto de la variante de la cuenta, `own_card`, `img`, `local` (con la marca violeta y la nota en la ficha) y `ref`. Verificar que, sin el interruptor, no llega ningún `local` y `/img-local/…` da 404.
-- [ ] 2.3 Foto propia de una carta: `POST /api/card-photos/:cardId` y `DELETE` (solo el administrador; JPEG, PNG o WebP hasta 8 MB) a `IMAGE_DIR/arma/cartas/` + `arma.card_photos` con fuente `own`. Verificar con `curl`: el administrador sube y quita; otra cuenta recibe 403.
+- [x] 2.3 Foto propia de una carta: `POST /api/card-photos/:cardId` y `DELETE` (solo el administrador; JPEG, PNG o WebP hasta 8 MB) a `IMAGE_DIR/arma/cartas/` + `arma.card_photos` con fuente `own`. Verificar con `curl`: el administrador sube y quita; otra cuenta recibe 403.
 
 ## 3. Galería "Por reemplazar"
 
