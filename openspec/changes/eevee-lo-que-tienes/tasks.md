@@ -17,7 +17,7 @@
 
 ## 3. Prueba en el navegador
 
-- [ ] 3.1 En Chrome sin interfaz, contra una copia de la base y con la cuenta del dueño:
+- [x] 3.1 En Chrome sin interfaz, contra una copia de la base y con la cuenta del dueño:
   - con "solo inglés", las ES y FR no se ven, la nota dice cuántas sacó y cuántas tengo, y el contador baja;
   - lo que tengo se ve a color con el sello "✓ N"; lo que me falta, en blanco y negro (comprobar el `filter` calculado);
   - "Las que tengo" y "Me faltan" muestran lo que dicen sus cantidades; combinados con "Por verificar" también;

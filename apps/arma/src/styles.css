@@ -723,9 +723,8 @@ button {
 }
 /* the classification check (corregir-clasificacion-de-cartas): a filter, a mark on the tag, the reasons in the sheet */
 .audit-filter {
-  /* beside "Ordenar", on the same row */
-  grid-column: 2;
-  align-self: center;
+  /* at the end of the "Ver" row (eevee-lo-que-tienes) */
+  margin-left: 10px;
 }
 .chip {
   display: inline-flex;
@@ -797,6 +796,11 @@ button {
   display: block;
   color: var(--light);
   font-size: 17px;
+}
+/* "Te falta": not on felt, which is what you have */
+.own:has(strong.none) {
+  background: #262520;
+  color: var(--ink-mute);
 }
 .own strong.none {
   color: var(--felt-ink);

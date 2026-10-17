@@ -324,20 +324,20 @@ export function App() {
                 {label} <em>{n.toLocaleString('es-CL')}</em>
               </button>
             ))}
+            {doubtful > 0 && (
+              <span className="audit-filter">
+                <button
+                  type="button"
+                  className={'chip' + (onlyDoubtful ? ' sel' : '')}
+                  aria-pressed={onlyDoubtful}
+                  onClick={() => setOnlyDoubtful(v => !v)}
+                >
+                  <CircleHelp size={13} aria-hidden="true" />
+                  Por verificar ({doubtful.toLocaleString('es-CL')})
+                </button>
+              </span>
+            )}
           </div>
-          {doubtful > 0 && (
-            <div className="audit-filter">
-              <button
-                type="button"
-                className={'chip' + (onlyDoubtful ? ' sel' : '')}
-                aria-pressed={onlyDoubtful}
-                onClick={() => setOnlyDoubtful(v => !v)}
-              >
-                <CircleHelp size={13} aria-hidden="true" />
-                Por verificar ({doubtful.toLocaleString('es-CL')})
-              </button>
-            </div>
-          )}
         </header>
         <Showcase shelves={shelves} sources={sources} copies={owned} audit={audit} selected={selected} onSelect={setSelected} />
       </main>
