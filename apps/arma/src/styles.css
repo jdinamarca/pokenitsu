@@ -1353,6 +1353,9 @@ button {
 .replace-up {
   justify-content: center;
   margin-top: 2px;
+  padding: 7px 6px;
+  font-size: 12.5px;
+  white-space: nowrap;
   cursor: pointer;
 }
 .replace-up:focus-within {

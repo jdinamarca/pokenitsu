@@ -37,7 +37,7 @@
   - "Bajar fotos locales del catálogo japonés" con su avance, y el aviso si el interruptor está apagado.
 
   Verificar typecheck y lint.
-- [ ] 3.3 En Chrome sin interfaz, contra una copia de la base, con el interruptor encendido:
+- [x] 3.3 En Chrome sin interfaz, contra una copia de la base, con el interruptor encendido:
   - abrir en Cargar una expansión japonesa sin fotos y volver a abrirla con fotos de Limitless y la marca violeta;
   - la galería muestra esas cartas y las de PokeCottage de Eevee;
   - "Subir la mía" en una carta y en una impresión: salen de la galería, el avance sube y Cargar o la vitrina muestran la foto propia;
