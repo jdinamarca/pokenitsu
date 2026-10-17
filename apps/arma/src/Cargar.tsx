@@ -6,16 +6,18 @@ import {
   indexNumbers,
   langCode,
   LANGS,
+  matchesCardName,
+  nameQuery,
   resolveEntry,
-  searchSetsLang,
   type Cond,
   type Entry,
   type Lang,
 } from '@pokenitsu/core';
-import { Plus, RefreshCw, Search, Undo2 } from 'lucide-react';
+import { ChevronDown, Plus, RefreshCw, Search, Undo2 } from 'lucide-react';
 import { api, ApiError, type CardSet, type InvLocation, type SetCard, type SetCards } from './api.ts';
 import { toLogin } from './auth.ts';
 import { CardPicture } from './components/CardPicture.tsx';
+import { SetPicker } from './components/SetPicker.tsx';
 import { Shell } from './components/Shell.tsx';
 import {
   cardQty,
@@ -75,8 +77,8 @@ export function Cargar() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>(() => (readSaved().recents.length ? 'loading' : 'idle'));
   const [loadError, setLoadError] = useState('');
   const [picking, setPicking] = useState(() => !readSaved().recents.length);
-  const [query, setQuery] = useState('');
-  const [resSel, setResSel] = useState(0);
+  // the account's progress per expansion, for the picker: asked when it opens, again after loading
+  const [progress, setProgress] = useState<Record<string, number> | null>(null);
   const [text, setText] = useState('');
   const [lastNum, setLastNum] = useState<string | null>(null);
   const [freshNum, setFreshNum] = useState<string | null>(null);
@@ -166,9 +168,14 @@ export function Cargar() {
   const resolved = useMemo(() => (data ? resolveEntry(text, index) : null), [data, text, index]);
   const focusNum = resolved?.kind === 'card' ? resolved.num : lastNum;
   const focus = focusNum ? byNum.get(focusNum) || null : null;
-  const results = useMemo(() => (sets && picking ? searchSetsLang(sets, query) : { sets: [], lang: null }), [sets, picking, query]);
   const count = useMemo(() => (set ? litCount(set, cards) : { have: 0, total: 0 }), [set, cards]);
-  const shown = useMemo(() => (onlyMissing ? cards.filter(c => !cardQty(c) || c.num === focusNum) : cards), [cards, onlyMissing, focusNum]);
+  // a name instead of a number (cargar-selector-y-nombre): the case shows only the cards that match
+  const named = useMemo(() => (resolved?.kind === 'bad' ? nameQuery(text) : null), [resolved, text]);
+  const matches = useMemo(() => (named ? cards.filter(c => matchesCardName(named, c)) : null), [cards, named]);
+  const shown = useMemo(() => {
+    const base = matches || cards;
+    return onlyMissing ? base.filter(c => !cardQty(c) || c.num === focusNum) : base;
+  }, [cards, matches, onlyMissing, focusNum]);
 
   // the marked card comes into view while typing
   useEffect(() => {
@@ -181,6 +188,8 @@ export function Cargar() {
 
   // every write goes in order, one after the other, as in Nitsu
   const enqueue = (fn: () => Promise<void>) => {
+    // the picker's progress is stale after any load
+    setProgress(null);
     queue.current = queue.current.then(fn).catch(e => authOr(e, m => say(m, 'err')));
   };
   async function loadOne(num: string, e: EntryLike, batch?: string) {
@@ -276,7 +285,21 @@ export function Cargar() {
       setText('');
       return say(`Estado: ${COND_LABEL[r.cond]} (${r.cond})`, r.cond === 'NM' ? '' : 'warn');
     }
-    if (r.kind === 'bad') return say('No entendí la entrada.', 'err');
+    if (r.kind === 'bad') {
+      // a name: Enter loads it only when one card matches
+      const q = nameQuery(raw);
+      if (!q) return say('No entendí la entrada.', 'err');
+      const hits = cards.filter(c => matchesCardName(q, c));
+      if (hits.length !== 1)
+        return say(
+          hits.length
+            ? `Hay ${hits.length} cartas con «${raw.trim()}»: elige una con clic o escribe su número.`
+            : `Ninguna carta de ${set.name} se llama «${raw.trim()}».`,
+          'warn',
+        );
+      setText('');
+      return runOne(hits[0]!.num, ONE, raw, repeated);
+    }
     if (r.kind === 'missing') return say(`La carta «${r.entry.full}» no existe en ${set.name}. ¿Expansión equivocada?`, 'err');
     setText('');
     if (r.kind === 'range') {
@@ -296,8 +319,6 @@ export function Cargar() {
       recents: [{ id: s.id, lang }, ...sv.recents.filter(r => r.id !== s.id)].slice(0, 8),
     }));
     setPicking(false);
-    setQuery('');
-    setResSel(0);
     setText('');
     setLastNum(null);
     setFreshNum(null);
@@ -307,10 +328,26 @@ export function Cargar() {
     if (s.id !== setId || status === 'error' || !data) openSet(s.id);
     requestAnimationFrame(() => entryRef.current?.focus());
   }
-  const openPicker = () => {
-    setPicking(true);
+  const openPicker = () => setPicking(true);
+  // the progress shown in the picker, asked again after any load
+  useEffect(() => {
+    if (picking && !progress) api.setsProgress().then(setProgress, e => authOr(e, () => setProgress({})));
+  }, [picking, progress, authOr]);
+  const closePicker = useCallback(() => {
+    setPicking(false);
     requestAnimationFrame(() => entryRef.current?.focus());
-  };
+  }, []);
+  // "/" opens the picker from anywhere in Cargar, except while typing in a field
+  useEffect(() => {
+    const onSlash = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement;
+      if (e.key !== '/' || e.metaKey || e.ctrlKey || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable) return;
+      e.preventDefault();
+      setPicking(true);
+    };
+    document.addEventListener('keydown', onSlash);
+    return () => document.removeEventListener('keydown', onSlash);
+  }, []);
   const pickCard = (card: SetCard) => {
     // the first click marks it, like typing its number; the second loads one copy
     if (focusNum === card.num) {
@@ -321,18 +358,6 @@ export function Cargar() {
   };
 
   const onEntryKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (picking) {
-      const list = results.sets;
-      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-        e.preventDefault();
-        setResSel(i => (list.length ? (i + (e.key === 'ArrowDown' ? 1 : list.length - 1)) % list.length : 0));
-      } else if (e.key === 'Enter' && list.length) chooseSet(list[Math.min(resSel, list.length - 1)]!, results.lang as Lang | null);
-      else if (e.key === 'Escape' && set) {
-        setPicking(false);
-        setQuery('');
-      }
-      return;
-    }
     if (e.key === 'Enter') {
       e.preventDefault();
       commit();
@@ -354,7 +379,14 @@ export function Cargar() {
       case 'cond':
         return { text: `Enter cambia el estado a ${COND_LABEL[resolved.cond]} (${resolved.cond})`, muted: true };
       case 'bad':
-        return { text: 'No entiendo esa entrada', muted: true };
+        if (!matches) return { text: 'No entiendo esa entrada', muted: true };
+        if (matches.length === 1) return { text: `Enter carga una: ${describe(matches[0]!, planRow(matches[0]!, ONE, session, ctx))}` };
+        return {
+          text: matches.length
+            ? `${matches.length} cartas con «${text.trim()}»: clic en una para marcarla, o escribe su número`
+            : `Ninguna carta de ${set.name} se llama «${text.trim()}»`,
+          muted: true,
+        };
       case 'missing':
         return {
           text: `No existe la ${resolved.entry.full} en ${set.name}${set.printed ? ` (tiene ${set.printed})` : ''}. ¿Expansión equivocada?`,
@@ -381,7 +413,7 @@ export function Cargar() {
     }
     // describe and locName only read the locations, already in ctx
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resolved, ctx, set, index, byNum, session, focus]);
+  }, [resolved, ctx, set, index, byNum, session, focus, matches, text]);
 
   const totals = loaded.reduce((a, l) => ({ copies: a.copies + l.copies, fresh: a.fresh + l.fresh }), { copies: 0, fresh: 0 });
   const recents = saved.recents.map(r => ({ r, s: sets?.find(x => x.id === r.id) })).filter(x => x.s);
@@ -437,72 +469,71 @@ export function Cargar() {
       <main className="main">
         <header className="top load-top">
           <p className="count" aria-live="polite">
-            <span className="n">{count.have.toLocaleString('es-CL')}</span>
-            <span className="of"> / {count.total.toLocaleString('es-CL')} encendidas</span>
-          </p>
-          <div className="setname">
-            {set ? (
+            {matches ? (
               <>
-                <b>
-                  {set.name} · {LANG_LABEL[session.lang] || session.lang}
-                </b>
-                <span>{setLine(set)}</span>
+                <span className="n">{matches.length.toLocaleString('es-CL')}</span>
+                <span className="of">
+                  {' '}
+                  {matches.length === 1 ? 'carta' : 'cartas'} con «{text.trim()}»
+                </span>
               </>
             ) : (
-              <b>Elige una expansión</b>
+              <>
+                <span className="n">{count.have.toLocaleString('es-CL')}</span>
+                <span className="of"> / {count.total.toLocaleString('es-CL')} encendidas</span>
+              </>
+            )}
+          </p>
+          <div className="set-anchor">
+            <button
+              type="button"
+              className={'set-button' + (picking ? ' open' : '')}
+              aria-haspopup="dialog"
+              aria-expanded={picking}
+              onClick={() => (picking ? closePicker() : openPicker())}
+              title="Cambiar de expansión (/)"
+            >
+              {set ? (
+                <>
+                  <b>{set.name}</b>
+                  <span>
+                    {LANG_LABEL[session.lang] || session.lang} · {setLine(set)}
+                  </span>
+                </>
+              ) : (
+                <b>Elige una expansión</b>
+              )}
+              <ChevronDown size={18} strokeWidth={2.25} aria-hidden="true" />
+            </button>
+            {picking && (
+              <SetPicker
+                sets={sets}
+                recents={recents.map(({ r, s }) => ({ s: s!, lang: r.lang }))}
+                current={setId}
+                sessionLang={session.lang}
+                progress={progress}
+                onChoose={chooseSet}
+                onClose={set ? closePicker : () => {}}
+              />
             )}
           </div>
           <div className="entry">
             <input
               ref={entryRef}
               autoFocus
-              value={picking ? query : text}
+              value={text}
               onChange={e => {
-                if (picking) {
-                  setQuery(e.target.value);
-                  setResSel(0);
-                } else {
-                  setText(e.target.value);
-                  setPending(null);
-                }
+                setText(e.target.value);
+                setPending(null);
               }}
               onKeyDown={onEntryKey}
-              placeholder={picking ? 'Expansión: código, nombre o serie' : '25, 25r*2, -25, 1-30…'}
-              aria-label={picking ? 'Buscar la expansión' : 'Número de la carta'}
-              role={picking ? 'combobox' : undefined}
-              aria-expanded={picking ? results.sets.length > 0 : undefined}
-              aria-controls={picking ? 'set-results' : undefined}
+              placeholder="25, 25r*2, 1-30 o un nombre"
+              aria-label="Número o nombre de la carta"
               autoComplete="off"
               spellCheck={false}
-              disabled={!picking && status !== 'idle'}
+              disabled={!set || status !== 'idle'}
             />
-            <span className="kbd">{picking ? 'Enter elige' : 'Enter carga'}</span>
-            {picking && results.sets.length > 0 && (
-              <ul className="results" id="set-results" role="listbox" aria-label="Expansiones">
-                {results.sets.map((s, i) => (
-                  <li key={s.id} role="option" aria-selected={i === resSel}>
-                    <button
-                      type="button"
-                      className={'result' + (i === resSel ? ' on' : '')}
-                      tabIndex={-1}
-                      onMouseDown={e => e.preventDefault()}
-                      onClick={() => chooseSet(s, results.lang as Lang | null)}
-                    >
-                      <b>
-                        {s.name}
-                        {results.lang ? ` · ${results.lang}` : ''}
-                      </b>
-                      <em>{s.code || s.id}</em>
-                      <small>
-                        {[setLine(s), s.printed ? `${s.printed} cartas` : '', s.has_cards ? '' : 'se bajan al abrirla']
-                          .filter(Boolean)
-                          .join(' · ')}
-                      </small>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <span className="kbd">Enter carga</span>
           </div>
         </header>
         <div className="chips" role="group" aria-label="Sesión de carga">
@@ -571,7 +602,10 @@ export function Cargar() {
           {!set ? (
             <div className="case-msg">
               <h2>Elige una expansión</h2>
-              <p>Busca por código (con idioma, como «MEW ES»), nombre o serie. Sus cartas se ven enteras en la vitrina.</p>
+              <p>
+                Toca «Elige una expansión» arriba (o la tecla /): búscala por código (con idioma, como «MEW ES»), nombre o serie, o
+                recórrelas por serie. Sus cartas se ven enteras en la vitrina.
+              </p>
             </div>
           ) : status === 'loading' ? (
             <div className="case-msg" aria-live="polite">
@@ -592,6 +626,13 @@ export function Cargar() {
               <h2>{set.name} no tiene cartas en el catálogo</h2>
               <p>Ni pokemontcg.io ni TCGdex traen sus cartas todavía.</p>
             </div>
+          ) : matches && !matches.length ? (
+            <div className="case-msg">
+              <h2>
+                Ninguna carta de {set.name} se llama «{text.trim()}»
+              </h2>
+              <p>Se busca por el nombre de la carta y por el del Pokémon en inglés. Borra lo escrito para ver toda la expansión.</p>
+            </div>
           ) : (
             <ul className="row" style={{ padding: '16px 0' }}>
               {shown.map(c => (
@@ -602,7 +643,8 @@ export function Cargar() {
         </div>
         <p className="hint">
           Lo que tienes está encendido; lo que te falta, en penumbra. Al escribir un número la carta se marca con luz; <b>Enter</b> la
-          carga. Clic en una carta la marca; otro clic carga una copia.
+          carga. Al escribir un nombre («meowth») quedan solo las que se llaman así. Clic en una carta la marca; otro clic carga una copia.{' '}
+          <b>/</b> cambia de expansión.
         </p>
       </main>
       <aside className="detail" aria-label="Ficha de la carta">

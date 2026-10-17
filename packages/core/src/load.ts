@@ -132,12 +132,67 @@ export function searchSets<S extends SearchableSet>(sets: readonly S[], q: strin
     .map(x => x[1]);
 }
 /** "MEW ES": search "MEW" and say the language, when the search finds something without it */
-export function searchSetsLang<S extends SearchableSet>(sets: readonly S[], q: string): { sets: S[]; lang: Lang | null } {
+export function searchSetsLang<S extends SearchableSet>(sets: readonly S[], q: string, limit = 14): { sets: S[]; lang: Lang | null } {
   const m = q.trim().match(/^(.*\S)\s+([a-z]{2})$/i);
   const lang = m ? langCode(m[2]) : null;
   if (m && lang) {
-    const r = searchSets(sets, m[1]!);
+    const r = searchSets(sets, m[1]!, limit);
     if (r.length) return { sets: r, lang };
   }
-  return { sets: searchSets(sets, q), lang: null };
+  return { sets: searchSets(sets, q, limit), lang: null };
+}
+
+/** an expansion for the picker's list: its language ('JA' for the Japanese ones) and its date (YYYY/MM/DD or '') */
+export interface ListedSet extends SetLike {
+  lang?: string | null;
+  date?: string | null;
+}
+/**
+ * The picker's list (cargar-selector-y-nombre): the Japanese or the international expansions, by series (era), the
+ * series with the newest expansion first; inside one, newest first and those without a date last, by code.
+ */
+export function groupSets<S extends ListedSet>(sets: readonly S[], which: 'ja' | 'intl'): { era: string; sets: S[] }[] {
+  const mine = sets.filter(s => (s.lang === 'JA') === (which === 'ja'));
+  const byEra = new Map<string, S[]>();
+  for (const s of mine) {
+    const era = eraOf(s) || 'Otras';
+    byEra.set(era, [...(byEra.get(era) || []), s]);
+  }
+  const date = (s: S) => s.date || '';
+  const newest = (xs: S[]) => xs.reduce((m, s) => (date(s) > m ? date(s) : m), '');
+  return [...byEra]
+    .map(([era, xs]) => ({
+      era,
+      sets: [...xs].sort((a, b) => {
+        if (!date(a) !== !date(b)) return date(a) ? -1 : 1;
+        return date(b).localeCompare(date(a)) || (a.code || a.id).localeCompare(b.code || b.id);
+      }),
+    }))
+    .sort((a, b) => (a.era === 'Otras' ? 1 : b.era === 'Otras' ? -1 : newest(b.sets).localeCompare(newest(a.sets))));
+}
+
+/** for comparing names: NFKC, lower case, no accents, no signs (♀ ♂ . ' -), single spaces */
+export const normName = (s: unknown): string =>
+  String(s ?? '')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .normalize('NFKC')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim();
+/**
+ * What's typed read as a card's name (cargar-selector-y-nombre), normalized; null when it isn't one: it has a digit,
+ * fewer than 2 letters, or is a language or a condition (those keep their meaning). Use it after resolveEntry says "bad".
+ */
+export function nameQuery(raw: string): string | null {
+  const t = raw.trim();
+  if (/\d/.test(t) || langCode(t) || /^(nm|lp|mp|hp|dmg)$/i.test(t)) return null;
+  const q = normName(t);
+  return q.replace(/ /g, '').length >= 2 ? q : null;
+}
+/** a card matches when its name or its Pokémon's English name contains the query (spaces aside: "mrmime" = "Mr. Mime") */
+export function matchesCardName(q: string, card: { name?: string | null; name_en?: string | null }): boolean {
+  const flat = (s: string) => s.replace(/ /g, '');
+  const k = flat(q);
+  return [card.name, card.name_en].some(n => n && flat(normName(n)).includes(k));
 }

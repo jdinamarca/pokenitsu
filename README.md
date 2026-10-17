@@ -301,9 +301,22 @@ Una opción nueva, separada de la app actual ([ADR 0020](docs/adr/0020-arma-tu-c
 - **Entrar ([ADR 0021](docs/adr/0021-arma-tu-coleccion-reemplaza-a-nitsu.md)):** la app tiene su propio acceso en `/entrar` (diseño "Mostrador", del canvas): entrar, crear cuenta (solo emails invitados durante la alfa), confirmar el correo y reenviarlo, "¿Olvidaste tu contraseña?" con contraseña nueva, Google si está configurado, y "Cerrar sesión" al pie del riel. Usa **las mismas cuentas y la misma sesión que Nitsu**: las dos APIs atienden las cuentas con la misma configuración, que vive en el paquete `packages/auth` (`@pokenitsu/auth`: invitados, contraseña, correos, Google, duración de la sesión). La API de la app nueva responde `/api/auth/*` con la dirección `ARMA_AUTH_URL` (por defecto `http://localhost:5180`), así los links de los correos y de Google vuelven aquí. **Para Google**, agrega `http://localhost:5180/api/auth/callback/google` en la consola de Google Cloud (Credenciales → tu cliente OAuth → URIs de redirección autorizados); sin eso, entrar con email funciona igual. Sin sesión, cualquier página lleva a `/entrar` y, al entrar, vuelve a donde ibas.
 - **Navegación:** el riel de la izquierda lleva a "Arma · Eevee", "Cargar" (`/cargar`) y "Mi inventario" (`/inventario`), sin recargar la página.
 - **Cargar** (diseño AO del canvas, "La expansión se enciende"):
-  - **Elegir la expansión:** por código (con idioma, como `MEW ES`), nombre o serie, con los mismos criterios de Nitsu. Las últimas 8 quedan en el riel. Una expansión de un solo idioma (las japonesas) fija el idioma sola. Si sus cartas nunca se bajaron, se bajan al abrirla ("Cargando cartas…", con "Reintentar" si falla).
+  - **Elegir la expansión:** la expansión abierta es un **botón en la cabecera** (nombre, idioma, serie, año y código). Al tocarlo, con la tecla `/` o con Esc en la caja vacía, se abre un panel con:
+    - un **buscador** por código (con idioma, como `MEW ES`), nombre o serie, con los mismos criterios de Nitsu;
+    - las **recientes** primero;
+    - **todas las expansiones** por serie, de la más nueva a la más antigua, en dos pestañas: **Internacionales** y **Japonesas**. Se abre en la del idioma de la sesión.
+
+    Cada expansión dice su **avance**: cuántas cartas distintas tienes de cuántas tiene, por ejemplo "1/65" (`GET /api/sets/progress`). Se elige con clic o con ↑↓ y Enter, y Esc o ✕ cierra. En el teléfono, el panel ocupa la pantalla.
+    - Las últimas 8 quedan también en el riel, y "Buscar otra expansión" abre el mismo panel.
+    - Una expansión de un solo idioma (las japonesas) fija el idioma sola.
+    - Si sus cartas nunca se bajaron, se bajan al abrirla ("Cargando cartas…", con "Reintentar" si falla).
   - **La vitrina:** la expansión entera por número. Lo que tienes está encendido (con "×N" si tienes más de una); lo que te falta, en penumbra, en su lugar. Arriba, "N / total encendidas" (números impresos) y el filtro "Todas · Solo las que faltan".
-  - **La entrada:** la misma sintaxis de Nitsu (`25`, sufijos `n/h/r/e/p/m`, `25*3`, `-25`, `1-30`, `25r lp`, `es`/`en`…, `nm`/`lp`…). Mientras escribes, la carta se marca con luz y la ficha dice qué se va a cargar y dónde. Enter con la caja vacía repite la última; Esc borra y, vacía, abre la búsqueda de expansión; un rango de más de 50 pide confirmar en la ficha.
+  - **La entrada:** la misma sintaxis de Nitsu (`25`, sufijos `n/h/r/e/p/m`, `25*3`, `-25`, `1-30`, `25r lp`, `es`/`en`…, `nm`/`lp`…). Mientras escribes, la carta se marca con luz y la ficha dice qué se va a cargar y dónde. Enter con la caja vacía repite la última; Esc borra y, vacía, abre el panel de expansiones; un rango de más de 50 pide confirmar en la ficha.
+  - **Buscar por nombre:** si escribes un nombre en vez de un número, la vitrina deja solo las cartas que se llaman así, con "N cartas con «…»" arriba.
+    - **Qué compara:** el nombre de la carta (en japonés en las japonesas) y el del Pokémon en inglés, sacado de su Pokédex. Así, `meow` encuentra la ニャース de Rocket Gang.
+    - **Cómo compara:** basta un pedazo, y no importan mayúsculas, tildes ni signos (`mr mime`, `nidoran`). El nombre en inglés viene en `name_en` de `GET /api/sets/:id/cards`.
+    - **Enter:** si queda una sola carta, carga una copia; si quedan varias, pide elegir con clic o por número.
+    - `es`, `nm` y los números siguen siendo lo de siempre.
   - **Con el mouse:** un clic marca la carta, otro clic (o "Cargar una") carga una copia.
   - **La sesión:** idioma, estado, "Para" (vender o mi colección personal) y "Guardar en" (Automático, con las reglas de tus ubicaciones y el precio guardado, o una ubicación fija), recordados en el navegador. La ficha cuenta lo cargado en la sesión, las cartas nuevas y la última, y anuncia "Nueva".
   - **Deshacer** (botón o ⌘/Ctrl+Z con la caja vacía): revierte la última carga de la cuenta, o el rango completo.
