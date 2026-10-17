@@ -314,11 +314,13 @@ app.get('/api/replace/cards', async req => {
   return { localPhotos: localPhotosOn(), cards: cards.rows, ...totals.rows[0]! };
 });
 // the whole Japanese catalog's photos for local use only: one expansion after the other, never two runs at once
-app.post<{ Body: { dex?: unknown } }>('/api/local-photos/catalog', async req => {
+app.post<{ Body: { dex?: unknown; sets?: unknown } }>('/api/local-photos/catalog', async req => {
   await requireOwner(req);
   // dex: only those Pokémon (to try it without the whole catalog)
   const dex = Array.isArray(req.body?.dex) ? req.body.dex.map(Number).filter(n => Number.isInteger(n) && n > 0) : undefined;
-  return startCatalogPhotos({ dex });
+  // sets: only those expansions (to try it, too)
+  const sets = Array.isArray(req.body?.sets) ? req.body.sets.map(String).filter(s => /^[\w.-]+$/.test(s)) : undefined;
+  return startCatalogPhotos({ dex, sets });
 });
 app.get('/api/local-photos/catalog', async req => {
   await requireOwner(req);

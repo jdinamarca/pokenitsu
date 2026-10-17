@@ -3,8 +3,10 @@
 export type CardPhotos = { own_card: string | null; local: { src: string; source: string } | null };
 /** a photo of the card (arma.card_photos) or of its printing in the Full (printed) */
 export type PhotoRow = { card_id: string; source_id: string; src: string; name: string; permission: string; printed: boolean };
-// among the photos for local use only: its printing's (the exact one, from the Full), then Limitless, then PokeCottage
-const localRank = (r: PhotoRow) => (r.printed ? 0 : r.source_id === 'limitless' ? 1 : r.source_id === 'pokecottage-fotos' ? 2 : 3);
+// among the photos for local use only: its printing's (the exact one, from the Full), then Limitless, PokeCottage and
+// Bill's Archive
+const RANK: Record<string, number> = { limitless: 1, 'pokecottage-fotos': 2, billsarchive: 3 };
+const localRank = (r: PhotoRow) => (r.printed ? 0 : (RANK[r.source_id] ?? 4));
 /** each card's own photo (the card's wins over its printing's) and its photo for local use only (only with the switch) */
 export function pickCardPhotos(rows: PhotoRow[], localOn: boolean): Map<string, CardPhotos> {
   const out = new Map<string, CardPhotos & { rank?: number }>();

@@ -21,6 +21,10 @@ describe('fotos-pokecottage-en-catalogo: qué foto solo local muestra una carta'
     expect(pick([row('limitless'), row('pokecottage-fotos', { printed: true, src: '/img-local/impresion.webp' })])?.local?.src).toBe(
       '/img-local/impresion.webp',
     ));
+  it("Bill's Archive va después de PokeCottage", () => {
+    expect(pick([row('billsarchive'), row('pokecottage-fotos')])?.local?.source).toBe('pokecottage-fotos');
+    expect(pick([row('billsarchive')])?.local?.source).toBe('billsarchive');
+  });
   it('solo PokeCottage', () => expect(pick([row('pokecottage-fotos')])?.local?.source).toBe('pokecottage-fotos'));
   it('sin el interruptor, ninguna', () => expect(pick([row('limitless'), row('pokecottage-fotos')], false)?.local).toBeNull());
   it('la propia de la carta gana sobre la de su impresión', () =>

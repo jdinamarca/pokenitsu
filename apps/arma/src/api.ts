@@ -217,13 +217,16 @@ export interface SourceCount {
 /** the Japanese catalog's photos for local use only: Limitless per expansion, then PokeCottage per Pokémon */
 export interface CatalogJob {
   running: boolean;
-  phase: 'limitless' | 'pokecottage';
+  phase: 'limitless' | 'pokecottage' | 'billsarchive';
   sets: number;
   done: number;
   pokemon: number;
   pokemonDone: number;
+  billsSets: number;
+  billsDone: number;
+  billsSkipped: string[];
   current: string | null;
-  bySource: { limitless: SourceCount; pokecottage: SourceCount };
+  bySource: { limitless: SourceCount; pokecottage: SourceCount; billsarchive: SourceCount };
   skipped: string[];
   waitingUntil?: string;
   stopped?: string;

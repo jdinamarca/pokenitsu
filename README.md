@@ -368,18 +368,34 @@ Una opción nueva, separada de la app actual ([ADR 0020](docs/adr/0020-arma-tu-c
       - Si responde **429 o 503**, se espera lo que diga `Retry-After` (60 s si no lo dice; 10 min como máximo) y se repite la misma petición, sin reintentos rápidos.
       - Con **3 fallas seguidas**, la descarga se detiene sola y lo dice. Pedirla otra vez sigue con lo que falta.
     - Unos 850 álbumes y del orden de 1.300 fotos nuevas, una sola vez: cerca de 40 minutos en segundo plano.
+  - **Bill's Archive para lo que sigue sin foto (sobre todo Entrenadores y Energías antiguos):** [billsarchive.com](https://billsarchive.com) tiene una página por expansión japonesa de 1996 a 2005 (Expansion Pack, Jungle, Fossils, Rocket Gang, Gym, Neo, e-Card, ADV/PCG), con todas sus cartas.
+    - **Cómo se cruza:**
+      - cada imagen se llama con el código y el número de TCGdex, los mismos del catálogo (`tcgdex_cards_jp/e4/e4-10_yanma.webp` es Split Earth #010);
+      - la página sale del nombre en inglés de la expansión (`Leaders' Stadium` → `/leaders-stadium-jp.html`);
+      - si la página no tiene tantas cartas como la expansión en el catálogo, no se usa y el avance lo anota.
+    - **Mismo ritmo que PokeCottage:**
+      - una petición a la vez a su sitio y a su almacenamiento de imágenes, con pausas;
+      - cada página se guarda 30 días y cada foto se baja una sola vez (`data/imagenes-locales/billsarchive/`);
+      - `Retry-After`, y se detiene sola con 3 fallas seguidas;
+      - solo a mano, como tercer paso de "Bajar fotos locales del catálogo japonés".
+    - **Por qué esta y no otras:**
+      - [Dittobase](https://www.dittobase.com/terms) y [Pokellector](https://www.pokellector.com/terms) tienen las mismas cartas, pero sus términos prohíben bajarlas en forma automática sin permiso escrito;
+      - TCGdex no tiene esas imágenes.
+
+      Bill's Archive no publica términos y su `robots.txt` lo permite. Igual se usa **solo en local** (fuente `billsarchive`, migración `008`).
+    - **Qué no tiene:** Holon Research Tower, Sun & Moon ni Start Deck 100. Esas cartas quedan para "Subir la mía".
   - **Qué foto muestra una carta en Cargar y Mi inventario:**
     1. tu foto de la variante;
     2. la foto propia de la carta (o la de su impresión del Full);
     3. la del catálogo;
-    4. la solo local, con la marca violeta y "Foto solo para uso local · fuente" en la ficha. Entre las solo locales gana la de su impresión del Full (en el idioma de la carta), después la de Limitless y después la de PokeCottage;
+    4. la solo local, con la marca violeta y "Foto solo para uso local · fuente" en la ficha. Entre las solo locales gana la de su impresión del Full (en el idioma de la carta), después la de Limitless, la de PokeCottage y la de Bill's Archive;
     5. al final, la de referencia del mismo Pokémon.
 - **Por reemplazar** (`/reemplazar`, solo el administrador: la primera cuenta creada, como en Nitsu): una galería con cada foto que hoy se ve pero no puede ir a producción, tanto de cartas del catálogo como de impresiones del Full, con su carta y su fuente.
   - **"Subir la mía"** (JPEG, PNG o WebP, hasta 8 MB) la reemplaza ahí mismo y sale de la galería. En una carta del catálogo, la foto propia va a `data/imagenes/arma/cartas/` y la ven todas las cuentas; en una impresión, es la misma foto propia de la ficha.
   - **Filtros** por fuente y por tipo, con el avance "N de M listas para producción", y el botón "Bajar fotos locales del catálogo japonés".
-    - El avance va por paso: Limitless por expansión, después PokeCottage por Pokémon.
+    - El avance va por paso: Limitless por expansión, PokeCottage por Pokémon y Bill's Archive por expansión (con las que no tiene o no calzan).
     - Dice cuándo PokeCottage pidió esperar ("Esperando a PokeCottage hasta las…") y si la descarga se detuvo.
-    - `POST /api/local-photos/catalog` acepta `{ "dex": [1, 25] }` para probarlo solo con esos Pokémon.
+    - `POST /api/local-photos/catalog` acepta `{ "dex": [1, 25] }` o `{ "sets": ["ja-PMCG2"] }` para probarlo solo con esos Pokémon o expansiones.
   - **Rutas:** `GET /api/replace/cards`, `POST`/`GET /api/local-photos/catalog`, y `POST`/`DELETE /api/card-photos/:cardId`, todas solo para el administrador.
 
 - **Equivalencias:** la misma carta internacional en distintos idiomas, y la inglesa con su original japonesa cuando Bulbapedia las une. Solo agrupan; no cambian ningún conteo por sí solas.

@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 // no database: the cache is always empty
 vi.mock('../db.ts', () => ({ pool: { query: async () => ({ rows: [] }) } }));
-const { downloadOnce, fetchJson, retryAfterMs, SourceBusy } = await import('./http.ts');
+const { downloadOnce, fetchJson, fetchText, retryAfterMs, SourceBusy } = await import('./http.ts');
 
 afterEach(() => vi.unstubAllGlobals());
 // the wait a call asked for, failing when it didn't throw SourceBusy
@@ -56,5 +56,26 @@ describe('fotos-pokecottage-en-catalogo: no saturar la fuente', () => {
     });
     await Promise.all(Array.from({ length: 4 }, (_, i) => fetchJson(`https://pokecottagecdn.com/mastersets/data/${i}-x.json`)));
     expect(most).toBe(1);
+  });
+
+  it("una página de Bill's Archive: 429 da SourceBusy tras una sola petición, y nunca dos a la vez", async () => {
+    const fetch = vi.fn(async () => answer(429, { 'retry-after': '5' }));
+    vi.stubGlobal('fetch', fetch);
+    expect(await waitOf(fetchText('https://billsarchive.com/rocket-gang-jp.html', h => h.length))).toBe(5_000);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    const now = new Map<string, number>();
+    const most = new Map<string, number>();
+    vi.stubGlobal('fetch', async (u: string) => {
+      const h = new URL(u).host;
+      now.set(h, (now.get(h) || 0) + 1);
+      most.set(h, Math.max(most.get(h) || 0, now.get(h)!));
+      await new Promise(r => setTimeout(r, 20));
+      now.set(h, now.get(h)! - 1);
+      return new Response('<html></html>', { status: 200 });
+    });
+    const pages = ['a', 'b', 'c'].map(p => fetchText(`https://billsarchive.com/${p}-jp.html`, h => h.length));
+    const imgs = ['a', 'b'].map(p => fetchText(`https://bills-archive.nyc3.cdn.digitaloceanspaces.com/${p}.webp`, h => h.length));
+    await Promise.all([...pages, ...imgs]);
+    expect([...most.values()]).toEqual([1, 1]);
   });
 });
