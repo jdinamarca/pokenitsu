@@ -14,7 +14,7 @@ import {
   type Lang,
 } from '@pokenitsu/core';
 import { ChevronDown, Plus, RefreshCw, Search, Undo2 } from 'lucide-react';
-import { api, ApiError, type CardSet, type InvLocation, type SetCard, type SetCards } from './api.ts';
+import { api, ApiError, type CardSet, type CopyRow, type InvLocation, type SetCard, type SetCards } from './api.ts';
 import { toLogin } from './auth.ts';
 import { CardPicture } from './components/CardPicture.tsx';
 import { SetPicker } from './components/SetPicker.tsx';
@@ -59,11 +59,14 @@ function writeSaved(s: Saved) {
 }
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 const copies = (n: number) => `${n.toLocaleString('es-CL')} ${Math.abs(n) === 1 ? 'copia' : 'copias'}`;
+// +2 / −1, with a true minus sign
+const signed = (n: number) => (n > 0 ? '+' : '−') + Math.abs(n).toLocaleString('es-CL');
 type Tone = '' | 'warn' | 'err';
 type EntryLike = Pick<Entry, 'v' | 'cond' | 'sign' | 'qty'>;
 const ONE: EntryLike = { v: null, cond: null, sign: 1, qty: 1 };
-// what the session block counts: each load (a card or a whole range)
-type Loaded = { copies: number; fresh: number; last: string };
+// one line of "En esta sesión" (cargar-deshacer-y-quitar): a load, a removal or a whole range, and what undoes exactly it
+type Loaded = { key: number; copies: number; fresh: number; text: string; logId?: number; batch?: string };
+let loadKey = 0;
 
 /** Cargar (canvas AO): the chosen expansion whole in the case, what you have lit and what you miss in the dark */
 export function Cargar() {
@@ -183,7 +186,7 @@ export function Cargar() {
   }, [focusNum]);
 
   const locName = (id: number) => locations.find(l => l.id === id)?.name || 'sin ubicación';
-  const describe = (card: SetCard, r: LoadRow) =>
+  const describe = (card: SetCard, r: Pick<LoadRow, 'variant' | 'lang' | 'cond' | 'loc'>) =>
     `${card.name} #${card.num} ${variantName(r.variant)} · ${r.lang} · ${r.cond} → ${locName(r.loc)}`;
 
   // every write goes in order, one after the other, as in Nitsu
@@ -199,7 +202,7 @@ export function Cargar() {
     const wasNew = cardQty(card) === 0;
     const r = await api.add({ ...row, delta: e.sign * e.qty, personal: session.personal, ...(batch ? { batch } : {}) });
     if (setIdRef.current === card.sid) updateCard(num, c => withRow(c, r));
-    return { real: r.real, fresh: wasNew && r.real > 0, row, card };
+    return { real: r.real, fresh: wasNew && r.real > 0, row, card, logId: r.logId };
   }
   function runOne(num: string, e: EntryLike, raw: string, repeated: boolean) {
     const sid = setIdRef.current!;
@@ -208,7 +211,16 @@ export function Cargar() {
       if (!r) return;
       if (!r.real) return say('No había copias de esa carta para quitar.', 'warn');
       lastEntry.current = { raw, set: sid };
-      setLoaded(l => [...l, { copies: r.real, fresh: r.fresh ? 1 : 0, last: `${r.card.name} #${r.card.num}` }]);
+      setLoaded(l => [
+        ...l,
+        {
+          key: ++loadKey,
+          copies: r.real,
+          fresh: r.fresh ? 1 : 0,
+          text: `${signed(r.real)} ${describe(r.card, r.row)}`,
+          ...(r.logId ? { logId: r.logId } : {}),
+        },
+      ]);
       setLastNum(num);
       setFreshNum(r.fresh ? num : null);
       say(`${repeated ? `Repetido: ${raw.trim()} · ` : ''}${r.real > 0 ? '+' : ''}${r.real} · ${describe(r.card, r.row)}`);
@@ -234,8 +246,16 @@ export function Cargar() {
       }
       if (!last) return say('No había copias de esas cartas para quitar.', 'warn');
       lastEntry.current = { raw, set: sid };
-      const lastCard = dataRef.current?.cards.find(c => c.num === last);
-      setLoaded(l => [...l, { copies: total, fresh, last: `${lastCard?.name || ''} #${last}` }]);
+      setLoaded(l => [
+        ...l,
+        {
+          key: ++loadKey,
+          copies: total,
+          fresh,
+          text: `${signed(total)} en ${nums.length - none} cartas (${entry.range!.from}–${entry.range!.to})${entry.v ? ' · ' + variantName(entry.v) : ''}`,
+          batch,
+        },
+      ]);
       setLastNum(last);
       setFreshNum(null);
       const extra = [
@@ -249,16 +269,46 @@ export function Cargar() {
       );
     });
   }
+  // the session's newest load, exactly it (by its log entry or its range), never one from before (cargar-deshacer-y-quitar)
+  const undoing = useRef(new Set<number>());
   function undo() {
     const sid = setIdRef.current;
+    const last = [...loaded].reverse().find(l => !undoing.current.has(l.key));
+    if (!last) return say('No hay nada que deshacer en esta sesión.', 'warn');
+    if (!last.logId && !last.batch) return say('Esa carga no se puede deshacer desde aquí.', 'warn');
+    undoing.current.add(last.key);
     enqueue(async () => {
-      const u = await api.undo();
-      if (!u.undone) return say('No hay nada que deshacer.', 'warn');
-      for (const r of u.rows) if (r.sid === sid) updateCard(r.num, c => withRow(c, r));
-      setLoaded(l => l.slice(0, -1));
-      setFreshNum(null);
-      if (u.rows[0]?.sid === sid) setLastNum(u.rows[u.rows.length - 1]!.num);
-      say(u.rows.length > 1 ? `Deshecho el rango: ${u.rows.length} cartas.` : `Deshecho: ${u.rows[0]?.sid} #${u.rows[0]?.num}.`);
+      try {
+        const u = await api.undo(last.batch ? { batch: last.batch } : { logId: last.logId });
+        setLoaded(l => l.filter(x => x.key !== last.key));
+        if (!u.undone) return say('Esa carga ya no estaba (se deshizo en otro lado): no cambié nada.', 'warn');
+        for (const r of u.rows) if (r.sid === sid) updateCard(r.num, c => withRow(c, r));
+        setFreshNum(null);
+        if (u.rows[0]?.sid === sid) setLastNum(u.rows[u.rows.length - 1]!.num);
+        say(`Deshecho: ${last.text}`);
+      } finally {
+        undoing.current.delete(last.key);
+      }
+    });
+  }
+  // one copy less of exactly that row of the marked card, whatever the session's settings
+  function removeOne(card: SetCard, row: CopyRow) {
+    enqueue(async () => {
+      const r = await api.add({
+        sid: card.sid,
+        num: card.num,
+        variant: row.variant,
+        lang: row.lang,
+        cond: row.cond,
+        loc: row.loc,
+        delta: -1,
+      });
+      if (setIdRef.current === card.sid) updateCard(card.num, c => withRow(c, r));
+      if (!r.real) return say('No quedaban copias en esa fila.', 'warn');
+      const text = `${signed(r.real)} ${describe(card, row)}`;
+      setLoaded(l => [...l, { key: ++loadKey, copies: r.real, fresh: 0, text, ...(r.logId ? { logId: r.logId } : {}) }]);
+      setLastNum(card.num);
+      say(text);
     });
   }
 
@@ -672,6 +722,35 @@ export function Cargar() {
             <p className={'status' + (cardQty(focus) ? '' : ' out')}>
               {cardQty(focus) ? `Tienes ${copies(cardQty(focus))} · encendida` : 'Te falta · está en penumbra'}
             </p>
+            {focus.copies.some(r => r.qty > 0) && (
+              <ul className="my-copies" aria-label={`Tus copias de ${focus.name}`}>
+                {[...focus.copies]
+                  .filter(r => r.qty > 0)
+                  .sort((a, b) => `${a.variant}|${a.lang}|${a.cond}|${a.loc}`.localeCompare(`${b.variant}|${b.lang}|${b.cond}|${b.loc}`))
+                  .map(r => {
+                    const label = `${variantName(r.variant)} · ${r.lang} · ${r.cond} · ${locName(r.loc)}`;
+                    return (
+                      <li key={`${r.variant}|${r.lang}|${r.cond}|${r.loc}`}>
+                        <span>
+                          {label}
+                          {r.personal ? <small> · {r.personal === r.qty ? 'personal' : `${r.personal} personal`}</small> : null}
+                        </span>
+                        <em>×{r.qty.toLocaleString('es-CL')}</em>
+                        <button
+                          type="button"
+                          className="ghost small"
+                          disabled={status !== 'idle'}
+                          onClick={() => removeOne(focus, r)}
+                          aria-label={`Quitar una copia: ${label}`}
+                          title="Quitar una copia de esta fila"
+                        >
+                          −1
+                        </button>
+                      </li>
+                    );
+                  })}
+              </ul>
+            )}
           </>
         ) : (
           <p className="rail-empty" style={{ color: 'var(--ink-mute)' }}>
@@ -688,10 +767,6 @@ export function Cargar() {
           >
             <Plus size={16} strokeWidth={2} aria-hidden="true" />
             Cargar una
-          </button>
-          <button type="button" className="ghost" onClick={undo} title="⌘/Ctrl+Z con la entrada vacía">
-            <Undo2 size={16} strokeWidth={2} aria-hidden="true" />
-            Deshacer
           </button>
         </div>
         {pending && (
@@ -729,20 +804,41 @@ export function Cargar() {
             {notice.text}
           </p>
         )}
-        <div className="session">
-          <h3 className="rail-h" style={{ margin: '4px 0 0' }}>
+        <section className="session" aria-labelledby="session-h">
+          <h3 className="rail-h" id="session-h" style={{ margin: '4px 0 0' }}>
             En esta sesión
           </h3>
-          <div>
-            Cargadas <em>{(totals.copies > 0 ? '+' : '') + totals.copies.toLocaleString('es-CL')}</em>
-          </div>
-          <div>
-            Nuevas en la expansión <em>{totals.fresh.toLocaleString('es-CL')}</em>
-          </div>
-          <div>
-            Última <em>{loaded.length ? loaded[loaded.length - 1]!.last : '—'}</em>
-          </div>
-        </div>
+          {loaded.length ? (
+            <>
+              <p className="session-sum">
+                {signed(totals.copies)} {Math.abs(totals.copies) === 1 ? 'copia' : 'copias'}
+                {totals.fresh
+                  ? ` · ${totals.fresh.toLocaleString('es-CL')} ${totals.fresh === 1 ? 'nueva' : 'nuevas'} en la expansión`
+                  : ''}
+              </p>
+              <ol className="session-list">
+                {[...loaded]
+                  .reverse()
+                  .slice(0, 50)
+                  .map((l, i) => (
+                    <li key={l.key} className={l.copies < 0 ? 'out' : ''}>
+                      <span>{l.text}</span>
+                      {i === 0 && (
+                        <button type="button" className="ghost small" onClick={undo} title="⌘/Ctrl+Z con la entrada vacía">
+                          <Undo2 size={14} strokeWidth={2} aria-hidden="true" />
+                          Deshacer
+                        </button>
+                      )}
+                    </li>
+                  ))}
+              </ol>
+              {loaded.length > 50 && <p className="session-more">y {(loaded.length - 50).toLocaleString('es-CL')} más</p>}
+              <p className="session-note">Deshacer revierte solo la última carga de esta sesión.</p>
+            </>
+          ) : (
+            <p className="session-note">Aún no cargas nada. Lo que cargues o quites aparece aquí, y lo último se puede deshacer.</p>
+          )}
+        </section>
       </aside>
     </Shell>
   );

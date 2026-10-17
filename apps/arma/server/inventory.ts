@@ -235,7 +235,10 @@ export function inventoryRoutes(app: FastifyInstance) {
   // the same contract as Nitsu's (apps/api), so both answer the same
   type AddBody = RowBody & { delta?: unknown; personal?: unknown; batch?: unknown };
   app.post<{ Body: AddBody }>('/api/inventory/add', async req => asViewer(await requireViewer(req), c => inv.add(c, req.body || {})));
-  app.post('/api/inventory/undo', async req => asViewer(await requireViewer(req), c => inv.undo(c)));
+  // { logId } or { batch }: exactly that load (Cargar's session); without them, the account's last one
+  app.post<{ Body: { logId?: unknown; batch?: unknown } }>('/api/inventory/undo', async req =>
+    asViewer(await requireViewer(req), c => inv.undo(c, { logId: req.body?.logId, batch: req.body?.batch })),
+  );
   app.post<{ Body: Parameters<typeof inv.move>[1] }>('/api/inventory/move', async req =>
     asViewer(await requireViewer(req), c => inv.move(c, req.body || {})),
   );
