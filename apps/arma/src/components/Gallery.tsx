@@ -84,7 +84,7 @@ export function Shelves({ cards, owned, label }: { cards: GalleryItem[]; owned: 
         {shelves.map((s, i) => (
           <section key={s.set_id} className="shelf gal-shelf" aria-label={s.set_name} style={{ ['--i' as string]: Math.min(i, 6) }}>
             <div className="shelf-h">
-              <h3>{s.set_name}</h3>
+              <h3 title={s.set_name}>{s.set_name}</h3>
               <span>
                 {[s.set_code, s.release.slice(0, 4)].filter(Boolean).join(' · ')}
                 <b className="gal-prog">

@@ -263,11 +263,11 @@ La pantalla del administrador (`/reemplazar`), sin ficha lateral: el riel lleva 
   - El nombre va en **Fraunces itálica 500** (25px, `SOFT` 100), la única letra de firma de la app. Se usa solo para los nombres de ilustradores.
   - Abajo, los años y "de N", en Archivo apagado. Arriba a la derecha, un anillo SVG de 44px en `--felt` con las cartas tuyas en Archivo Narrow.
   - Un ilustrador sin cartas tuyas lleva una cartulina más tostada (`#d6caae`) y la firma apagada.
-  - **El momento memorable:** al pasar el mouse o enfocar, su carta de portada sale desde detrás de la esquina superior derecha, girada 8° (`translate(34%, -52%)`, 420ms `--ease-out`), como una lámina que se saca de una carpeta. La cartulina sube 2px. En pantallas sin hover, la portada va como miniatura de 50px a la izquierda del nombre.
+  - **El momento memorable:** al pasar el mouse o enfocar, la ilustración de su carta de portada llena la tarjeta de fondo. La carta se recorta a su ilustración (116% de ancho, subida un 28%) y entra con un zoom suave (de 1,06 a 1 en 600ms, `--ease-out`). Un velo oscuro de arriba abajo mantiene legibles la firma, los años y el anillo, que pasan a `--light`. La tarjeta sube 2px. En pantallas sin hover, la portada va como miniatura de 50px a la izquierda del nombre.
 - **Galería de un ilustrador o de un Pokémon:**
   - El encabezado lleva "‹ Ilustradores" (o la región). El nombre va en firma de 58px (en un Pokémon, el número en Archivo Narrow de 66px y el nombre con el japonés debajo), con "N de M cartas" y los años.
   - A la derecha, el control Todas · Tengo · Me faltan: grafito, con la opción elegida en cartulina.
-  - Las repisas son la vitrina de fieltro. Las expansiones chicas van lado a lado, cada una con su tabla y su encabezado, que se ajusta a su ancho.
+  - Las repisas son la vitrina de fieltro. Las expansiones chicas van lado a lado, cada una con su tabla. El encabezado siempre ocupa dos líneas: el nombre en una, cortado con "…" y completo al pasar el mouse, y debajo el código, el año y el avance. Así, las cartas de repisas vecinas empiezan a la misma altura.
   - Lo que falta va en `grayscale(1)` con opacidad 0,55, y al pasar el mouse asoma a medias (`grayscale(.35)`). Lo tuyo va a color y con el sello ×N.
 - **Pokédex:**
   - pestañas de región en grafito, con su cifra y una barra de 3px en `--ok`; la elegida, en fieltro con barra `--light`;

@@ -2633,8 +2633,7 @@ button {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  /* room above the first row for the covers that come out */
-  padding: 58px 34px 48px 28px;
+  padding: 26px 28px 48px;
 }
 .sig-grid {
   display: grid;
@@ -2664,17 +2663,15 @@ button {
 .placard:focus-visible {
   outline: none;
 }
-.placard:focus-visible .placard-face {
+.placard:focus-visible::before {
   outline: 2px solid var(--light);
   outline-offset: 3px;
 }
-.placard-face {
+.placard::before {
+  content: '';
   position: absolute;
   inset: 0;
-  z-index: 1;
-  display: grid;
-  grid-template-rows: 1fr auto;
-  padding: 16px 18px 13px;
+  z-index: 0;
   border-radius: 4px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.35), transparent 38%), var(--stock);
   box-shadow:
@@ -2682,8 +2679,17 @@ button {
     0 18px 30px -22px rgba(0, 0, 0, 0.95);
   transition: transform 260ms var(--ease-out);
 }
-.placard:not(.has) .placard-face {
+.placard:not(.has)::before {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent 38%), #d6caae;
+}
+.placard-face {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  padding: 16px 18px 13px;
+  transition: transform 260ms var(--ease-out);
 }
 .sig {
   font-family: Fraunces, Georgia, serif;
@@ -2742,52 +2748,92 @@ button {
   font: 700 13px 'Archivo Narrow';
   font-variant-numeric: tabular-nums;
 }
-/* the cover: hidden behind the placard, it slides out like a print from a sleeve */
+/* the cover: on hover its illustration fills the placard, under a veil that keeps the name legible */
 .peek {
   position: absolute;
-  top: 12px;
-  right: 18px;
-  width: 92px;
-  aspect-ratio: 63 / 88;
-  z-index: 0;
+  inset: 0;
+  z-index: 1;
+  border-radius: 4px;
+  overflow: hidden;
   pointer-events: none;
 }
 .peek-card {
+  position: absolute;
+  inset: 0;
   display: block;
-  width: 100%;
-  height: 100%;
-  border-radius: 5px;
-  overflow: hidden;
   background: #0a2a23;
-  box-shadow: 0 16px 30px -12px rgba(0, 0, 0, 0.9);
   opacity: 0;
-  transform: translateY(10%) rotate(0deg);
+  transform: scale(1.06);
   transition:
-    transform 420ms var(--ease-out),
-    opacity 240ms var(--ease-out);
+    opacity 320ms var(--ease-out),
+    transform 600ms var(--ease-out);
 }
+/* the card cut to its illustration (the art box sits about 11–49% down a card) */
 .peek-card img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  position: absolute;
+  left: -8%;
+  top: -28%;
+  width: 116%;
+  height: auto;
   display: block;
 }
 .peek-card.miss img {
   filter: grayscale(1);
 }
+.peek-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(12, 10, 8, 0.62), rgba(12, 10, 8, 0.2) 48%, rgba(12, 10, 8, 0.78));
+}
 .peek-card .local-mark {
   display: none;
 }
 @media (hover: hover) and (pointer: fine) {
+  .sig-item:hover .placard::before,
+  .sig-item:focus-within .placard::before,
   .sig-item:hover .placard-face,
-  .sig-item:focus-within .placard-face {
+  .sig-item:focus-within .placard-face,
+  .sig-item:hover .peek,
+  .sig-item:focus-within .peek {
     transform: translateY(-2px);
+  }
+  .peek {
+    transition: transform 260ms var(--ease-out);
   }
   .sig-item:hover .peek-card,
   .sig-item:focus-within .peek-card {
     opacity: 1;
-    transform: translate(34%, -52%) rotate(8deg);
+    transform: scale(1);
   }
+  .sig-item:hover .sig,
+  .sig-item:focus-within .sig {
+    color: var(--light);
+  }
+  .sig-item:hover .placard-foot,
+  .sig-item:focus-within .placard-foot {
+    color: rgba(255, 243, 220, 0.82);
+  }
+  .sig-item:hover .ring-bg,
+  .sig-item:focus-within .ring-bg {
+    stroke: rgba(255, 243, 220, 0.25);
+  }
+  .sig-item:hover .ring-fg,
+  .sig-item:focus-within .ring-fg {
+    stroke: var(--light);
+  }
+  .sig-item:hover .ring-n,
+  .sig-item:focus-within .ring-n {
+    color: var(--light);
+  }
+}
+.sig,
+.placard-foot,
+.ring-n {
+  transition: color 240ms var(--ease-out);
+}
+.ring circle {
+  transition: stroke 240ms var(--ease-out);
 }
 /* without hover (a phone): the cover as a thumbnail beside the name */
 @media (hover: none) {
@@ -2795,16 +2841,27 @@ button {
     padding-left: 78px;
   }
   .peek {
+    inset: auto;
     left: 14px;
-    right: auto;
     top: 16px;
     width: 50px;
-    z-index: 2;
+    aspect-ratio: 63 / 88;
+    z-index: 3;
+    border-radius: 4px;
+    box-shadow: 0 6px 12px -6px rgba(0, 0, 0, 0.7);
   }
   .peek-card {
     opacity: 1;
     transform: none;
-    box-shadow: 0 6px 12px -6px rgba(0, 0, 0, 0.7);
+  }
+  .peek-card img {
+    position: static;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .peek-card::after {
+    display: none;
   }
 }
 
@@ -2902,10 +2959,19 @@ button {
   align-items: flex-start;
   column-gap: 30px;
 }
-/* the header wraps inside the board's own width instead of widening it */
+/* the header: always two lines (name, then code · year · progress) inside the board's own width, so the cards of
+   boards side by side start at the same height */
 .gal-shelf .shelf-h {
   width: 0;
   min-width: 100%;
+  display: grid;
+  gap: 3px;
+}
+.gal-shelf .shelf-h h3,
+.gal-shelf .shelf-h span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .gal-shelf {
   flex: 0 1 auto;
@@ -3209,7 +3275,9 @@ button {
   .dexwin {
     animation: none;
   }
+  .peek,
   .peek-card,
+  .placard::before,
   .placard-face,
   .dexwin-art,
   .dexwin-art img,
@@ -3218,8 +3286,12 @@ button {
   }
   .sig-item:hover .peek-card,
   .sig-item:focus-within .peek-card {
-    transform: translate(34%, -52%);
+    transform: none;
   }
+  .sig-item:hover .placard::before,
+  .sig-item:focus-within .placard::before,
+  .sig-item:hover .peek,
+  .sig-item:focus-within .peek,
   .sig-item:hover .placard-face,
   .sig-item:focus-within .placard-face,
   .dexwin a:hover .dexwin-art {
