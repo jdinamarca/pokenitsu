@@ -221,6 +221,28 @@ export interface SourceCount {
   failed: number;
 }
 /** the Japanese catalog's photos for local use only: Limitless per expansion, then PokeCottage per Pokémon */
+/** the Japanese cards' details (detalles-de-japonesas-en-arma) */
+export interface DetailsStep {
+  total: number;
+  done: number;
+  filled: number;
+  missing: number;
+  failed: number;
+}
+export interface DetailsJob {
+  running: boolean;
+  phase: 'tcgdex' | 'pokedex' | 'ilustrador';
+  current: string | null;
+  steps: { tcgdex: DetailsStep; pokedex: DetailsStep; ilustrador: DetailsStep };
+  waitingUntil?: string;
+  stopped?: string;
+  error?: string;
+}
+export interface DetailsPending {
+  tcgdex: number;
+  pokedex: number;
+  ilustrador: number;
+}
 export interface CatalogJob {
   running: boolean;
   phase: 'limitless' | 'pokecottage' | 'billsarchive';
@@ -311,6 +333,9 @@ export const api = {
   replaceCards: () => call<ReplaceCards>('GET', '/replace/cards'),
   catalogJob: () => call<{ localPhotos: boolean; job: CatalogJob | null }>('GET', '/local-photos/catalog'),
   startCatalogJob: () => call<CatalogJob>('POST', '/local-photos/catalog', {}),
+  // the Japanese cards' details: what's missing and the job (the administrator's)
+  catalogDetails: () => call<{ pending: DetailsPending; job: DetailsJob | null }>('GET', '/catalog-details'),
+  startCatalogDetails: () => call<DetailsJob>('POST', '/catalog-details', {}),
   // your own photo of a catalog card (the administrator's; JPEG, PNG or WebP up to 8 MB)
   uploadCardPhoto: async (cardId: string, file: File) => {
     const r = await fetch(`/api/card-photos/${encodeURIComponent(cardId)}`, {

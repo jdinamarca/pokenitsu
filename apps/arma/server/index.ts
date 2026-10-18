@@ -5,6 +5,7 @@ import { pool } from './db.ts';
 import { importDex } from './importer.ts';
 import { importLocalPhotos } from './localPhotos.ts';
 import { catalogJob, PRINTED_PHOTOS, startCatalogPhotos } from './catalogPhotos.ts';
+import { detailsJob, pendingDetails, startJaDetails } from './details.ts';
 import { LOCAL_IMAGE_DIR, localPhotosOn } from './local.ts';
 import { isOwner, ownedCopies, requireOwner, requireViewer, viewerOf } from './session.ts';
 import { authRoutes, initAuth } from './auth.ts';
@@ -325,6 +326,18 @@ app.post<{ Body: { dex?: unknown; sets?: unknown } }>('/api/local-photos/catalog
 app.get('/api/local-photos/catalog', async req => {
   await requireOwner(req);
   return { localPhotos: localPhotosOn(), job: catalogJob() };
+});
+
+// the Japanese cards' details (detalles-de-japonesas-en-arma): what's missing and the job, for the administrator
+app.get('/api/catalog-details', async req => {
+  await requireOwner(req);
+  return { pending: await pendingDetails(), job: detailsJob() };
+});
+app.post<{ Body: { sets?: unknown } }>('/api/catalog-details', async req => {
+  await requireOwner(req);
+  // sets: only those expansions (to try it without the whole catalog)
+  const sets = Array.isArray(req.body?.sets) ? req.body.sets.map(String).filter(s => /^[\w.-]+$/.test(s)) : undefined;
+  return startJaDetails({ sets });
 });
 
 // photos for local use only: downloaded once to LOCAL_IMAGE_DIR, only with ARMA_FOTOS_LOCALES=1 (403 otherwise)

@@ -28,3 +28,4 @@ Por qué el sistema es como es. El **qué** hace está en [`openspec/specs/`](..
 | [0022](0022-cuentas-en-arma-tu-coleccion.md) | Las cuentas se atienden en "Arma tu colección", con su configuración compartida | Aceptado |
 | [0023](0023-arma-escribe-el-inventario-compartido.md) | "Arma tu colección" escribe el inventario compartido, con las operaciones de un paquete | Aceptado |
 | [0024](0024-arma-gestiona-las-ubicaciones.md) | "Arma tu colección" gestiona las ubicaciones con las operaciones del paquete | Aceptado |
+| [0025](0025-arma-completa-los-detalles-del-catalogo-japones.md) | "Arma tu colección" completa los detalles del catálogo japonés | Aceptado |

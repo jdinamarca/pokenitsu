@@ -10,3 +10,4 @@ export * from './tier.js';
 export * from './progress.js';
 export * from './arma.js';
 export * from './load.js';
+export * from './dex.js';
