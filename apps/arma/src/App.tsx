@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { applyRules, type ArmaRules, type RuleId } from '@pokenitsu/core';
+import { applyRules, MEMBER_NAMES, memberFromPath, type ArmaRules, type RuleId } from '@pokenitsu/core';
 import { CircleHelp, RefreshCw } from 'lucide-react';
 import { toLogin } from './auth.ts';
-import { api, ApiError, type Copy, type Full, type SavedView, type Source } from './api.ts';
+import { api, ApiError, type Copy, type Full, type MasterSets, type SavedView, type Source } from './api.ts';
 import {
   copiesByCode,
   keepFor,
@@ -21,21 +21,25 @@ import { Rail } from './components/Rail.tsx';
 import { Shell } from './components/Shell.tsx';
 import { Showcase } from './components/Showcase.tsx';
 import { Detail } from './components/Detail.tsx';
+import { FamilyFan } from './components/FamilyFan.tsx';
+import { Link } from './components/Gallery.tsx';
+import { useHref } from './router.ts';
 
-const DEX = 133;
-const SPECIES = 'Eevee';
 const MASTER_EN: ArmaRules = { onlyEnglish: true, asiaAsJapanese: true, stampsAndDecks: true, wcd: true, jumbo: false };
 
 type Load = { state: 'loading' } | { state: 'signedOut' } | { state: 'error'; message: string } | { state: 'ready' };
 
 type Loaded =
-  { kind: 'ready'; full: Full; copies: Copy[]; views: SavedView[] } | { kind: 'signedOut' } | { kind: 'error'; message: string };
-async function fetchAll(): Promise<Loaded> {
+  | { kind: 'ready'; dex: number; full: Full; copies: Copy[]; views: SavedView[] }
+  | { kind: 'signedOut' }
+  | { kind: 'error'; message: string };
+// one member's Full, its copies and the saved views (master-set-familia-eevee: any member of the family)
+async function fetchAll(dex: number): Promise<Loaded> {
   try {
     const me = await api.me();
     if (!me.viewer) return { kind: 'signedOut' };
-    const [full, o, v] = await Promise.all([api.full(DEX), api.owned(DEX), api.views()]);
-    return { kind: 'ready', full, copies: o.copies, views: v.views };
+    const [full, o, v] = await Promise.all([api.full(dex), api.owned(dex), api.views()]);
+    return { kind: 'ready', dex, full, copies: o.copies, views: v.views };
   } catch (e) {
     if (e instanceof ApiError && e.status === 401) return { kind: 'signedOut' };
     return { kind: 'error', message: e instanceof Error ? e.message : String(e) };
@@ -43,7 +47,15 @@ async function fetchAll(): Promise<Loaded> {
 }
 
 export function App() {
+  // the member comes from the address: / is Eevee, /master-set/umbreon is Umbreon (master-set-familia-eevee)
+  const path = useHref().split('?')[0]!;
+  const dex = memberFromPath(path);
+  const species = dex ? MEMBER_NAMES[dex] || `#${dex}` : '';
   const [load, setLoad] = useState<Load>({ state: 'loading' });
+  // the member whose Full is loaded; while another one arrives, the case says so
+  const [loadedDex, setLoadedDex] = useState<number | null>(null);
+  const [family, setFamily] = useState<MasterSets | null>(null);
+  const loadFamily = useCallback(() => api.masterSets().then(setFamily, () => {}), []);
   const [full, setFull] = useState<Full | null>(null);
   const [copies, setCopies] = useState<Copy[]>([]);
   const [views, setViews] = useState<SavedView[]>([]);
@@ -91,6 +103,8 @@ export function App() {
   // fetching never touches state; applying the result does, once it arrives
   const apply = useCallback((r: Loaded) => {
     if (r.kind === 'ready') {
+      setLoadedDex(r.dex);
+      setSelected(null);
       setFull(r.full);
       setMarks(r.full.photoMarks || {});
       setCopies(r.copies);
@@ -100,7 +114,7 @@ export function App() {
       r.kind === 'ready' ? { state: 'ready' } : r.kind === 'signedOut' ? { state: 'signedOut' } : { state: 'error', message: r.message },
     );
   }, []);
-  const refresh = useCallback(() => fetchAll().then(apply), [apply]);
+  const refresh = useCallback(() => (dex ? fetchAll(dex).then(apply) : Promise.resolve()), [apply, dex]);
   // the sheet's photo tools: a mark changes the case right away; an upload brings the Full again
   const markPhoto = useCallback(async (src: string, shows: string | null) => {
     if (shows === null) await api.unmarkPhoto(src);
@@ -127,12 +141,16 @@ export function App() {
     [refresh],
   );
   useEffect(() => {
+    if (!dex) return;
     let alive = true;
-    void fetchAll().then(r => alive && apply(r));
+    void fetchAll(dex).then(r => alive && apply(r));
     return () => {
       alive = false;
     };
-  }, [apply]);
+  }, [apply, dex]);
+  useEffect(() => {
+    void loadFamily();
+  }, [loadFamily]);
 
   const sources = useMemo(() => new Map<string, Source>((full?.sources || []).map(s => [s.id, s])), [full]);
   const printings = useMemo(() => withPhotoShows(full?.printings || [], marks), [full, marks]);
@@ -191,8 +209,8 @@ export function App() {
   const runImport = async () => {
     setImporting(true);
     try {
-      await api.importDex(DEX);
-      await refresh();
+      await api.importDex(dex!);
+      await Promise.all([refresh(), loadFamily()]);
     } catch (e) {
       setLoad({ state: 'error', message: e instanceof Error ? e.message : String(e) });
     } finally {
@@ -200,7 +218,7 @@ export function App() {
     }
   };
 
-  if (load.state === 'loading') return <Gate title="Abriendo la vitrina…" />;
+  if (load.state === 'loading' && dex) return <Gate title="Abriendo la vitrina…" />;
   // without a session, to this app's own way in, coming back here after entering (login-en-arma)
   if (load.state === 'signedOut') {
     toLogin();
@@ -215,17 +233,66 @@ export function App() {
         </button>
       </Gate>
     );
+  const fan = family && dex ? <FamilyFan members={family.members} dex={dex} rules={rules} /> : null;
+  const railFor = (total: number) => (
+    <Rail
+      species={species || 'Arma tu Master Set'}
+      dex={dex || 0}
+      total={total}
+      rules={rules}
+      active={active}
+      onToggle={toggle}
+      views={views}
+      viewId={viewId}
+      onView={pickView}
+      onSave={saveView}
+      onDelete={id => void deleteView(id)}
+    />
+  );
+  // no member at this address, its Full still arriving, or not brought yet: the fan stays, the case says what's up
+  const message = (title: string, text?: string, action?: React.ReactNode) => (
+    <Shell path="/" label="Navegación, reglas y vistas" rail={railFor(0)}>
+      <main className="main">
+        {fan}
+        <div className="case" role="region" aria-label="Vitrina">
+          <div className="case-msg">
+            <h2>{title}</h2>
+            {text && <p>{text}</p>}
+            {action}
+          </div>
+        </div>
+      </main>
+      <Detail
+        p={null}
+        fallback={null}
+        copies={[]}
+        sources={sources}
+        siblings={[]}
+        marks={marks}
+        onMark={markPhoto}
+        onUpload={uploadPhoto}
+        onRemovePhoto={removePhoto}
+        reasons={[]}
+      />
+    </Shell>
+  );
+  if (!dex)
+    return message(
+      'Ese Pokémon no está en Arma tu Master Set',
+      'Por ahora la vitrina tiene a Eevee y sus evoluciones.',
+      <Link to="/" className="primary">
+        Ir a Eevee
+      </Link>,
+    );
+  if (loadedDex !== dex) return message(`Abriendo el Full de ${species}…`);
   if (!printings.length)
-    return (
-      <Gate
-        title={`El Full de ${SPECIES} todavía está vacío`}
-        text="Tráelo desde TCGdex, el catálogo de Nitsu, PokeCottage (solo texto) y Bulbapedia. Cada dato queda marcado con su fuente."
-      >
-        <button type="button" className="primary" disabled={importing} onClick={() => void runImport()}>
-          <RefreshCw size={16} strokeWidth={2} className={importing ? 'spin' : ''} />
-          {importing ? 'Trayendo el Full…' : `Traer el Full de ${SPECIES}`}
-        </button>
-      </Gate>
+    return message(
+      `El Full de ${species} todavía está vacío`,
+      'Tráelo desde TCGdex, el catálogo de Nitsu, PokeCottage (solo texto), Bulbapedia y WikiDex, con los mismos criterios que Eevee. Cada dato queda marcado con su fuente.',
+      <button type="button" className="primary" disabled={importing} onClick={() => void runImport()}>
+        <RefreshCw size={16} strokeWidth={2} className={importing ? 'spin' : ''} />
+        {importing ? `Trayendo el Full de ${species}…` : `Traer el Full de ${species}`}
+      </button>,
     );
 
   // what a rule or a filter takes off the case can't stay chosen
@@ -237,26 +304,9 @@ export function App() {
   const activeRule = RULES.find(r => r.id === active);
   const shelfPicture = sel ? (shelves.find(s => s.printings.includes(sel))?.fallback(sel) ?? null) : null;
   return (
-    <Shell
-      path="/"
-      label="Navegación, reglas y vistas"
-      rail={
-        <Rail
-          species={SPECIES}
-          dex={DEX}
-          total={printings.length}
-          rules={rules}
-          active={active}
-          onToggle={toggle}
-          views={views}
-          viewId={viewId}
-          onView={pickView}
-          onSave={saveView}
-          onDelete={id => void deleteView(id)}
-        />
-      }
-    >
+    <Shell path="/" label="Navegación, reglas y vistas" rail={railFor(printings.length)}>
       <main className="main">
+        {fan}
         <header className="top">
           <p className="count" aria-live="polite">
             <span className="n">{own.visible.have.toLocaleString('es-CL')}</span>

@@ -28,6 +28,18 @@ const POCKET = /^(A\d|B\d|P-A)/i;
 interface SpeciesNames {
   [tcgdexLang: string]: string[];
 }
+/** without accents or case: TCGdex writes "Evoli" where PokéAPI says "Évoli" */
+export const bare = (s: string) => s.normalize('NFKD').replace(/\p{M}/gu, '').toLowerCase();
+/** a name and, when it has accents, the same without them (both are searched in TCGdex) */
+const withBare = (names: (string | undefined)[]) => {
+  const out: string[] = [];
+  for (const n of names) {
+    if (!n) continue;
+    const plain = n.normalize('NFKD').replace(/\p{M}/gu, '');
+    for (const x of [n, plain]) if (!out.includes(x)) out.push(x);
+  }
+  return out;
+};
 /** the species' name in each TCGdex language, from PokéAPI (Thai is not there: TH relies on the Pokédex number) */
 export async function speciesNames(dex: number): Promise<{ en: string; byLang: SpeciesNames }> {
   const sp = await fetchJson<{ names: { language: { name: string }; name: string }[] }>(`https://pokeapi.co/api/v2/pokemon-species/${dex}`);
@@ -35,12 +47,12 @@ export async function speciesNames(dex: number): Promise<{ en: string; byLang: S
   const en = n('en') || String(dex);
   const byLang: SpeciesNames = {
     en: [en],
-    fr: [n('fr'), 'Evoli'].filter(Boolean) as string[],
-    es: [n('es') || en],
-    'es-mx': [n('es') || en],
-    it: [n('it') || en],
+    fr: withBare([n('fr')]),
+    es: withBare([n('es') || en]),
+    'es-mx': withBare([n('es') || en]),
+    it: withBare([n('it') || en]),
     pt: [en],
-    de: [n('de') || en],
+    de: withBare([n('de') || en]),
     ja: [n('ja-hrkt') || n('ja') || en],
     ko: [n('ko') || en],
     'zh-tw': [n('zh-hant') || en],
@@ -52,9 +64,11 @@ export async function speciesNames(dex: number): Promise<{ en: string; byLang: S
 }
 
 // a card is of the species when its name starts with it, after Radiant / 光輝 / かがやく (not an evolution like Leafeon)
-const isSpecies = (name: string, names: string[]) => {
-  const core = name.replace(/^(Radiant |Strahlendes |Radieux |光輝|かがやく|빛나는 )/, '');
-  return names.some(n => core.startsWith(n) || name.endsWith(` ${n}`));
+// (compared without accents or case)
+export const isSpecies = (name: string, names: string[]) => {
+  const full = bare(name);
+  const core = bare(name.replace(/^(Radiant |Strahlendes |Radieux |光輝|かがやく|빛나는 )/, ''));
+  return names.some(n => core.startsWith(bare(n)) || full.endsWith(` ${bare(n)}`));
 };
 
 interface TdCard {
@@ -99,9 +113,13 @@ export async function tcgdexClaims(cat: Catalog, dex: number): Promise<{ claims:
       for (const c of list) if (isSpecies(c.name, names[lang]!)) ids.add(c.id);
     }
     const wanted = [...ids].filter(id => !POCKET.test(id));
-    const details = await mapLimit(wanted, 4, id => fetchJson<TdCard>(`${API}/${lang}/cards/${encodeURIComponent(id)}`).catch(() => null));
+    // a card's answer without its set is not one of ours (an older trimmed copy kept under the same URL): asked again
+    const details = await mapLimit(wanted, 4, id =>
+      fetchJson<TdCard>(`${API}/${lang}/cards/${encodeURIComponent(id)}`, { valid: d => !!d?.set?.id }).catch(() => null),
+    );
     for (const d of details) {
-      if (!d || POCKET.test(d.set.id)) continue;
+      // a card TCGdex lists without its set (it happens) can't be placed: left out, not the whole source
+      if (!d?.set?.id || POCKET.test(d.set.id)) continue;
       const setKey = setKeyOf(cat, lang, d.set.id);
       // a holo without its foil (or from the old flags) does not say which holo it is
       const vs = (d.variants_detailed || [])

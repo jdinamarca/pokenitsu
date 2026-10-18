@@ -57,13 +57,18 @@ export async function pokecottageClaims(
   cat: Catalog,
   dex: number,
   speciesEn: string,
-): Promise<{ claims: Claim[]; entries: number; unmatched: number }> {
+): Promise<{ claims: Claim[]; entries: number; unmatched: number; incomplete?: string[] }> {
   const data = await fetchJson<PcData>(dataUrl(dex, speciesEn), { transform: withoutPictures });
   if (!data || !Array.isArray(data.cards)) throw new Error('PokeCottage no trajo el master set (¿cambió el formato?)');
   const claims: Claim[] = [];
   let unmatched = 0;
+  // an entry without its card, number or set can't be placed: it is left out and named, not the whole source
+  // (Vaporeon's 134-jpn_dp4a-14-firstEdition); only when none is complete the format must have changed
+  const incomplete = data.cards.filter(e => !e.cardId || !e.cardNumber || !e.set?.id).map(e => String(e.id));
+  if (data.cards.length && incomplete.length === data.cards.length)
+    throw new Error(`PokeCottage: ninguna entrada trae carta, número y expansión (¿cambió el formato?)`);
   for (const e of data.cards) {
-    if (!e.cardId || !e.cardNumber || !e.set?.id) throw new Error(`PokeCottage: entrada sin carta, número o expansión (${e.id})`);
+    if (!e.cardId || !e.cardNumber || !e.set?.id) continue;
     // the set says the language better than the region: PokeCottage marks some Japanese promos "International"
     const region = e.set.id.startsWith('jpn_') ? 'Japan' : e.set.id.startsWith('scn_') ? 'China' : e.region;
     const lang = LANG[region] || 'ZH-CN';
@@ -93,7 +98,7 @@ export async function pokecottageClaims(
       ...(cardId ? { cardId } : {}),
     });
   }
-  return { claims, entries: data.cards.length, unmatched };
+  return { claims, entries: data.cards.length, unmatched, ...(incomplete.length ? { incomplete } : {}) };
 }
 
 // ---------- its pictures, for local use only ----------

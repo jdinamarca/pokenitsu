@@ -221,6 +221,20 @@ export interface SourceCount {
   failed: number;
 }
 /** the Japanese catalog's photos for local use only: Limitless per expansion, then PokeCottage per Pokémon */
+/** Arma tu Master Set (master-set-familia-eevee): each member of the family, enough to count it with the active rules */
+export interface MasterMember {
+  dex: number;
+  name: string;
+  ja: string;
+  printings: { code: string; lang: string; stamp: string | null; equiv_id: string | null }[];
+  /** the printings the account has copies of */
+  have: string[];
+  pic: Picture | null;
+}
+export interface MasterSets {
+  family: { id: string; name: string; base: number };
+  members: MasterMember[];
+}
 /** Ilustradores and Pokédex (ilustradores-y-pokedex-en-arma) */
 export type Scope = 'all' | 'intl' | 'ja';
 export interface Picture {
@@ -344,6 +358,7 @@ export const api = {
   saveView: (name: string, rules: ArmaRules) => call<SavedView>('POST', '/views', { name, rules }),
   deleteView: (id: number) => call<{ removed: number }>('DELETE', `/views/${id}`),
   importDex: (dex: number) => call<{ printings: number }>('POST', `/import/${dex}`),
+  masterSets: () => call<MasterSets>('GET', '/master-sets'),
   // what a photo shows (fotos-por-variante): a stamp key, '' for the printing with no stamp; unmark → automatic
   markPhoto: (src: string, shows: string) => call<{ src: string; shows: string }>('POST', '/photo-marks', { src, shows }),
   unmarkPhoto: (src: string) => call<{ removed: number }>('DELETE', '/photo-marks', { src }),

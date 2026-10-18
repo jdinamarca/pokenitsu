@@ -170,7 +170,7 @@ Una herramienta de escritorio en tres columnas fijas que ocupan toda la ventana:
 
 La zona de trabajo tiene arriba el contador con su nota y la leyenda de stickers, y debajo la vitrina, que hace scroll por dentro con su borde de luz pegado arriba. La vitrina se ordena en repisas por diseño (una ilustración y todas sus impresiones), de la más antigua a la más nueva; dentro de una repisa, por idioma (inglés primero), luego expansión, acabado y sello. Bajo la leyenda, "Ordenar: Por diseño · Por expansión" (dos botones como los chips de vista, en grafito; el elegido en cartulina) cambia a una repisa por expansión en una sola línea de tiempo que mezcla regiones (ロケット団, Japón 1997, antes que Team Rocket, 2000). Su subtítulo es "Región · AAAA-MM" o "Fecha por confirmar", y dentro va por número y luego idioma, acabado y sello. Debajo va "Ver: Todas · Las que tengo · Me faltan", con la cantidad de cada una en cifras condensadas (los mismos botones; el elegido en cartulina, recordado en el navegador), y al final de esa fila "Por verificar (N)". El contador no cambia con el filtro.
 
-**Riel de navegación:** bajo la marca, "Arma · Eevee", "Cargar" y "Mi inventario" con su icono de línea (Layers, Plus, Archive); la pantalla actual va en cartulina. Debajo, la zona propia de cada pantalla (reglas y vistas en Eevee, expansiones recientes en Cargar, ubicaciones en Mi inventario) y "Cerrar sesión" al pie. Las listas del riel (recientes, ubicaciones) son renglones con su cifra condensada a la derecha y una línea de ayuda; el elegido se ilumina con la luz cálida.
+**Riel de navegación:** bajo la marca, "Arma tu Master Set", "Cargar" y "Mi inventario" con su icono de línea (Layers, Plus, Archive); la pantalla actual va en cartulina. Debajo, la zona propia de cada pantalla (reglas y vistas en Eevee, expansiones recientes en Cargar, ubicaciones en Mi inventario) y "Cerrar sesión" al pie. Las listas del riel (recientes, ubicaciones) son renglones con su cifra condensada a la derecha y una línea de ayuda; el elegido se ilumina con la luz cálida.
 
 **Cargar (canvas AO):** el mismo esqueleto. Arriba, el contador "N / total encendidas" (o "N cartas con «…»" mientras se busca por nombre), el botón de la expansión y la entrada grande (48px, cifras condensadas en luz cálida, borde de luz al enfocar). Debajo, los ajustes de la sesión como chips de grafito con su select (Idioma, Estado, Para, Guardar en) y, a la derecha, "Todas · Solo las que faltan". La vitrina muestra la expansión entera por número; la ficha muestra la carta marcada, tus copias de ella (renglones con borde de sala, variante · idioma · estado · ubicación, la cifra ×N condensada en luz y un botón "−1" de grafito), lo que se va a cargar, "Cargar una", los avisos y "En esta sesión". "En esta sesión" es la lista de lo cargado, de lo más nuevo a lo más viejo. El renglón más nuevo va sobre grafito, con el filete de luz a la izquierda y el único "↶ Deshacer"; los demás quedan apagados, y una quita (−1) se escribe en ámbar. Debajo dice "Deshacer revierte solo la última carga de esta sesión". La ficha ya no tiene un botón "Deshacer" propio.
 
@@ -256,6 +256,13 @@ La pantalla del administrador (`/reemplazar`), sin ficha lateral: el riel lleva 
   - Los errores van en rosado (`#ffb4ab`). En el teléfono, el panel queda a 16px de los bordes y el botón baja bajo las cifras.
 - **Al reemplazar,** la carta sale de la vitrina y el contador sube en uno.
 - **En el riel,** "Por reemplazar" (icono ImageUp) aparece solo para el administrador.
+
+### Abanico de la familia (Arma tu Master Set)
+
+- **Arriba de la vitrina**, una fila de 9 retratos redondos de 60px. Cada retrato es la carta recortada a su ilustración (160% de ancho, subida un 14%), con un aro de `--room-line`. Debajo van el nombre (Archivo 600, 11,5px, apagado) y "tienes / total" en Archivo Narrow.
+- **El elegido** crece un 14%, con aro `--light` y un halo cálido, y su nombre va en una etiqueta de cartulina. Lo que no tienes va en blanco y negro, y un Pokémon sin Full queda al 45%, con un contorno punteado y "Sin traer".
+- **El orden** es el de la Pokédex, con Eevee al centro. Si los 9 no caben (ventanas de menos de 1300px o el teléfono), la fila se desliza hacia el lado sin barra visible, con el elegido centrado.
+- **Movimiento:** con el mouse, el retrato sube 2px, y uno en blanco y negro deja asomar su color. Con "reducir movimiento" no hay transiciones.
 
 ### Ilustradores y Pokédex
 

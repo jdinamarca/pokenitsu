@@ -77,13 +77,15 @@ async function applyTcgdex(cardId: string, x: TdCard) {
 /** 'filled' | 'missing' (TCGdex doesn't have it: marked, not asked again); a failure throws and leaves it unmarked */
 async function askTcgdex(cardId: string): Promise<'filled' | 'missing'> {
   const url = `${TCGDEX}/ja/cards/${encodeURIComponent(cardId.replace(/^ja-/, ''))}`;
+  // the trimmed answer under its own key: the importer keeps the whole one under the URL (master-set-familia-eevee)
+  const opts = { transform: keep, cacheKey: `${url}#detalles` };
   let x: TdCard | null;
   try {
-    x = await fetchJson<TdCard>(url, { transform: keep });
+    x = await fetchJson<TdCard>(url, opts);
   } catch (e) {
     if (!(e instanceof SourceBusy)) throw e;
     await sleep(e.retryAfterMs);
-    x = await fetchJson<TdCard>(url, { transform: keep });
+    x = await fetchJson<TdCard>(url, opts);
   }
   if (!x) {
     await pool.query('UPDATE cards SET details_at = now() WHERE id = $1', [cardId]);
