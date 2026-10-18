@@ -2579,3 +2579,650 @@ button {
     transition: none;
   }
 }
+
+/* ---------- Ilustradores and Pokédex (ilustradores-y-pokedex-en-arma) ---------- */
+.gal-main {
+  min-height: 0;
+}
+.gal-top {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+.gal-tools {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.gal-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--room-2);
+  border: 1px solid var(--room-line);
+  color: var(--ink-mute);
+}
+.gal-search:focus-within {
+  border-color: var(--ink-mute);
+}
+.gal-search input {
+  width: 200px;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: 500 14px Archivo;
+  outline: none;
+}
+.gal-order select {
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: var(--room-2);
+  border: 1px solid var(--room-line);
+  color: var(--ink);
+  font: 500 14px Archivo;
+}
+.gal-msg {
+  padding: 34px 28px;
+}
+
+/* the gallery of signatures: cardstock placards on the room's wall, each artist's name as a signature */
+.sig-wall {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  /* room above the first row for the covers that come out */
+  padding: 58px 34px 48px 28px;
+}
+.sig-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(236px, 1fr));
+  gap: 26px 22px;
+}
+.sig-item {
+  position: relative;
+  animation: gal-rise 520ms var(--ease-out) both;
+  animation-delay: calc(var(--i) * 28ms);
+}
+.sig-grid.settled .sig-item {
+  animation: none;
+}
+.sig-item:hover,
+.sig-item:focus-within {
+  z-index: 2;
+}
+.placard {
+  position: relative;
+  display: block;
+  height: 150px;
+  color: var(--stock-ink);
+  text-decoration: none;
+  isolation: isolate;
+}
+.placard:focus-visible {
+  outline: none;
+}
+.placard:focus-visible .placard-face {
+  outline: 2px solid var(--light);
+  outline-offset: 3px;
+}
+.placard-face {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  padding: 16px 18px 13px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.35), transparent 38%), var(--stock);
+  box-shadow:
+    inset 0 0 0 1px rgba(26, 23, 18, 0.08),
+    0 18px 30px -22px rgba(0, 0, 0, 0.95);
+  transition: transform 260ms var(--ease-out);
+}
+.placard:not(.has) .placard-face {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent 38%), #d6caae;
+}
+.sig {
+  font-family: Fraunces, Georgia, serif;
+  font-style: italic;
+  font-weight: 500;
+  font-size: 25px;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  font-variation-settings: 'SOFT' 100;
+  padding-right: 50px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.placard:not(.has) .sig {
+  color: #5e5647;
+}
+.placard-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font: 500 12px Archivo;
+  color: #6f6757;
+  font-variant-numeric: tabular-nums;
+}
+.ring {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 44px;
+  height: 44px;
+}
+.ring svg {
+  width: 100%;
+  height: 100%;
+}
+.ring circle {
+  fill: none;
+  stroke-width: 3.5;
+}
+.ring-bg {
+  stroke: rgba(26, 23, 18, 0.13);
+}
+.ring-fg {
+  stroke: var(--felt);
+  stroke-linecap: round;
+}
+.ring-n {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font: 700 13px 'Archivo Narrow';
+  font-variant-numeric: tabular-nums;
+}
+/* the cover: hidden behind the placard, it slides out like a print from a sleeve */
+.peek {
+  position: absolute;
+  top: 12px;
+  right: 18px;
+  width: 92px;
+  aspect-ratio: 63 / 88;
+  z-index: 0;
+  pointer-events: none;
+}
+.peek-card {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 5px;
+  overflow: hidden;
+  background: #0a2a23;
+  box-shadow: 0 16px 30px -12px rgba(0, 0, 0, 0.9);
+  opacity: 0;
+  transform: translateY(10%) rotate(0deg);
+  transition:
+    transform 420ms var(--ease-out),
+    opacity 240ms var(--ease-out);
+}
+.peek-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.peek-card.miss img {
+  filter: grayscale(1);
+}
+.peek-card .local-mark {
+  display: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .sig-item:hover .placard-face,
+  .sig-item:focus-within .placard-face {
+    transform: translateY(-2px);
+  }
+  .sig-item:hover .peek-card,
+  .sig-item:focus-within .peek-card {
+    opacity: 1;
+    transform: translate(34%, -52%) rotate(8deg);
+  }
+}
+/* without hover (a phone): the cover as a thumbnail beside the name */
+@media (hover: none) {
+  .placard-face {
+    padding-left: 78px;
+  }
+  .peek {
+    left: 14px;
+    right: auto;
+    top: 16px;
+    width: 50px;
+    z-index: 2;
+  }
+  .peek-card {
+    opacity: 1;
+    transform: none;
+    box-shadow: 0 6px 12px -6px rgba(0, 0, 0, 0.7);
+  }
+}
+
+/* a gallery's head: back, the name, the counter and Todas · Tengo · Me faltan */
+.gal-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 8px 24px;
+  padding: 16px 28px 14px;
+  border-bottom: 1px solid var(--room-line);
+}
+.gal-back {
+  grid-column: 1 / -1;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 8px 4px 2px;
+  border-radius: 6px;
+  color: var(--ink-mute);
+  font: 600 13px Archivo;
+  text-decoration: none;
+}
+.gal-back:hover {
+  color: var(--light);
+}
+.gal-title {
+  min-width: 0;
+}
+.sig-xl {
+  font-size: 58px;
+  line-height: 0.95;
+  color: var(--light);
+  padding: 0 0 6px;
+  -webkit-line-clamp: 2;
+}
+.gal-sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 18px;
+}
+.gal-sub .count .n {
+  font-size: 40px;
+}
+.gal-sub .count .of {
+  font-size: 18px;
+}
+.gal-sub .years {
+  font: 500 14px Archivo;
+  color: var(--ink-mute);
+  font-variant-numeric: tabular-nums;
+}
+.gal-seg {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  border-radius: 10px;
+  background: var(--room-2);
+  border: 1px solid var(--room-line);
+}
+.gal-seg button {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--ink-mute);
+  font: 600 13px Archivo;
+  transition:
+    background 180ms var(--ease-out),
+    color 180ms var(--ease-out);
+}
+.gal-seg button:hover {
+  color: var(--ink);
+}
+.gal-seg button.on {
+  background: var(--stock);
+  color: var(--stock-ink);
+}
+.gal-seg em {
+  font: 700 12px 'Archivo Narrow';
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
+}
+/* small expansions side by side: each one its own board on the same line */
+.gal-flow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  column-gap: 30px;
+}
+/* the header wraps inside the board's own width instead of widening it */
+.gal-shelf .shelf-h {
+  width: 0;
+  min-width: 100%;
+}
+.gal-shelf {
+  flex: 0 1 auto;
+  min-width: 190px;
+  max-width: 100%;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 260px;
+  animation: gal-rise 520ms var(--ease-out) both;
+  animation-delay: calc(var(--i) * 60ms);
+}
+.gal-prog {
+  margin-left: 10px;
+  font: 700 13px 'Archivo Narrow';
+  color: var(--light);
+  font-variant-numeric: tabular-nums;
+}
+.gal-card {
+  cursor: default;
+}
+.gal-num {
+  flex: none;
+  opacity: 0.6;
+  font-variant-numeric: tabular-nums;
+}
+.gal-card.miss img {
+  filter: grayscale(1);
+  opacity: 0.55;
+}
+.gal-card.miss .tag {
+  opacity: 0.62;
+}
+@media (hover: hover) and (pointer: fine) {
+  /* a missing card lets its colour show through, halfway: how it would look */
+  .gal-card.miss:hover img {
+    filter: grayscale(0.35);
+    opacity: 0.9;
+  }
+}
+
+/* the Pokédex: regions as tabs, each Pokémon a numbered window */
+.dex-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 14px 28px 2px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--room-line) transparent;
+}
+.dex-tab {
+  flex: none;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
+  gap: 2px 12px;
+  min-width: 112px;
+  padding: 9px 12px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--room-line);
+  background: var(--room-2);
+  color: var(--ink);
+  text-align: left;
+  transition:
+    background 180ms var(--ease-out),
+    border-color 180ms var(--ease-out);
+}
+.dex-tab:hover {
+  border-color: #3a3730;
+}
+.dex-tab.on {
+  background: var(--felt);
+  border-color: var(--felt-line);
+  color: var(--light);
+}
+.dex-tab-name {
+  font: 600 14px Archivo;
+}
+.dex-tab-n {
+  font: 700 12px 'Archivo Narrow';
+  color: var(--ink-mute);
+  font-variant-numeric: tabular-nums;
+}
+.dex-tab.on .dex-tab-n {
+  color: var(--felt-ink);
+}
+.dex-tab-bar {
+  grid-column: 1 / -1;
+  height: 3px;
+  margin-top: 6px;
+  border-radius: 2px;
+  background: rgba(239, 233, 220, 0.1);
+  overflow: hidden;
+}
+.dex-tab-bar span {
+  display: block;
+  height: 100%;
+  background: var(--ok);
+  border-radius: 2px;
+}
+.dex-tab.on .dex-tab-bar span {
+  background: var(--light);
+}
+.dex-case {
+  margin-top: 12px;
+}
+.dex-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(124px, 1fr));
+  gap: 20px 14px;
+  padding: 18px 0 10px;
+}
+.dexwin {
+  animation: gal-rise 480ms var(--ease-out) both;
+  animation-delay: calc(var(--i) * 18ms);
+}
+.dex-grid.settled .dexwin {
+  animation: none;
+}
+.dexwin a {
+  display: grid;
+  gap: 7px;
+  color: inherit;
+  text-decoration: none;
+  border-radius: 8px;
+}
+.dexwin a:focus-visible {
+  outline: 2px solid var(--light);
+  outline-offset: 4px;
+}
+.dexwin-art {
+  position: relative;
+  display: block;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #0a2a23;
+  box-shadow: 0 12px 22px -12px rgba(0, 0, 0, 0.9);
+  transition: transform 220ms var(--ease-out);
+}
+/* the card cut to its artwork: the illustration, with a hint of its name bar */
+.dexwin-art img {
+  position: absolute;
+  left: -20%;
+  top: -12%;
+  width: 140%;
+  height: auto;
+  transition:
+    filter var(--dim) var(--ease-out),
+    opacity var(--dim) var(--ease-out);
+}
+.dexwin-art .blank {
+  border: 0;
+}
+.dexwin.miss .dexwin-art img {
+  filter: grayscale(1) brightness(0.9);
+  opacity: 0.62;
+}
+.dexwin.has .dexwin-art {
+  box-shadow:
+    0 0 0 1px rgba(255, 243, 220, 0.4),
+    0 14px 26px -12px rgba(255, 214, 140, 0.3);
+}
+.dexwin-no {
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--stock);
+  color: var(--stock-ink);
+  font: 700 12px 'Archivo Narrow';
+  font-variant-numeric: tabular-nums;
+}
+.dexwin-tag {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0 6px;
+  align-items: baseline;
+}
+.dexwin-name {
+  font: 600 13px Archivo;
+  color: var(--light);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dexwin.miss .dexwin-name {
+  color: var(--felt-ink);
+}
+.dexwin-n {
+  grid-row: 1;
+  grid-column: 2;
+  font: 700 12px 'Archivo Narrow';
+  color: var(--felt-mute);
+  font-variant-numeric: tabular-nums;
+}
+.dexwin.has .dexwin-n {
+  color: var(--light);
+}
+.dexwin-ja {
+  grid-column: 1 / -1;
+  font-size: 11px;
+  color: var(--felt-mute);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (hover: hover) and (pointer: fine) {
+  .dexwin a:hover .dexwin-art {
+    transform: translateY(-3px);
+  }
+  .dexwin.miss a:hover .dexwin-art img {
+    filter: grayscale(0.35);
+    opacity: 0.9;
+  }
+}
+.dex-title {
+  display: flex;
+  align-items: flex-end;
+  gap: 18px;
+}
+.dex-no {
+  font: 700 66px/0.9 'Archivo Narrow';
+  color: var(--light);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+.dex-name {
+  font: 700 30px/1.1 Archivo;
+  color: var(--light);
+}
+.dex-ja {
+  display: block;
+  font: 500 14px Archivo;
+  color: var(--ink-mute);
+}
+.dex-title .gal-sub .count .n {
+  font-size: 30px;
+}
+@keyframes gal-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+@media (max-width: 900px) {
+  .gal-top {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .gal-top .count,
+  .gal-sub .count {
+    white-space: normal;
+  }
+  .gal-tools {
+    justify-content: flex-start;
+  }
+  .gal-search {
+    flex: 1;
+  }
+  .gal-search input {
+    width: 100%;
+    min-width: 0;
+  }
+  .sig-wall {
+    padding: 16px 16px 32px;
+    overflow: visible;
+  }
+  .sig-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 14px;
+  }
+  .placard {
+    height: 132px;
+  }
+  .sig {
+    font-size: 22px;
+  }
+  .gal-head {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 14px 16px 12px;
+  }
+  .sig-xl {
+    font-size: 40px;
+  }
+  .dex-tabs {
+    padding: 12px 16px 2px;
+  }
+  .dex-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 16px 10px;
+  }
+  .dex-no {
+    font-size: 48px;
+  }
+  .dex-name {
+    font-size: 24px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sig-item,
+  .gal-shelf,
+  .dexwin {
+    animation: none;
+  }
+  .peek-card,
+  .placard-face,
+  .dexwin-art,
+  .dexwin-art img,
+  .gal-card img {
+    transition: none;
+  }
+  .sig-item:hover .peek-card,
+  .sig-item:focus-within .peek-card {
+    transform: translate(34%, -52%);
+  }
+  .sig-item:hover .placard-face,
+  .sig-item:focus-within .placard-face,
+  .dexwin a:hover .dexwin-art {
+    transform: none;
+  }
+}

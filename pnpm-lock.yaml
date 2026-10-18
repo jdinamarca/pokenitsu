@@ -201,6 +201,9 @@ importers:
       '@fontsource/archivo-narrow':
         specifier: ^5.3.0
         version: 5.3.0
+      '@fontsource/fraunces':
+        specifier: ^5.3.0
+        version: 5.3.0
       '@pokenitsu/auth':
         specifier: workspace:*
         version: link:../../packages/auth
@@ -909,6 +912,9 @@ packages:
 
   '@fontsource/archivo@5.3.0':
     resolution: {integrity: sha512-5DIMgPVJRi62OqdOVoogCFxP73EkNM/E0YVTSDIQlDEJfDbxqZduwM/YoNZwC9Sx1CDgpKinqf8ckRY1QNIecw==}
+
+  '@fontsource/fraunces@5.3.0':
+    resolution: {integrity: sha512-LEHTOBiZufQzAvnAe2rZ8ZknbDS28Q9kzwb0L+gZJEmjLGr8hhZ/5NuHXwDuHBWhVXYoiGGXmrb0H6Ko/RrHTg==}
 
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
@@ -3220,6 +3226,8 @@ snapshots:
   '@fontsource/archivo-narrow@5.3.0': {}
 
   '@fontsource/archivo@5.3.0': {}
+
+  '@fontsource/fraunces@5.3.0': {}
 
   '@humanfs/core@0.19.2':
     dependencies:

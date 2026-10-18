@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Archive, Boxes, ImageUp, Layers, LogOut, Plus } from 'lucide-react';
+import { Archive, BookOpen, Boxes, Brush, ImageUp, Layers, LogOut, Plus } from 'lucide-react';
 import { api } from '../api.ts';
 import { signOut } from '../auth.ts';
 import { navigate } from '../router.ts';
@@ -9,6 +9,8 @@ const LINKS = [
   { path: '/cargar', label: 'Cargar', Icon: Plus },
   { path: '/inventario', label: 'Mi inventario', Icon: Archive },
   { path: '/cajas', label: 'Cajas y carpetas', Icon: Boxes },
+  { path: '/ilustradores', label: 'Ilustradores', Icon: Brush },
+  { path: '/pokedex', label: 'Pokédex', Icon: BookOpen },
 ] as const;
 // only the administrator's rail has it (fotos-solo-local-en-catalogo)
 const OWNER_LINK = { path: '/reemplazar', label: 'Por reemplazar', Icon: ImageUp } as const;

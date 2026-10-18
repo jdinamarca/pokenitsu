@@ -17,3 +17,5 @@ const subscribe = (f: () => void) => {
 };
 /** the current path; re-renders when it changes */
 export const usePath = () => useSyncExternalStore(subscribe, () => location.pathname);
+/** the current path and query (?ver=…); re-renders when either changes */
+export const useHref = () => useSyncExternalStore(subscribe, () => location.pathname + location.search);

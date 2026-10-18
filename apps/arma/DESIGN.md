@@ -257,6 +257,26 @@ La pantalla del administrador (`/reemplazar`), sin ficha lateral: el riel lleva 
 - **Al reemplazar,** la carta sale de la vitrina y el contador sube en uno.
 - **En el riel,** "Por reemplazar" (icono ImageUp) aparece solo para el administrador.
 
+### Ilustradores y Pokédex
+
+- **Galería de firmas** (`/ilustradores`): tarjetas de cartulina (`--stock`, 150px de alto, radio 4px) colgadas en la pared de la sala.
+  - El nombre va en **Fraunces itálica 500** (25px, `SOFT` 100), la única letra de firma de la app. Se usa solo para los nombres de ilustradores.
+  - Abajo, los años y "de N", en Archivo apagado. Arriba a la derecha, un anillo SVG de 44px en `--felt` con las cartas tuyas en Archivo Narrow.
+  - Un ilustrador sin cartas tuyas lleva una cartulina más tostada (`#d6caae`) y la firma apagada.
+  - **El momento memorable:** al pasar el mouse o enfocar, su carta de portada sale desde detrás de la esquina superior derecha, girada 8° (`translate(34%, -52%)`, 420ms `--ease-out`), como una lámina que se saca de una carpeta. La cartulina sube 2px. En pantallas sin hover, la portada va como miniatura de 50px a la izquierda del nombre.
+- **Galería de un ilustrador o de un Pokémon:**
+  - El encabezado lleva "‹ Ilustradores" (o la región). El nombre va en firma de 58px (en un Pokémon, el número en Archivo Narrow de 66px y el nombre con el japonés debajo), con "N de M cartas" y los años.
+  - A la derecha, el control Todas · Tengo · Me faltan: grafito, con la opción elegida en cartulina.
+  - Las repisas son la vitrina de fieltro. Las expansiones chicas van lado a lado, cada una con su tabla y su encabezado, que se ajusta a su ancho.
+  - Lo que falta va en `grayscale(1)` con opacidad 0,55, y al pasar el mouse asoma a medias (`grayscale(.35)`). Lo tuyo va a color y con el sello ×N.
+- **Pokédex:**
+  - pestañas de región en grafito, con su cifra y una barra de 3px en `--ok`; la elegida, en fieltro con barra `--light`;
+  - ventanitas cuadradas con la carta recortada a su ilustración (140% de ancho, subida un 12%) y el número en una etiqueta de cartulina;
+  - las tuyas, a color y con un filete cálido; las demás, en blanco y negro.
+- **Movimiento:**
+  - entrada escalonada solo la primera vez: las tarjetas cada 28ms, las ventanitas cada 18ms (con tope) y las repisas cada 60ms;
+  - con "reducir movimiento", nada entra, sube ni gira.
+
 ### Estante de cajas y carpetas
 
 La pantalla `/cajas` (icono Boxes en el riel) trae el estante de Ubicaciones de Nitsu a la vitrina:

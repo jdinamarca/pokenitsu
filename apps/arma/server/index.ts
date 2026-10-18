@@ -10,6 +10,7 @@ import { LOCAL_IMAGE_DIR, localPhotosOn } from './local.ts';
 import { isOwner, ownedCopies, requireOwner, requireViewer, viewerOf } from './session.ts';
 import { authRoutes, initAuth } from './auth.ts';
 import { inventoryRoutes } from './inventory.ts';
+import { galleryRoutes } from './gallery.ts';
 import { auditPrintings, FULL_RULES, type ArmaFinish, type ArmaRules, type AuditReason } from '@pokenitsu/core';
 import { createReadStream } from 'node:fs';
 import { mkdir, readdir, stat, unlink, writeFile } from 'node:fs/promises';
@@ -20,6 +21,7 @@ const app = Fastify({ logger: false });
 authRoutes(app);
 // Cargar and Mi inventario: the inventory shared with Nitsu (cargar-e-inventario-en-arma)
 inventoryRoutes(app);
+galleryRoutes(app);
 
 app.get('/api/health', async () => {
   await pool.query('SELECT 1');
