@@ -1,6 +1,7 @@
 // Builds the Full of one Pokémon from every source and stores it in arma.* (never anywhere else).
 // A source that fails keeps what it had brought before; the summary says which one failed and why.
 import {
+  battleAcademyClaims,
   buildEquivalences,
   catalogCode,
   mergeClaims,
@@ -16,6 +17,7 @@ import { bulbapediaLanguages } from './sources/bulbapedia-idiomas.ts';
 import { wikidexSpanish } from './sources/wikidex.ts';
 import { cardIdOf, catalogClaims, loadCatalog } from './sources/catalog.ts';
 import { stats } from './sources/http.ts';
+import { battleAcademyList } from './sources/battleAcademy.ts';
 import { bulbapediaLinks } from './sources/bulbapedia.ts';
 import { pokecottageClaims } from './sources/pokecottage.ts';
 import { speciesNames, tcgdexClaims } from './sources/tcgdex.ts';
@@ -33,6 +35,8 @@ export interface ImportSummary {
   added: number;
   updated: number;
   removed: number;
+  /** local photos moved to the printing that now holds their PokeCottage entry */
+  carried?: number;
   equivalences: number;
   unmatched: number;
   requests: { cached: number; fetched: number };
@@ -80,6 +84,14 @@ async function run(dex: number): Promise<ImportSummary> {
   await attempt(['pokemontcg', 'tcgplayer'], async () => ({ claims: await catalogClaims(dex) }));
   await attempt(['tcgdex'], () => tcgdexClaims(cat, dex));
   await attempt(['pokecottage'], () => pokecottageClaims(cat, dex, en));
+  // Battle Academy cards as the original card with the deck's stamp (mazos-y-campeonatos-de-la-familia): what the sources
+  // above say of them is converted, and the lists back every card of the species; without the lists nothing changes
+  await attempt(['bulbapedia-mazos'], async () => {
+    const list = await battleAcademyList(cat);
+    const r = battleAcademyClaims(claims, list.cards, en);
+    claims.splice(0, claims.length, ...r.claims);
+    return { claims: r.added, converted: r.converted, listed: list.listed, unmatched: list.unmatched };
+  });
   await attempt(['bulbapedia'], async () => {
     const r = await bulbapediaLinks(cat, en);
     links = r.links;
@@ -139,6 +151,12 @@ async function run(dex: number): Promise<ImportSummary> {
   const codeOf = (p: MergedPrinting) => catalogCode(prefix, p);
   const { rows: existing } = await pool.query<{ code: string }>('SELECT code FROM arma.printings WHERE dex = $1', [dex]);
   const had = new Set(existing.map(r => r.code));
+  // the PokeCottage entry behind each printing before this import, to carry a local photo to the printing that holds it now
+  const { rows: pcBefore } = await pool.query<{ code: string; ref: string }>(
+    `SELECT f.printing_code AS code, f.ref FROM arma.facts f JOIN arma.printings p ON p.code = f.printing_code
+     WHERE p.dex = $1 AND f.source_id = 'pokecottage' AND f.field = 'exists' AND f.ref IS NOT NULL`,
+    [dex],
+  );
   let added = 0,
     updated = 0;
   await tx(async c => {
@@ -184,6 +202,24 @@ async function run(dex: number): Promise<ImportSummary> {
         );
     }
   });
+  // a printing that changed form (mazos-y-campeonatos-de-la-familia: pc:ba20c #49 → Hidden Fates #49 with ba-charizard-26)
+  // keeps its photos from other sources (the local ones): they move to the printing with the same PokeCottage entry
+  const codes = new Set(merged.map(codeOf));
+  const nowByRef = new Map<string, string>();
+  for (const p of merged)
+    for (const f of p.facts) if (f.field === 'exists' && f.source === 'pokecottage' && f.ref) nowByRef.set(f.ref, codeOf(p));
+  let carried = 0;
+  for (const b of pcBefore) {
+    const to = nowByRef.get(b.ref);
+    if (codes.has(b.code) || !to) continue;
+    const { rowCount } = await pool.query(
+      `INSERT INTO arma.facts (printing_code, field, source_id, value, ref, fetched_at)
+       SELECT $2, field, source_id, value, ref, fetched_at FROM arma.facts WHERE printing_code = $1 AND field = 'image' AND NOT (source_id = ANY ($3))
+       ON CONFLICT (printing_code, field, source_id) DO NOTHING`,
+      [b.code, to, ok],
+    );
+    carried += rowCount ?? 0;
+  }
   // a printing no source says exists anymore (every source behind it answered and none brought it) is gone, with what
   // still hung from it (a local photo, by cascade): otherwise a misfiled printing would live on through its photo
   const { rowCount: removed } = await pool.query(
@@ -198,6 +234,7 @@ async function run(dex: number): Promise<ImportSummary> {
     added,
     updated,
     removed: removed ?? 0,
+    ...(carried ? { carried } : {}),
     equivalences: equivs.length,
     unmatched: merged.filter(p => p.setKey.includes(':')).length,
     requests: { cached: stats.cached - before.cached, fetched: stats.fetched - before.fetched },

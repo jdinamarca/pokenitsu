@@ -66,6 +66,8 @@ const STAMP_ALIAS: Record<string, string> = {
   'jreast-rally2000': 'jr-stamp-rally',
   'jr-east-rally2000': 'jr-stamp-rally',
   'pokemon-card-gym': 'pokemon-card-gym',
+  // PokeCottage names Eevee's copy of Jimmy Ballard's 2006 deck apart from his other cards (mazos-y-campeonatos-de-la-familia)
+  worldchampionshipsdeck2006eeveelutionsbyjimmyballard: 'world-championships-deck2006-jimmy-ballard',
 };
 export const stampKey = (s: unknown): string | null => {
   const k = slug(s);
@@ -76,7 +78,17 @@ export const variantLabel = (v: ArmaVariant): string => {
   const f = FINISH_LABEL[v.finish];
   if (!v.stamp) return f;
   if (v.stamp === '1st-edition' && v.finish === 'normal') return '1st Edition';
-  const s = STAMP_LABEL[v.stamp] || v.label || v.stamp;
+  const ba = BA_STAMP.exec(v.stamp);
+  const s =
+    STAMP_LABEL[v.stamp] ||
+    v.label ||
+    (ba
+      ? baLabel(
+          null,
+          ba[1]!.replace(/^./, x => x.toUpperCase()),
+          ba[2],
+        )
+      : v.stamp);
   return v.finish === 'normal' ? s : `${f} · ${s}`;
 };
 
@@ -142,6 +154,115 @@ export function variantFromInventory(v: string): ArmaVariant {
   const [f, s] = v.split('~');
   const finish = (ARMA_FINISHES as readonly string[]).includes(f!) ? (f as ArmaFinish) : 'normal';
   return { finish, stamp: stampKey(s ?? v) };
+}
+
+// ---------- Battle Academy (mazos-y-campeonatos-de-la-familia) ----------
+/** a card of a Battle Academy deck, as Bulbapedia lists it: the original card and, in a numbered deck, its number there */
+export interface BattleAcademyCard {
+  year: number;
+  /** "Charizard", "Eevee" (without " Deck") */
+  deck: string;
+  /** the number printed next to the deck's silhouette; null in a deck without numbers (Mewtwo 2020, Eevee 2022) */
+  deckNo: string | null;
+  name: string;
+  setKey: string;
+  setName?: string;
+  number: string;
+}
+/** the deck's stamp on its original card: ba-charizard-26, ba-mewtwo (as the current app's inventory: normal~ba-charizard-12) */
+export const baStamp = (deck: string, deckNo?: string | null) => `ba-${slug(deck)}${deckNo ? '-' + normNumber(deckNo) : ''}`;
+export const baLabel = (year: number | null, deck: string, deckNo?: string | null) =>
+  `Battle Academy${year ? ' ' + year : ''} · Mazo ${deck}${deckNo ? ' #' + normNumber(deckNo) : ''}`;
+const BA_STAMP = /^ba-([a-z-]+?)(?:-(\d+))?$/;
+/** the species' own cards: "Eevee", "Eevee V", "Eevee δ" (not "Eevee & Snorlax-GX"'s partner) */
+const ofSpecies = (name: string, species: string) => name === species || (name.startsWith(species + ' ') && !name.includes('&'));
+const HOLO_NAME = /\s(V|VMAX|VSTAR|ex|EX|GX)$/;
+
+/**
+ * Battle Academy cards in their physical form, the original card with the deck's stamp. PokeCottage's deck "sets"
+ * (pc:ba20c, its id's third part the deck number) and its promos stamped "Battle Academy Charizard Deck #27" become that
+ * card; what doesn't match Bulbapedia's lists stays as it came. Every card of the species in those lists is `added`.
+ */
+export function battleAcademyClaims(
+  claims: readonly Claim[],
+  list: readonly BattleAcademyCard[],
+  species: string,
+): { claims: Claim[]; added: Claim[]; converted: number } {
+  let converted = 0;
+  const as = (c: Claim, b: BattleAcademyCard): Claim => {
+    converted++;
+    // the deck's "set" name and card id were PokeCottage's: the original card's come from the catalog
+    const rest: Claim = { ...c };
+    delete rest.cardId;
+    delete rest.setName;
+    return {
+      ...rest,
+      setKey: b.setKey,
+      number: b.number,
+      // PokeCottage's variant names the deck ("eeveedeck"); its id ends in the finish: 133-ba22e-1-holo
+      finish: c.finish === 'normal' && c.ref?.endsWith('-holo') ? 'holo' : c.finish,
+      stamp: baStamp(b.deck, b.deckNo),
+      label: baLabel(b.year, b.deck, b.deckNo),
+      ...(b.setName ? { setName: b.setName } : {}),
+    };
+  };
+  const out = claims.map(c => {
+    const set = /^pc:ba(\d\d)([a-z])$/.exec(c.setKey);
+    if (set) {
+      const deck = list.filter(b => b.year === 2000 + Number(set[1]) && slug(b.deck)[0] === set[2] && ofSpecies(b.name, species));
+      if (deck.some(b => b.deckNo)) {
+        const no = c.ref?.split('-')[2];
+        const hit = deck.find(b => b.deckNo && normNumber(b.deckNo) === normNumber(no ?? ''));
+        return hit ? as(c, hit) : c;
+      }
+      // a deck without numbers: the species' only card in it
+      const cards = [...new Map(deck.map(b => [`${b.setKey}|${normNumber(b.number)}`, b])).values()];
+      return cards.length === 1 ? as(c, cards[0]!) : c;
+    }
+    const st = /^battle-academy-([a-z]+?)-?(\d+)?$/.exec(c.stamp || '');
+    if (st) {
+      const [, deck, no] = st;
+      const hit = list.find(
+        b =>
+          slug(b.deck) === deck &&
+          (b.deckNo ? normNumber(b.deckNo) : '') === (no ? normNumber(no) : '') &&
+          b.setKey === c.setKey &&
+          normNumber(b.number) === normNumber(c.number),
+      );
+      converted++;
+      return hit
+        ? { ...c, stamp: baStamp(hit.deck, hit.deckNo), label: baLabel(hit.year, hit.deck, hit.deckNo) }
+        : {
+            ...c,
+            stamp: baStamp(deck!, no),
+            label: baLabel(
+              null,
+              deck!.replace(/^./, x => x.toUpperCase()),
+              no,
+            ),
+          };
+    }
+    return c;
+  });
+  const added: Claim[] = list
+    .filter(b => ofSpecies(b.name, species))
+    .map(b => {
+      const stamp = baStamp(b.deck, b.deckNo);
+      const same = out.find(c => c.setKey === b.setKey && normNumber(c.number) === normNumber(b.number) && c.stamp === stamp);
+      return {
+        setKey: b.setKey,
+        number: b.number,
+        lang: 'EN',
+        finish: same?.finish ?? (HOLO_NAME.test(b.name) ? 'holo' : 'normal'),
+        stamp,
+        label: baLabel(b.year, b.deck, b.deckNo),
+        source: 'bulbapedia-mazos',
+        ref: `Battle Academy ${b.year} (TCG)`,
+        name: b.name,
+        ...(b.setName ? { setName: b.setName } : {}),
+      };
+    });
+  return { claims: out, added, converted };
 }
 
 // ---------- identity ----------
@@ -351,7 +472,8 @@ export interface RuleResult {
   /** the rule that leaves it out */
   by: RuleId | null;
 }
-const isWcd = (s: string | null) => !!s && s.includes('world-championship');
+// without hyphens: a source's name run together still counts (worldchampionshipsdeck2006…)
+const isWcd = (s: string | null) => !!s && s.replace(/-/g, '').includes('worldchampionship');
 const isJumbo = (s: string | null) => !!s && s.split('+').includes('jumbo');
 
 /** Which printings of the Full count for the collection. Nothing is ever removed from the Full: out means dimmed. */
