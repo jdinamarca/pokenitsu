@@ -39,11 +39,20 @@ export interface Printing {
   equiv_id: string | null;
   facts: Facts;
 }
+/** what an import brought (POST /api/import/:dex): the totals and how each source answered */
+export interface ImportSummary {
+  printings: number;
+  added?: number;
+  removed?: number;
+  /** local photos moved to the printing that now holds their PokeCottage entry */
+  carried?: number;
+  sources?: Record<string, { ok: boolean; error?: string }>;
+}
 export interface Full {
   dex: number;
   printings: Printing[];
   sources: Source[];
-  lastImport: { summary: { printings: number }; started_at: string } | null;
+  lastImport: { summary: ImportSummary; started_at: string } | null;
   /** ARMA_FOTOS_LOCALES=1: photos for local use only come in the Full */
   localPhotos: boolean;
   /** the classification check: the doubtful printings and why (corregir-clasificacion-de-cartas) */
@@ -357,7 +366,7 @@ export const api = {
   views: () => call<{ views: SavedView[] }>('GET', '/views'),
   saveView: (name: string, rules: ArmaRules) => call<SavedView>('POST', '/views', { name, rules }),
   deleteView: (id: number) => call<{ removed: number }>('DELETE', `/views/${id}`),
-  importDex: (dex: number) => call<{ printings: number }>('POST', `/import/${dex}`),
+  importDex: (dex: number) => call<ImportSummary>('POST', `/import/${dex}`),
   masterSets: () => call<MasterSets>('GET', '/master-sets'),
   // what a photo shows (fotos-por-variante): a stamp key, '' for the printing with no stamp; unmark → automatic
   markPhoto: (src: string, shows: string) => call<{ src: string; shows: string }>('POST', '/photo-marks', { src, shows }),

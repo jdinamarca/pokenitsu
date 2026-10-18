@@ -332,6 +332,9 @@ Una opción nueva, separada de la app actual ([ADR 0020](docs/adr/0020-arma-tu-c
   - Arriba va el **abanico de la familia**: 9 retratos con Eevee al centro. Cada uno lleva el arte de tu carta más reciente de ese Pokémon (o una suya en blanco y negro), su nombre y "tienes / total" con las reglas de la vista activa, igual que el contador.
   - Al cambiar de Pokémon se mantienen las reglas, la vista guardada, el orden, "Ver" y "Por verificar"; Atrás vuelve al anterior.
   - Un Pokémon sin Full muestra "Traer el Full de <Pokémon>", que lo importa con las mismas fuentes y criterios que Eevee.
+  - **Volver a traer:** en el riel, bajo el nombre del Pokémon, aparece cuándo se trajo su Full por última vez ("Traído el 18 oct, 10:42") y el botón "Volver a traer". El botón vuelve a importar el Full con las mismas fuentes, sin tocar el inventario.
+    - Mientras corre, la vitrina queda a la vista con lo de antes.
+    - Al terminar muestra un resumen: impresiones, nuevas, quitadas, fotos locales traspasadas y las fuentes que no respondieron. El resumen se cierra solo a los 10 s, salvo un error.
   - La familia se define en `FAMILIES` (`packages/core/src/family.ts`), y `GET /api/master-sets` trae lo que necesita el abanico.
   - El informe de la primera importación de las evoluciones está en el cambio OpenSpec archivado `master-set-familia-eevee` (`informe-auditoria.md`).
 - **Ilustradores** (`/ilustradores`): una galería de firmas. Cada ilustrador tiene una tarjeta de cartulina con:

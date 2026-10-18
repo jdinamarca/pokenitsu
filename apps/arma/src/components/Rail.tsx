@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import { Bookmark, Plus, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Bookmark, Plus, RefreshCw, X } from 'lucide-react';
 import type { ArmaRules, RuleId } from '@pokenitsu/core';
 import type { SavedView } from '../api.ts';
-import { RULES } from '../model.ts';
+import { importedAt, RULES } from '../model.ts';
 
 interface Props {
   species: string;
@@ -16,10 +16,20 @@ interface Props {
   onView: (v: SavedView) => void;
   onSave: (name: string) => Promise<void>;
   onDelete: (id: number) => void;
+  /** bringing the Full again (volver-a-traer-el-full): only for a member whose Full is here */
+  refresh?: Refresh;
+}
+interface Refresh {
+  /** when it was last brought */
+  at: string | null;
+  importing: boolean;
+  note: { lines: string[]; error?: boolean } | null;
+  onImport: () => void;
+  onDismiss: () => void;
 }
 
 /** the Eevee screen's zone of the rail: the species, the rules and the saved views */
-export function Rail({ species, dex, total, rules, active, onToggle, views, viewId, onView, onSave, onDelete }: Props) {
+export function Rail({ species, dex, total, rules, active, onToggle, views, viewId, onView, onSave, onDelete, refresh }: Props) {
   const [naming, setNaming] = useState(false);
   const [name, setName] = useState('');
   const [error, setError] = useState('');
@@ -41,6 +51,7 @@ export function Rail({ species, dex, total, rules, active, onToggle, views, view
         <span>
           #{dex} · {total.toLocaleString('es-CL')} impresiones en el Full
         </span>
+        {refresh && <BringAgain species={species} {...refresh} />}
       </div>
       <section aria-labelledby="rules-h">
         <h2 id="rules-h" className="rail-h">
@@ -117,5 +128,39 @@ export function Rail({ species, dex, total, rules, active, onToggle, views, view
         )}
       </section>
     </>
+  );
+}
+
+/** when the Full was brought, the button to bring it again and, afterwards, what changed (gone after 10 s unless an error) */
+function BringAgain({ species, at, importing, note, onImport, onDismiss }: Refresh & { species: string }) {
+  useEffect(() => {
+    if (!note || note.error) return;
+    const t = setTimeout(onDismiss, 10000);
+    return () => clearTimeout(t);
+  }, [note, onDismiss]);
+  return (
+    <div className="again">
+      {at && <span className="again-at">Traído el {importedAt(at)}</span>}
+      <button
+        type="button"
+        className="again-btn"
+        disabled={importing}
+        onClick={onImport}
+        aria-label={importing ? undefined : `Volver a traer el Full de ${species}`}
+      >
+        <RefreshCw size={13} strokeWidth={2.25} className={importing ? 'spin' : ''} aria-hidden="true" />
+        {importing ? 'Trayendo…' : 'Volver a traer'}
+      </button>
+      {note && (
+        <div className={'again-note' + (note.error ? ' bad' : '')} role={note.error ? 'alert' : 'status'}>
+          {note.lines.map(l => (
+            <p key={l}>{l}</p>
+          ))}
+          <button type="button" className="again-x" aria-label="Cerrar el resumen" onClick={onDismiss}>
+            <X size={12} strokeWidth={2.5} />
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { applyRules, MEMBER_NAMES, memberFromPath, type ArmaRules, type RuleId } from '@pokenitsu/core';
 import { CircleHelp, RefreshCw } from 'lucide-react';
 import { toLogin } from './auth.ts';
@@ -16,6 +16,7 @@ import {
   cardOf,
   type Order,
   type Seeing,
+  importLines,
 } from './model.ts';
 import { Rail } from './components/Rail.tsx';
 import { Shell } from './components/Shell.tsx';
@@ -64,6 +65,13 @@ export function App() {
   const [active, setActive] = useState<RuleId | null>('onlyEnglish');
   const [selected, setSelected] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
+  // the note of the last import, for the member it was about
+  const [imported, setImported] = useState<{ dex: number; lines: string[]; error?: boolean } | null>(null);
+  const dismissImport = useCallback(() => setImported(null), []);
+  const dexNow = useRef(dex);
+  useEffect(() => {
+    dexNow.current = dex;
+  }, [dex]);
   // what variant each photo shows, marked by hand (fotos-por-variante); changed from the sheet without reloading
   const [marks, setMarks] = useState<Record<string, string>>({});
   // the case's order, remembered in this browser (a convenience: without storage it is "by design")
@@ -206,13 +214,24 @@ export function App() {
     setViews(vs => vs.filter(v => v.id !== id));
     if (viewId === id) setViewId(null);
   };
+  // bringing a Full (again, volver-a-traer-el-full): the case stays while it runs; afterwards what changed, in the rail.
+  // Another member opened meanwhile is left alone: only the family's progress is brought again.
   const runImport = async () => {
+    const which = dex!;
+    const had = printings.length > 0;
     setImporting(true);
+    setImported(null);
     try {
-      await api.importDex(dex!);
-      await Promise.all([refresh(), loadFamily()]);
+      const r = await api.importDex(which);
+      await loadFamily();
+      if (dexNow.current !== which) return;
+      await refresh();
+      setImported({ dex: which, lines: importLines(species, r, sources) });
     } catch (e) {
-      setLoad({ state: 'error', message: e instanceof Error ? e.message : String(e) });
+      const message = e instanceof Error ? e.message : String(e);
+      if (dexNow.current !== which) return;
+      if (had) setImported({ dex: which, lines: [`No pude traer el Full de ${species}: ${message}`], error: true });
+      else setLoad({ state: 'error', message });
     } finally {
       setImporting(false);
     }
@@ -247,6 +266,17 @@ export function App() {
       onView={pickView}
       onSave={saveView}
       onDelete={id => void deleteView(id)}
+      {...(total && loadedDex === dex
+        ? {
+            refresh: {
+              at: full?.lastImport?.started_at ?? null,
+              importing,
+              note: imported?.dex === dex ? imported : null,
+              onImport: () => void runImport(),
+              onDismiss: dismissImport,
+            },
+          }
+        : {})}
     />
   );
   // no member at this address, its Full still arriving, or not brought yet: the fan stays, the case says what's up

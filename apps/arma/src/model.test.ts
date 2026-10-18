@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Printing, Source } from './api.ts';
-import { cardOf, expansionOf, keepFor, LANG_NAME, ownership, regionOf, shelvesBySet, withPhotoShows } from './model.ts';
+import { cardOf, expansionOf, importLines, keepFor, LANG_NAME, ownership, regionOf, shelvesBySet, withPhotoShows } from './model.ts';
 import { applyRules, FULL_RULES } from '@pokenitsu/core';
 import type { Copy } from './api.ts';
 
@@ -143,5 +143,26 @@ describe('eevee-lo-que-tienes: lo que tengo y lo que me falta', () => {
       true,
       false,
       true,
+    ]));
+});
+
+describe('volver-a-traer-el-full: el resumen', () => {
+  const srcs = new Map([['bulbapedia-mazos', { id: 'bulbapedia-mazos', name: 'Bulbapedia (mazos)' } as Source]]);
+  it('nuevas, quitadas y fotos traspasadas', () =>
+    expect(importLines('Eevee', { printings: 1114, added: 5, removed: 4, carried: 4, sources: { tcgdex: { ok: true } } }, srcs)).toEqual([
+      'Full de Eevee actualizado: 1.114 impresiones · +5 nuevas · −4 quitadas',
+      '4 fotos locales traspasadas',
+    ]));
+  it('una fuente que no respondió, en singular y sin cambios', () =>
+    expect(
+      importLines(
+        'Espeon',
+        { printings: 1, added: 1, removed: 0, sources: { 'bulbapedia-mazos': { ok: false, error: 'x' }, wikidex: { ok: false } } },
+        srcs,
+      ),
+    ).toEqual([
+      'Full de Espeon actualizado: 1 impresión · +1 nueva · −0 quitadas',
+      'Bulbapedia (mazos) no respondió: quedó lo de la última vez',
+      'wikidex no respondió: quedó lo de la última vez',
     ]));
 });
