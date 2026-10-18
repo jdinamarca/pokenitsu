@@ -333,9 +333,9 @@ Una opción nueva, separada de la app actual ([ADR 0020](docs/adr/0020-arma-tu-c
   - sus años;
   - un anillo con cuántas de sus cartas tienes, de cuántas existen.
 
-  Al pasar el mouse, su mejor carta asoma detrás (la imagen se pide solo en ese momento); en el teléfono va como miniatura. Hay buscador y orden (más avance, más cartas mías, más cartas en total o nombre).
+  Al pasar el mouse, la ilustración de su mejor carta queda de fondo en la tarjeta (la imagen se pide solo en ese momento); en el teléfono va como miniatura. Hay buscador y orden (más avance, más cartas mías, más cartas en total o nombre).
 
-  Al entrar a uno (`/ilustradores/<nombre>`), sus cartas aparecen en la vitrina, con una repisa por expansión de la más nueva a la más antigua, cada una con su "tengo / total". Las que tienes van en color y con ×copias; las que faltan, en blanco y negro, y al pasarles el mouse asoma su color a medias. Se filtra con Todas · Tengo · Me faltan.
+  Al entrar a uno (`/ilustradores/<nombre>`), sus cartas aparecen en la vitrina, con una repisa por expansión de la más nueva a la más antigua. Cada repisa tiene un encabezado de dos líneas (el nombre, y debajo el código, el año y "tengo / total"), para que las repisas vecinas queden alineadas. Las que tienes van en color y con ×copias; las que faltan, en blanco y negro, y al pasarles el mouse asoma su color a medias. Se filtra con Todas · Tengo · Me faltan.
 - **Pokédex** (`/pokedex`): las 1.025 especies en pestañas por región (Kanto, Johto, Hoenn, Sinnoh, Teselia, Kalos, Alola, Galar y Paldea), cada una con su avance. Cada Pokémon es una ventanita con:
   - su número y su nombre, con el japonés debajo;
   - "tengo / total";
