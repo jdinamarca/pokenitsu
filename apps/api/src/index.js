@@ -15,7 +15,7 @@ import { fillDetails, startDetailsJob, detailsJob, startVariantsJob, variantsJob
 import { ensureCardPrice, ensureSetPrices, refreshPrices, staleCount, getSetting, putSetting, getFx } from './prices.js';
 import { inv } from './inventory.js';
 import { pickPrice } from '@pokenitsu/core';
-import { writeRow, lockRow, ownClp, bad, checkVariant, checkCond, checkLang, checkLoc, PRICE_CFG as INV_PRICE_CFG } from '@pokenitsu/inventory';
+import { checkLocation, createLocations, writeRow, lockRow, ownClp, bad, checkVariant, checkCond, checkLang, PRICE_CFG as INV_PRICE_CFG } from '@pokenitsu/inventory';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const LANGS = ['ES', 'EN', 'PT', 'FR', 'DE', 'IT', 'JA', 'KO', 'ZH'];
@@ -44,7 +44,8 @@ const CONDS = ['NM', 'LP', 'MP', 'HP', 'DMG'];
 
 
 // the inventory and catalog operations shared with Arma tu colección (@pokenitsu/inventory)
-const { resolveCard, ensureSetCards, rowOf, moveRow } = inv;
+const { resolveCard, ensureSetCards, moveRow } = inv;
+const locs = createLocations(inv);
 
 async function groupsWithCards(c = pool) {
   const { rows: groups } = await c.query('SELECT id, name, cols, image_url, kind, note FROM art_groups ORDER BY created_at DESC, id DESC');
@@ -410,20 +411,7 @@ app.post('/api/inventory/undo', async () => tx(c => inv.undo(c)));
 // n copies (default all) of a row to another language, condition and/or location: body = row + {to: {lang?, cond?, loc?}, n?}
 app.post('/api/inventory/move', async req => tx(c => inv.move(c, req.body || {})));
 // several whole rows to new locations at once (auto-assign): moves [{sid, num, variant, lang, cond, loc, to}]
-app.post('/api/inventory/move-locs', { bodyLimit: 20 * 1024 * 1024 }, async req => {
-  const moves = Array.isArray(req.body?.moves) ? req.body.moves : [];
-  return tx(async c => {
-    const { rows: locs } = await c.query('SELECT id FROM locations');
-    const ok = new Set([0, ...locs.map(l => l.id)]);
-    let moved = 0;
-    for (const m of moves) {
-      const from = await rowOf(c, m), to = { ...from, loc: checkLoc(m.to) };
-      if (!ok.has(to.loc)) continue;
-      moved += await moveRow(c, from, to);
-    }
-    return { moved };
-  });
-});
+app.post('/api/inventory/move-locs', { bodyLimit: 20 * 1024 * 1024 }, async req => tx(c => locs.moveMany(c, req.body?.moves)));
 app.post('/api/inventory/assign-lang', async req => {
   const to = checkLang(req.body?.lang, false);
   await tx(async c => {
@@ -441,52 +429,13 @@ app.post('/api/inventory/reset', async req => {
   return { ok: true };
 });
 
-// ---------- storage locations (boxes, binders) ----------
-const KINDS = ['box', 'binder', 'other'];
-function checkLocation(b) {
-  const name = String(b?.name ?? '').trim().replace(/\|/g, '/').slice(0, 80);
-  if (!name) throw bad('Ponle un nombre a la ubicación');
-  const r = b.rule || {};
-  const list = x => (Array.isArray(x) ? x : []).map(String).filter(Boolean).slice(0, 500);
-  const rule = {};
-  if (list(r.series).length) rule.series = list(r.series);
-  if (list(r.sets).length) rule.sets = list(r.sets);
-  if (list(r.special).length) rule.special = list(r.special);
-  if (list(r.origin).length) rule.origin = list(r.origin);   // INT (international), JA, ZH…: the set's region
-  if (parseInt(r.minPrice, 10) > 0) rule.minPrice = parseInt(r.minPrice, 10);
-  if (r.personal === true || r.personal === false) rule.personal = r.personal;
-  if (r.auto === false) rule.auto = false;   // never assigned automatically, only by hand
-  if (r.bulk === true) rule.bulk = true;      // only bulk: common/uncommon/rare/rare holo without ex/GX/V…, normal/holo/reverse
-  return { name, kind: KINDS.includes(b.kind) ? b.kind : 'box', note: String(b.note ?? '').slice(0, 2000), rule };
-}
-const uniqueName = e => { if (e.code === '23505') throw bad('Ya existe una ubicación con ese nombre'); throw e; };
-app.post('/api/locations', async req => {
-  const l = checkLocation(req.body);
-  const { rows: [r] } = await pool.query(
-    `INSERT INTO locations (name, kind, note, rule, pos) VALUES ($1, $2, $3, $4, (SELECT coalesce(max(pos), 0) + 1 FROM locations)) RETURNING id`,
-    [l.name, l.kind, l.note, JSON.stringify(l.rule)]).catch(uniqueName);
-  return { id: r.id };
-});
-app.put('/api/locations/:id', async req => {
-  const l = checkLocation(req.body);
-  await pool.query('UPDATE locations SET name = $2, kind = $3, note = $4, rule = $5 WHERE id = $1', [req.params.id, l.name, l.kind, l.note, JSON.stringify(l.rule)]).catch(uniqueName);
-  return { ok: true };
-});
+// ---------- storage locations (boxes, binders): @pokenitsu/inventory, shared with Arma's Cajas y carpetas ----------
+app.post('/api/locations', async req => locs.create(pool, req.body));
+app.put('/api/locations/:id', async req => locs.update(pool, req.params.id, req.body));
 // order = which rule is checked first: ids in the new order
-app.put('/api/locations-order', async req => {
-  const ids = (req.body?.ids || []).map(Number);
-  await tx(async c => { for (let i = 0; i < ids.length; i++) await c.query('UPDATE locations SET pos = $2 WHERE id = $1', [ids[i], i + 1]); });
-  return { ok: true };
-});
+app.put('/api/locations-order', async req => tx(c => locs.reorder(c, req.body?.ids)));
 // deleting a location leaves its cards without location
-app.delete('/api/locations/:id', async req => tx(async c => {
-  const id = parseInt(req.params.id, 10);
-  const { rows } = await c.query('SELECT card_id, variant, lang, cond FROM inventory WHERE loc = $1', [id]);
-  for (const r of rows) { const from = { cardId: r.card_id, variant: r.variant, lang: r.lang, cond: r.cond, loc: id }; await moveRow(c, from, { ...from, loc: 0 }); }
-  await c.query('UPDATE inventory_log SET loc = 0 WHERE loc = $1', [id]);
-  await c.query('DELETE FROM locations WHERE id = $1', [id]);
-  return { ok: true, moved: rows.length };
-}));
+app.delete('/api/locations/:id', async req => tx(c => locs.remove(c, req.params.id)));
 
 // ---------- connected-art groups ----------
 // kind: panorama (one picture) | cameo (they appear in each other's card) | escena (same scene, or a continuation)
