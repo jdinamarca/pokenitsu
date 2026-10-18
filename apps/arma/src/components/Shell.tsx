@@ -5,7 +5,7 @@ import { signOut } from '../auth.ts';
 import { navigate } from '../router.ts';
 
 const LINKS = [
-  { path: '/', label: 'Arma · Eevee', Icon: Layers },
+  { path: '/', label: 'Arma tu Master Set', Icon: Layers },
   { path: '/cargar', label: 'Cargar', Icon: Plus },
   { path: '/inventario', label: 'Mi inventario', Icon: Archive },
   { path: '/cajas', label: 'Cajas y carpetas', Icon: Boxes },

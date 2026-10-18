@@ -60,7 +60,8 @@ export const stats: FetchStats = { cached: 0, fetched: 0 };
 
 /** JSON from a source, from the cache when it is less than a day old; 404 → null */
 /** transform: applied before caching, so what must not be kept (a source's picture URLs) never is;
- *  cacheKey: to keep two views of one URL apart (PokeCottage's text and, for local photos, its picture URLs) */
+ *  cacheKey: to keep two views of one URL apart (PokeCottage's text and, for local photos, its picture URLs);
+ *  valid: what a usable answer looks like; a cached one that isn't (another view stored under this URL) is asked again */
 export async function fetchJson<T = unknown>(
   url: string,
   {
@@ -68,15 +69,17 @@ export async function fetchJson<T = unknown>(
     tries = 3,
     transform,
     cacheKey = url,
-  }: { ttl?: number; tries?: number; transform?: (body: unknown) => unknown; cacheKey?: string } = {},
+    valid,
+  }: { ttl?: number; tries?: number; transform?: (body: unknown) => unknown; cacheKey?: string; valid?: (body: T) => boolean } = {},
 ): Promise<T | null> {
   const { rows } = await pool.query<{ body: T; fresh: boolean }>(
     `SELECT body, fetched_at > now() - ($2 || ' milliseconds')::interval AS fresh FROM arma.source_cache WHERE url = $1`,
     [cacheKey, String(ttl)],
   );
-  if (rows[0]?.fresh) {
+  const usable = rows[0] && (!valid || valid(rows[0].body)) ? rows[0] : undefined;
+  if (usable?.fresh) {
     stats.cached++;
-    return rows[0].body;
+    return usable.body;
   }
   const host = new URL(url).host;
   let last: unknown;
@@ -105,7 +108,7 @@ export async function fetchJson<T = unknown>(
     }
   }
   // the source is down: an old cached answer is better than nothing
-  if (rows[0]) return rows[0].body;
+  if (usable) return usable.body;
   throw last instanceof Error ? last : new Error(String(last));
 }
 

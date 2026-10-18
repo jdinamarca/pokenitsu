@@ -12,3 +12,4 @@ export * from './arma.js';
 export * from './load.js';
 export * from './dex.js';
 export * from './gallery.js';
+export * from './family.js';

@@ -7,8 +7,11 @@ import { DetailsPanel } from './components/DetailsPanel.tsx';
 import { isOwnerAccount, Shell } from './components/Shell.tsx';
 import { LANG_NAME, pictureOf, tagOf, withPhotoShows } from './model.ts';
 
-// the Full shown in the case (the only one imported so far)
-const DEX = 133;
+// the Fulls of every member of the family that has one (master-set-familia-eevee)
+async function fulls(): Promise<Full[]> {
+  const fam = await api.masterSets();
+  return Promise.all(fam.members.filter(m => m.printings.length).map(m => api.full(m.dex)));
+}
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 /** one photo in use that can't go to production: a catalog card's or a printing of the Full */
@@ -26,7 +29,7 @@ type Load =
   | { state: 'loading' }
   | { state: 'notOwner' }
   | { state: 'error'; message: string }
-  | { state: 'ready'; cards: ReplaceCards; full: Full | null };
+  | { state: 'ready'; cards: ReplaceCards; fulls: Full[] };
 
 /** "Por reemplazar" (fotos-solo-local-en-catalogo): the administrator's gallery of the photos to replace with their own */
 export function Reemplazar() {
@@ -49,8 +52,8 @@ export function Reemplazar() {
           return setLoad({ state: 'notOwner' });
         }
         try {
-          const [cards, full, j] = await Promise.all([api.replaceCards(), api.full(DEX).catch(() => null), api.catalogJob()]);
-          setLoad({ state: 'ready', cards, full });
+          const [cards, fs, j] = await Promise.all([api.replaceCards(), fulls().catch(() => [] as Full[]), api.catalogJob()]);
+          setLoad({ state: 'ready', cards, fulls: fs });
           setJob(j.job);
           setDone(new Set());
         } catch (e) {
@@ -106,18 +109,25 @@ export function Reemplazar() {
       src: c.src,
       upload: f => api.uploadCardPhoto(c.card_id, f),
     }));
-    // the Full's printings: the same choice of picture as the case (pictureOf, with the photos' marks)
-    const full = data.full;
-    const sources = new Map<string, Source>((full?.sources || []).map(s => [s.id, s]));
-    const localIds = new Set((full?.sources || []).filter(s => s.permission === 'local').map(s => s.id));
-    const printings = withPhotoShows(full?.printings || [], full?.photoMarks || {});
-    const withLocal = printings.filter(p => (p.facts.image || []).some(f => localIds.has(f.source)));
-    const shown = withLocal.map(p => ({ p, pic: pictureOf(p, sources) }));
-    const pending = shown.filter(x => x.pic?.local);
+    // each Full's printings: the same choice of picture as its case (pictureOf, with the photos' marks)
+    const withLocal: ReturnType<typeof withPhotoShows> = [];
+    const pending: { p: (typeof withLocal)[number]; pic: ReturnType<typeof pictureOf> }[] = [];
+    for (const full of data.fulls) {
+      const sources = new Map<string, Source>(full.sources.map(s => [s.id, s]));
+      const localIds = new Set(full.sources.filter(s => s.permission === 'local').map(s => s.id));
+      const mine = withPhotoShows(full.printings, full.photoMarks || {}).filter(p =>
+        (p.facts.image || []).some(f => localIds.has(f.source)),
+      );
+      withLocal.push(...mine);
+      for (const p of mine) {
+        const pic = pictureOf(p, sources);
+        if (pic?.local) pending.push({ p, pic });
+      }
+    }
     const printItems: Item[] = pending.map(({ p, pic }) => ({
       key: 'print:' + p.code,
       kind: 'print',
-      name: p.name || 'Eevee',
+      name: p.name || '',
       line: `${p.set_name || p.set_key} · #${p.number} · ${LANG_NAME[p.lang] || p.lang} · ${tagOf(p)}`,
       source: pic!.source,
       src: pic!.src,

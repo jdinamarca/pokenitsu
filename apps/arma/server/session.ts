@@ -44,43 +44,41 @@ export interface OwnedCopy {
  * A copy fills a printing when card, language and variant match.
  */
 export async function ownedCopies(userId: string, dex: number): Promise<OwnedCopy[]> {
+  type InvRow = { card_id: string; variant: string; lang: string; cond: string; loc: string | null; qty: number; personal: number };
+  // the account's copies inside its own transaction, and the connection given back before asking for anything else:
+  // holding it while waiting for another one could leave the pool (max 6) waiting for itself
   const c = await pool.connect();
+  let inv: InvRow[];
   try {
     await c.query('BEGIN READ ONLY');
     await c.query("SELECT set_config('app.user_id', $1, true)", [userId]);
-    const { rows: inv } = await c.query<{
-      card_id: string;
-      variant: string;
-      lang: string;
-      cond: string;
-      loc: string | null;
-      qty: number;
-      personal: number;
-    }>(
-      `SELECT i.card_id, i.variant, i.lang, i.cond, l.name AS loc, i.qty, i.personal
-       FROM public.inventory i JOIN public.cards k ON k.id = i.card_id LEFT JOIN public.locations l ON l.id::text = i.loc::text
-       WHERE $1 = ANY (k.dex)`,
-      [dex],
-    );
+    inv = (
+      await c.query<InvRow>(
+        `SELECT i.card_id, i.variant, i.lang, i.cond, l.name AS loc, i.qty, i.personal
+         FROM public.inventory i JOIN public.cards k ON k.id = i.card_id LEFT JOIN public.locations l ON l.id::text = i.loc::text
+         WHERE $1 = ANY (k.dex)`,
+        [dex],
+      )
+    ).rows;
     await c.query('COMMIT');
-    const { rows: prints } = await pool.query<{ code: string; card_id: string; lang: string; finish: string; stamp: string | null }>(
-      'SELECT code, card_id, lang, finish, stamp FROM arma.printings WHERE dex = $1 AND card_id IS NOT NULL',
-      [dex],
-    );
-    const index = new Map(prints.map(p => [`${p.card_id}|${p.lang}|${p.finish}|${p.stamp || ''}`, p.code]));
-    const out: OwnedCopy[] = [];
-    for (const r of inv) {
-      const v = variantFromInventory(r.variant);
-      // an international card without a language counts as English, a Japanese set's card as Japanese
-      const lang = r.lang || (r.card_id.startsWith('ja-') ? 'JA' : 'EN');
-      const code = index.get(`${r.card_id}|${lang}|${v.finish}|${v.stamp || ''}`);
-      if (code) out.push({ code, qty: r.qty, personal: r.personal, lang, cond: r.cond, loc: r.loc });
-    }
-    return out;
   } catch (e) {
     await c.query('ROLLBACK').catch(() => {});
     throw e;
   } finally {
     c.release();
   }
+  const { rows: prints } = await pool.query<{ code: string; card_id: string; lang: string; finish: string; stamp: string | null }>(
+    'SELECT code, card_id, lang, finish, stamp FROM arma.printings WHERE dex = $1 AND card_id IS NOT NULL',
+    [dex],
+  );
+  const index = new Map(prints.map(p => [`${p.card_id}|${p.lang}|${p.finish}|${p.stamp || ''}`, p.code]));
+  const out: OwnedCopy[] = [];
+  for (const r of inv) {
+    const v = variantFromInventory(r.variant);
+    // an international card without a language counts as English, a Japanese set's card as Japanese
+    const lang = r.lang || (r.card_id.startsWith('ja-') ? 'JA' : 'EN');
+    const code = index.get(`${r.card_id}|${lang}|${v.finish}|${v.stamp || ''}`);
+    if (code) out.push({ code, qty: r.qty, personal: r.personal, lang, cond: r.cond, loc: r.loc });
+  }
+  return out;
 }

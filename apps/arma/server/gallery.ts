@@ -69,6 +69,41 @@ async function galleryCards(c: pg.PoolClient, where: string, scope: Scope, arg: 
   return rows.map(r => ({ ...r, ...(pics.get(r.id) || { img: null, own_card: null, local: null, ref: null }) }));
 }
 
+interface SpeciesRow {
+  dex: number;
+  total: number;
+  mine: number;
+  mine_id: string | null;
+  rep_id: string | null;
+}
+/**
+ * Each species' cards, the ones the account has, the newest of them with something to show (mine_id) and a
+ * representative one: a common with a simple name from a regular expansion, as Nitsu's /api/dex (rep_id)
+ */
+async function speciesRows(c: pg.PoolClient, scope: Scope, dexes: number[] | null): Promise<SpeciesRow[]> {
+  const { rows } = await c.query<SpeciesRow>(
+    `WITH ${MINE},
+     pc AS (SELECT c.id, d, m.q, s.release_date, ${HAS_PIC} AS pic, ${ODD_SET} AS odd, s.source,
+                   (position(' ' in c.name) = 0 OR c.name LIKE 'Nidoran%' OR c.name LIKE 'Mr. %') AS simple,
+                   cardinality(c.dex) = 1 AS lone, coalesce(c.rarity, '') IN ('Common', 'Commune', 'C') AS common
+            FROM cards c JOIN sets s ON s.id = c.set_id LEFT JOIN mine m ON m.card_id = c.id, unnest(c.dex) d
+            WHERE s.source = ANY ($1) AND d BETWEEN 1 AND 1025 AND ($2::int[] IS NULL OR d = ANY ($2)))
+     SELECT d AS dex, count(*)::int AS total, count(q)::int AS mine,
+            (array_agg(id ORDER BY release_date DESC NULLS LAST, id) FILTER (WHERE q IS NOT NULL AND pic))[1] AS mine_id,
+            (array_agg(id ORDER BY pic DESC, source = 'ptcg' DESC, lone DESC, odd, simple DESC, common DESC,
+                               release_date DESC NULLS LAST, id))[1] AS rep_id
+     FROM pc GROUP BY d ORDER BY d`,
+    [SOURCES[scope], dexes],
+  );
+  return rows;
+}
+/** a portrait per species (Arma tu Master Set's fan): the newest card of it the account has, else a representative one */
+export async function speciesPortraits(c: pg.PoolClient, dexes: number[]): Promise<Map<number, Picture | null>> {
+  const rows = await speciesRows(c, 'all', dexes);
+  const pics = await pictures(rows.map(r => r.mine_id || r.rep_id).filter((x): x is string => !!x));
+  return new Map(rows.map(r => [r.dex, pics.get(r.mine_id || r.rep_id || '') || null]));
+}
+
 export function galleryRoutes(app: FastifyInstance) {
   // every illustrator: their cards, the ones the account has, their years and a cover (the newest of theirs it has,
   // else the newest from a regular expansion with something to show)
@@ -108,27 +143,7 @@ export function galleryRoutes(app: FastifyInstance) {
   app.get<{ Querystring: { scope?: string } }>('/api/pokedex', async req => {
     const scope = scopeOf(req.query.scope);
     const [rows, names] = await Promise.all([
-      asViewer(
-        await requireViewer(req),
-        async c =>
-          (
-            await c.query<{ dex: number; total: number; mine: number; mine_id: string | null; rep_id: string | null }>(
-              `WITH ${MINE},
-               pc AS (SELECT c.id, d, m.q, s.release_date, ${HAS_PIC} AS pic, ${ODD_SET} AS odd, s.source,
-                             (position(' ' in c.name) = 0 OR c.name LIKE 'Nidoran%' OR c.name LIKE 'Mr. %') AS simple,
-                             cardinality(c.dex) = 1 AS lone, coalesce(c.rarity, '') IN ('Common', 'Commune', 'C') AS common
-                      FROM cards c JOIN sets s ON s.id = c.set_id LEFT JOIN mine m ON m.card_id = c.id, unnest(c.dex) d
-                      WHERE s.source = ANY ($1) AND d BETWEEN 1 AND 1025)
-               SELECT d AS dex, count(*)::int AS total, count(q)::int AS mine,
-                      (array_agg(id ORDER BY release_date DESC NULLS LAST, id) FILTER (WHERE q IS NOT NULL AND pic))[1] AS mine_id,
-                      (array_agg(id ORDER BY pic DESC, source = 'ptcg' DESC, lone DESC, odd, simple DESC, common DESC,
-                                         release_date DESC NULLS LAST, id))[1] AS rep_id
-               FROM pc GROUP BY d ORDER BY d`,
-              [SOURCES[scope]],
-            )
-          ).rows,
-        true,
-      ),
+      asViewer(await requireViewer(req), c => speciesRows(c, scope, null), true),
       speciesNames().catch(() => null),
     ]);
     const pics = await pictures(rows.map(r => r.mine_id || r.rep_id).filter((x): x is string => !!x));
