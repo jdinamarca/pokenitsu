@@ -17,6 +17,8 @@ const LIMIT: Record<string, number> = {
   'pokecottagecdn.com': 1,
   'billsarchive.com': 1,
   'bills-archive.nyc3.cdn.digitaloceanspaces.com': 1,
+  // Bulbapedia's card lists, one page at a time (detalles-de-japonesas-en-arma)
+  'bulbapedia.bulbagarden.net': 1,
 };
 
 /** a source answered 429 or 503: wait retryAfterMs before asking it again */

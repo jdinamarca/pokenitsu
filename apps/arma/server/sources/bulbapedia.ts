@@ -7,16 +7,22 @@ import { fetchJson } from './http.ts';
 // overridable to check what happens when the source is down
 const API = process.env.ARMA_BULBAPEDIA_API || 'https://bulbapedia.bulbagarden.net/w/api.php';
 
+/** the species has no card list in Bulbapedia (not a failure: nothing to ask again) */
+export class NoCardList extends Error {}
+
 const field = (s: string, k: string) => s.match(new RegExp(`(?:^|\\|)${k}=([^|]*)`))?.[1]?.trim();
 
 export async function bulbapediaLinks(
   cat: Catalog,
   speciesEn: string,
+  { ttl }: { ttl?: number } = {},
 ): Promise<{ links: DesignLink[]; designs: number; unmatched: number }> {
   const page = encodeURIComponent(`${speciesEn} (TCG)`);
-  const d = await fetchJson<{ parse?: { wikitext?: { '*': string } } }>(`${API}?action=parse&page=${page}&prop=wikitext&format=json`);
+  const d = await fetchJson<{ parse?: { wikitext?: { '*': string } } }>(`${API}?action=parse&page=${page}&prop=wikitext&format=json`, {
+    ttl,
+  });
   const text = d?.parse?.wikitext?.['*'];
-  if (!text) throw new Error('Bulbapedia no trajo la lista de cartas');
+  if (!text) throw new NoCardList('Bulbapedia no trajo la lista de cartas');
   const blocks = text.split('{{card list/card|').slice(1);
   const links: DesignLink[] = [];
   let unmatched = 0;

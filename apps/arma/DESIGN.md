@@ -249,6 +249,11 @@ La pantalla del administrador (`/reemplazar`), sin ficha lateral: el riel lleva 
 
 - **Arriba:** el contador "N de M listas para producción", la nota y, a la derecha, "Bajar fotos locales del catálogo japonés" como botón de grafito. Un aviso en ámbar si las fotos locales están apagadas, y una franja de fieltro con el avance de la descarga.
 - **Cada foto:** la carta a 112px con la foto que hoy se ve, el sticker violeta de solo uso local y su etiqueta de cartulina con el nombre. Debajo, la expansión, el número (y el idioma y la variante de una impresión) y la fuente, y el botón "Subir la mía" en grafito, en una línea.
+- **Detalles de las japonesas:** un panel de sala (`--room-2`, filete `--room-line`, radio 10px) bajo el encabezado y antes de la vitrina.
+  - Arriba van el título y las tres cifras: en negrita y tabulares, con su texto apagado. A la derecha, "Completar detalles" en grafito (icono ListChecks).
+  - Mientras corre: "Paso N de 3 · paso · lo que se consulta", una barra de 6px en `--ok`, que se mueve con `--ease-out` y queda quieta con movimiento reducido, y una línea por paso.
+  - Al terminar: "Última vez · …", y "nada pendiente" en un paso que no tenía qué hacer.
+  - Los errores van en rosado (`#ffb4ab`). En el teléfono, el panel queda a 16px de los bordes y el botón baja bajo las cifras.
 - **Al reemplazar,** la carta sale de la vitrina y el contador sube en uno.
 - **En el riel,** "Por reemplazar" (icono ImageUp) aparece solo para el administrador.
 

@@ -125,6 +125,7 @@ export function createInventory(db: Db) {
     }
     return {
       sid: b.sid,
+      cardId: r.cardId,
       num: r.num,
       variant: r.variant,
       lang: r.lang,

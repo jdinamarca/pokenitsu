@@ -3,6 +3,7 @@ import { Download, RefreshCw, Upload } from 'lucide-react';
 import { api, ApiError, type CatalogJob, type Full, type ReplaceCards, type Source, type SourceCount } from './api.ts';
 import { toLogin } from './auth.ts';
 import { Gate } from './Cargar.tsx';
+import { DetailsPanel } from './components/DetailsPanel.tsx';
 import { isOwnerAccount, Shell } from './components/Shell.tsx';
 import { LANG_NAME, pictureOf, tagOf, withPhotoShows } from './model.ts';
 
@@ -246,6 +247,7 @@ export function Reemplazar() {
             ) : null}
           </div>
         </header>
+        <DetailsPanel />
         {!d.localPhotos && (
           <p className="notice warn" style={{ margin: '14px 28px 0' }}>
             Las fotos solo locales están apagadas. Enciéndelas con <code>ARMA_FOTOS_LOCALES=1</code> en el <code>.env</code> y reinicia{' '}

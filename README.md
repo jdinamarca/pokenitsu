@@ -405,6 +405,12 @@ Una opción nueva, separada de la app actual ([ADR 0020](docs/adr/0020-arma-tu-c
     - Dice cuándo PokeCottage pidió esperar ("Esperando a PokeCottage hasta las…") y si la descarga se detuvo.
     - `POST /api/local-photos/catalog` acepta `{ "dex": [1, 25] }` o `{ "sets": ["ja-PMCG2"] }` para probarlo solo con esos Pokémon o expansiones.
   - **Rutas:** `GET /api/replace/cards`, `POST`/`GET /api/local-photos/catalog`, y `POST`/`DELETE /api/card-photos/:cardId`, todas solo para el administrador.
+  - **Detalles de las japonesas** ([ADR 0025](docs/adr/0025-arma-completa-los-detalles-del-catalogo-japones.md)): cuántas cartas japonesas no se han consultado en TCGdex, cuántos Pokémon no tienen Pokédex y cuántos no tienen ilustrador. El botón "Completar detalles" corre tres pasos, con su avance:
+    1. **TCGdex:** las cartas que nunca se consultaron, de a 3.
+    2. **Pokédex por el nombre:** el nombre japonés sin adornos (ex, GX, Mega, "de …", la forma) se busca en la lista de nombres de PokéAPI, que se baja una vez como un solo archivo. Si hay duda, no pone nada.
+    3. **Ilustrador desde la carta inglesa:** Bulbapedia dice, por especie, qué japonesa es la misma carta que qué inglesa, y el ilustrador se copia de esa inglesa del catálogo. Va de a una página, con pausa y con cache de 30 días.
+
+    Solo rellena campos vacíos. Al cargar una carta japonesa a la que le falta algo, se completa esa sola carta, después de confirmar la carga. `POST /api/catalog-details` acepta `{ "sets": ["ja-M2"] }` para probarlo con pocas expansiones, y `GET /api/catalog-details` da las cifras y el avance; las dos rutas son solo para el administrador.
 
 - **Equivalencias:** la misma carta internacional en distintos idiomas, y la inglesa con su original japonesa cuando Bulbapedia las une. Solo agrupan; no cambian ningún conteo por sí solas.
 - **Reglas** (no borran nada del Full: lo que queda fuera sale de la vitrina, y la nota dice cuántas sacó y cuántas de ellas tienes):
@@ -434,7 +440,7 @@ Una opción nueva, separada de la app actual ([ADR 0020](docs/adr/0020-arma-tu-c
   - **Neerlandés (NL):** idioma internacional del Full; la regla "solo inglés" lo saca de la vitrina como al resto.
   - **Español de España y de Latinoamérica:** son la misma carta hasta 2025. Desde *Aventuras Compartidas* (marzo de 2025) existe el español latinoamericano (`ES-MX`) como versión aparte, con otros nombres y vocabulario (Lylia/Lillie, Poké Ball/Pokébola). Viene de TCGdex, que tiene sus 11 expansiones; no se deduce.
   - El resumen de la importación cuenta lo confirmado, lo deducido, las expansiones "No distribuidas", las que no se pudieron emparejar y las que TCGdex no lista en cada idioma.
-- **Datos:** esquema `arma` de la misma base (`printings`, `facts`, `sources`, `designs`, `views`, `source_cache`, `imports`), con migraciones propias en `apps/arma/server/migrations`. Fuera de ese esquema, la app nueva solo escribe el inventario y las ubicaciones de la cuenta (Cargar, Mi inventario y Cajas y carpetas), siempre con su `app.user_id`. Para borrar lo propio de arma: `DROP SCHEMA arma CASCADE` (no toca el inventario).
+- **Datos:** esquema `arma` de la misma base (`printings`, `facts`, `sources`, `designs`, `views`, `source_cache`, `imports`), con migraciones propias en `apps/arma/server/migrations`. Fuera de ese esquema, la app nueva solo escribe el inventario y las ubicaciones de la cuenta (Cargar, Mi inventario y Cajas y carpetas), siempre con su `app.user_id`. Además completa los campos vacíos del catálogo japonés (Pokédex, ilustrador, rareza y tipo; ver "Detalles de las japonesas"). Para borrar lo propio de arma: `DROP SCHEMA arma CASCADE` (no toca el inventario).
 - **Fuera de esta versión:** editar equivalencias a mano, agregar variantes propias, el informe "Listo para producción" y otros Pokémon.
 
 ## Consultas útiles

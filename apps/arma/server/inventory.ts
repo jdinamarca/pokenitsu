@@ -9,6 +9,7 @@ import { ensureLocalCardPhotos, PRINTED_PHOTOS } from './catalogPhotos.ts';
 import { pickCardPhotos, type CardPhotos } from './photoOrder.ts';
 import { localPhotosOn } from './local.ts';
 import { asViewer } from './viewerTx.ts';
+import { fillJaDetails } from './details.ts';
 
 // catalog downloads (cards, exchange rate) are shared by every account: plain connections
 const inv = createInventory({ query: (text, params) => pool.query(text, params) as Promise<never>, tx });
@@ -237,7 +238,13 @@ export function inventoryRoutes(app: FastifyInstance) {
 
   // the same contract as Nitsu's (apps/api), so both answer the same
   type AddBody = RowBody & { delta?: unknown; personal?: unknown; batch?: unknown };
-  app.post<{ Body: AddBody }>('/api/inventory/add', async req => asViewer(await requireViewer(req), c => inv.add(c, req.body || {})));
+  app.post<{ Body: AddBody }>('/api/inventory/add', async req => {
+    const r = await asViewer(await requireViewer(req), c => inv.add(c, req.body || {}));
+    // a Japanese card without its details gets them after answering (detalles-de-japonesas-en-arma)
+    if (r.real > 0)
+      fillJaDetails([r.cardId]).catch(e => console.warn(`[arma] detalles de ${r.cardId}:`, e instanceof Error ? e.message : e));
+    return r;
+  });
   // { logId } or { batch }: exactly that load (Cargar's session); without them, the account's last one
   app.post<{ Body: { logId?: unknown; batch?: unknown } }>('/api/inventory/undo', async req =>
     asViewer(await requireViewer(req), c => inv.undo(c, { logId: req.body?.logId, batch: req.body?.batch })),
