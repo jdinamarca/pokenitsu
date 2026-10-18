@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import languagesPage from './fixtures/bulbapedia-languages.json' with { type: 'json' };
 import {
   applyRules,
+  battleAcademyClaims,
+  type BattleAcademyCard,
   auditPrintings,
   baseFinish,
   buildEquivalences,
@@ -13,6 +15,7 @@ import {
   misfiled,
   photoShows,
   printingKey,
+  stampKey,
   variantFromInventory,
   variantFromPokecottage,
   variantFromTcgdex,
@@ -392,5 +395,97 @@ describe('idiomas desde Bulbapedia', () => {
         'Jungle',
       ).languages,
     ).toEqual(['EN', 'NL', 'ES']);
+  });
+});
+
+describe('mazos con sello y de campeonato (mazos-y-campeonatos-de-la-familia)', () => {
+  const list: BattleAcademyCard[] = [
+    { year: 2020, deck: 'Charizard', deckNo: '26', name: 'Eevee', setKey: 'sm115', setName: 'Hidden Fates', number: '49' },
+    { year: 2020, deck: 'Charizard', deckNo: '27', name: 'Flareon', setKey: 'smp', setName: 'SM Black Star Promos', number: 'SM186' },
+    { year: 2020, deck: 'Charizard', deckNo: '36', name: 'Eevee', setKey: 'sm115', setName: 'Hidden Fates', number: '49' },
+    { year: 2020, deck: 'Charizard', deckNo: '44', name: 'Flareon', setKey: 'smp', setName: 'SM Black Star Promos', number: 'SM186' },
+    { year: 2020, deck: 'Mewtwo', deckNo: null, name: 'Espeon', setKey: 'sm8', setName: 'Lost Thunder', number: '89' },
+    { year: 2020, deck: 'Mewtwo', deckNo: null, name: 'Eevee', setKey: 'sm115', setName: 'Hidden Fates', number: '49' },
+    { year: 2022, deck: 'Eevee', deckNo: null, name: 'Eevee V', setKey: 'swshp', setName: 'SWSH Black Star Promos', number: 'SWSH065' },
+  ];
+  const pc = (setKey: string, number: string, ref: string, stamp: string, finish: Claim['finish'] = 'normal'): Claim => ({
+    setKey,
+    number,
+    lang: 'EN',
+    finish,
+    stamp,
+    source: 'pokecottage',
+    ref,
+    setName: 'Battle Academy 2020: Charizard Deck',
+  });
+  const keys = (cs: Claim[]) =>
+    mergeClaims(cs)
+      .map(
+        p =>
+          `${p.setKey}|${p.number}|${p.finish}|${p.stamp}|${p.facts
+            .filter(f => f.field === 'exists')
+            .map(f => f.source)
+            .join('+')}`,
+      )
+      .sort();
+
+  it('dos números del mismo mazo son dos impresiones de la carta original', () => {
+    const r = battleAcademyClaims(
+      [
+        pc('pc:ba20c', '49', '133-ba20c-26-normal', 'charizarddeck'),
+        pc('pc:ba20c', '49', '133-ba20c-36-normal', 'charizarddeck'),
+        pc('pc:ba20m', '49', '133-ba20m-3-normal', 'mewtwodeck'),
+        pc('pc:ba22e', '1', '133-ba22e-1-holo', 'eeveedeck'),
+      ],
+      list,
+      'Eevee',
+    );
+    expect(keys([...r.claims, ...r.added])).toEqual([
+      'sm115|49|normal|ba-charizard-26|pokecottage+bulbapedia-mazos',
+      'sm115|49|normal|ba-charizard-36|pokecottage+bulbapedia-mazos',
+      'sm115|49|normal|ba-mewtwo|pokecottage+bulbapedia-mazos',
+      'swshp|SWSH065|holo|ba-eevee|pokecottage+bulbapedia-mazos',
+    ]);
+    expect(r.claims[0]!.label).toBe('Battle Academy 2020 · Mazo Charizard #26');
+    expect(r.claims[0]!.setName).toBe('Hidden Fates');
+  });
+
+  it('la misma carta dicha como expansión del mazo y como promo con sello es una sola', () => {
+    const r = battleAcademyClaims(
+      [
+        pc('pc:ba20c', '27', '136-ba20c-27-normal', 'charizarddeck'),
+        pc('pc:ba20c', '44', '136-ba20c-44-normal', 'charizarddeck'),
+        pc('smp', 'SM186', '136-smp-SM186-battleAcademyCharizard27', stampKey('battleAcademyCharizard27')!),
+        pc('smp', 'SM186', '136-smp-SM186-battleAcademyCharizard44', stampKey('battleAcademyCharizard44')!),
+      ],
+      list,
+      'Flareon',
+    );
+    expect(keys([...r.claims, ...r.added])).toEqual([
+      'smp|SM186|normal|ba-charizard-27|pokecottage+bulbapedia-mazos',
+      'smp|SM186|normal|ba-charizard-44|pokecottage+bulbapedia-mazos',
+    ]);
+  });
+
+  it('una carta que solo trae Bulbapedia se agrega con su fuente; sin lista nada cambia', () => {
+    const r = battleAcademyClaims([], list, 'Espeon');
+    expect(keys(r.added)).toEqual(['sm8|89|normal|ba-mewtwo|bulbapedia-mazos']);
+    const same = [pc('pc:ba20c', '27', '136-ba20c-27-normal', 'charizarddeck')];
+    expect(battleAcademyClaims(same, [], 'Flareon').claims).toEqual(same);
+    expect(variantLabel({ finish: 'normal', stamp: 'ba-charizard-12' })).toBe('Battle Academy · Mazo Charizard #12');
+  });
+
+  it('el mazo de Ballard escrito sin guiones es el mismo y cuenta como campeonato', () => {
+    const ballard = stampKey('worldchampionshipsdeck2006eeveelutionsbyjimmyballard');
+    expect(ballard).toBe(stampKey('worldChampionshipsDeck2006JimmyBallard'));
+    const r = applyRules(
+      [
+        { key: 'a', lang: 'EN', stamp: ballard, equivId: null },
+        { key: 'b', lang: 'EN', stamp: 'worldchampionshipsdeck2099someone', equivId: null },
+      ],
+      { ...FULL_RULES, wcd: false },
+    );
+    expect(r.get('a')).toEqual({ in: false, by: 'wcd' });
+    expect(r.get('b')).toEqual({ in: false, by: 'wcd' });
   });
 });

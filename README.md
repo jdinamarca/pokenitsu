@@ -372,6 +372,12 @@ Una opción nueva, separada de la app actual ([ADR 0020](docs/adr/0020-arma-tu-c
   | TCGplayer (vía `card_prices`) | Variantes y precios | 🔴 sin permiso |
   | PokeCottage (master set) | Cartas y variantes especiales, **solo texto** | 🟢 autorizó el texto, también para producción; sus fotos solo con las fotos solo locales (abajo) |
   | Bulbapedia ("Eevee (TCG)") | Qué carta inglesa y qué japonesa son el mismo diseño | 🟠 CC BY-NC-SA, por revisar |
+  | Bulbapedia (Battle Academy 2020, 2022 y 2024) | Qué carta trae cada mazo de Battle Academy y su número en el mazo | 🟠 CC BY-NC-SA, por revisar |
+
+- **Mazos con sello y de campeonato.**
+  - **Battle Academy:** una carta de Battle Academy es la carta original con el sello del mazo, y con su número cuando el mazo lo imprime. Por ejemplo, Eevee de Hidden Fates #49 con "Battle Academy 2020 · Mazo Charizard #26" (sello `ba-charizard-26`, como en el inventario de Nitsu). Cada número es una impresión aparte. Lo que PokeCottage trae como expansión del mazo (`ba20c`) o como promo con sello se convierte a esa forma según las listas de Bulbapedia. Una carta que solo trae Bulbapedia queda "Por verificar".
+  - **World Championships Decks:** el mazo con la firma del jugador es una impresión con su sello (`world-championships-deck2006-jimmy-ballard`) y cuenta para la regla "Incluir World Championship Decks" aunque la fuente escriba el nombre sin guiones.
+  - Al reimportar, una impresión que cambió de forma conserva su foto solo local: pasa a la impresión que ahora tiene la misma entrada de PokeCottage.
 
 - **Fotos solo para uso local** (apagadas por defecto). Para ver la ilustración correcta de las impresiones que no tienen una foto con permiso (promos japonesas, sellos, variantes con error…), la app puede usar fotos de fuentes que **no** dieron permiso de imagen, solo en tu computador:
 

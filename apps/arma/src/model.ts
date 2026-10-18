@@ -112,7 +112,9 @@ function designPicture(ps: Printing[], sources: Map<string, Source>): Picture | 
 }
 
 export const variantName = (p: Printing): string => {
-  const pc = p.facts.variant?.find(f => f.source === 'pokecottage')?.value;
+  // a Battle Academy card only Bulbapedia's lists bring is named by them: "Battle Academy 2020 · Mazo Mewtwo"
+  const named = (src: string) => p.facts.variant?.find(f => f.source === src)?.value;
+  const pc = named('pokecottage') ?? named('bulbapedia-mazos');
   return p.stamp && pc && !/^(standard|holo|reverse holo)$/i.test(pc) ? pc : variantLabel({ finish: p.finish, stamp: p.stamp });
 };
 export const tagOf = (p: Printing) => `${p.lang} · ${variantName(p)}`;
