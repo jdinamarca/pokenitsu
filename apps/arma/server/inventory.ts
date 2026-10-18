@@ -54,7 +54,7 @@ async function refImages(dexes: number[]): Promise<Map<number, string>> {
   );
   return new Map(rows.map(r => [r.dex, r.img]));
 }
-async function cardPhotos(ids: string[]): Promise<Map<string, CardPhotos>> {
+export async function cardPhotos(ids: string[]): Promise<Map<string, CardPhotos>> {
   const out = new Map<string, CardPhotos>();
   if (!ids.length) return out;
   const { rows } = await pool.query<{ card_id: string; source_id: string; src: string; name: string; permission: string }>(
@@ -103,7 +103,7 @@ const englishName = (dex: number[] | null, names: Map<number, string>) =>
 type Pictured = { img: string | null; dex: number[] | null };
 const loneDex = (r: Pictured) => (!r.img && r.dex?.length === 1 ? r.dex[0]! : null);
 // the reference picture of each card without its own
-async function withRefs<T extends Pictured>(rows: T[]): Promise<(T & { ref: string | null })[]> {
+export async function withRefs<T extends Pictured>(rows: T[]): Promise<(T & { ref: string | null })[]> {
   const refs = await refImages([...new Set(rows.map(loneDex).filter((d): d is number => d != null))]);
   return rows.map(r => ({ ...r, ref: refs.get(loneDex(r) ?? -1) ?? null }));
 }

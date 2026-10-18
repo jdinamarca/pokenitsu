@@ -6,12 +6,16 @@ import '@fontsource/archivo/600.css';
 import '@fontsource/archivo/700.css';
 import '@fontsource/archivo-narrow/600.css';
 import '@fontsource/archivo-narrow/700.css';
+import '@fontsource/fraunces/400-italic.css';
+import '@fontsource/fraunces/500-italic.css';
 import { App } from './App.tsx';
 import { Login } from './Login.tsx';
 import { Cargar } from './Cargar.tsx';
 import { Inventario } from './Inventario.tsx';
 import { Cajas } from './Cajas.tsx';
 import { Reemplazar } from './Reemplazar.tsx';
+import { Ilustradores } from './Ilustradores.tsx';
+import { Pokedex } from './Pokedex.tsx';
 import { usePath } from './router.ts';
 import './styles.css';
 
@@ -23,6 +27,9 @@ function Root() {
   if (path === '/inventario') return <Inventario />;
   if (path === '/cajas') return <Cajas />;
   if (path === '/reemplazar') return <Reemplazar />;
+  // ilustradores-y-pokedex-en-arma: their lists and, below them, one illustrator, one region or one Pokémon
+  if (path === '/ilustradores' || path.startsWith('/ilustradores/')) return <Ilustradores />;
+  if (path === '/pokedex' || path.startsWith('/pokedex/')) return <Pokedex />;
   return <App />;
 }
 

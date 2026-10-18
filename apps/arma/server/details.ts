@@ -97,14 +97,18 @@ async function askTcgdex(cardId: string): Promise<'filled' | 'missing'> {
 interface Species {
   idx: SpeciesIndex;
   en: Map<number, string>;
+  /** the name in kana (the CSV's language 1 comes before the kanji one) */
+  ja: Map<number, string>;
 }
 let species: Promise<Species> | null = null;
 /** PokéAPI's names, one file asked once a month; kept as what is used, not the CSV */
-function speciesNames(): Promise<Species> {
+export function speciesNames(): Promise<Species> {
   species ??= fetchText(SPECIES_CSV, parseSpeciesCsv, { ttl: DAYS_30 })
     .then(n => {
       if (!n?.ja.length) throw new Error('PokéAPI no trajo la lista de nombres');
-      return { idx: speciesIndex(n.ja), en: new Map(n.en) };
+      const ja = new Map<number, string>();
+      for (const [name, dex] of n.ja) if (!ja.has(dex)) ja.set(dex, name);
+      return { idx: speciesIndex(n.ja), en: new Map(n.en), ja };
     })
     .catch(e => {
       species = null;

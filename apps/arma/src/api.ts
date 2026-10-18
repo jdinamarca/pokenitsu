@@ -221,6 +221,42 @@ export interface SourceCount {
   failed: number;
 }
 /** the Japanese catalog's photos for local use only: Limitless per expansion, then PokeCottage per Pokémon */
+/** Ilustradores and Pokédex (ilustradores-y-pokedex-en-arma) */
+export type Scope = 'all' | 'intl' | 'ja';
+export interface Picture {
+  img: string | null;
+  own_card: string | null;
+  local: LocalPhoto | null;
+  ref: string | null;
+}
+export interface ArtistItem {
+  name: string;
+  total: number;
+  mine: number;
+  from: number | null;
+  to: number | null;
+  cover: Picture | null;
+}
+export interface GalleryItem extends Picture {
+  id: string;
+  set_id: string;
+  set_name: string;
+  set_code: string;
+  release: string;
+  number: string;
+  number_norm: string;
+  name: string;
+  rarity: string | null;
+  qty: number;
+}
+export interface DexItem {
+  dex: number;
+  name: string;
+  ja: string;
+  total: number;
+  mine: number;
+  pic: Picture | null;
+}
 /** the Japanese cards' details (detalles-de-japonesas-en-arma) */
 export interface DetailsStep {
   total: number;
@@ -333,6 +369,12 @@ export const api = {
   replaceCards: () => call<ReplaceCards>('GET', '/replace/cards'),
   catalogJob: () => call<{ localPhotos: boolean; job: CatalogJob | null }>('GET', '/local-photos/catalog'),
   startCatalogJob: () => call<CatalogJob>('POST', '/local-photos/catalog', {}),
+  // Ilustradores and Pokédex: every illustrator or species with its progress, and the cards of one
+  artists: (scope: Scope) => call<ArtistItem[]>('GET', `/artists?scope=${scope}`),
+  artistCards: (name: string, scope: Scope) => call<GalleryItem[]>('GET', `/artists/cards?name=${encodeURIComponent(name)}&scope=${scope}`),
+  pokedex: (scope: Scope) => call<DexItem[]>('GET', `/pokedex?scope=${scope}`),
+  pokemonCards: (dex: number, scope: Scope) =>
+    call<{ dex: number; name: string; ja: string; cards: GalleryItem[] }>('GET', `/pokedex/${dex}?scope=${scope}`),
   // the Japanese cards' details: what's missing and the job (the administrator's)
   catalogDetails: () => call<{ pending: DetailsPending; job: DetailsJob | null }>('GET', '/catalog-details'),
   startCatalogDetails: () => call<DetailsJob>('POST', '/catalog-details', {}),

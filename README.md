@@ -300,7 +300,7 @@ Una opción nueva, separada de la app actual ([ADR 0020](docs/adr/0020-arma-tu-c
 
 - **Levantarla:** `pnpm arma` (abre `http://localhost:5180`). Necesita la base Postgres del `.env`; ya no hace falta que Nitsu esté corriendo ([ADR 0022](docs/adr/0022-cuentas-en-arma-tu-coleccion.md)).
 - **Entrar ([ADR 0021](docs/adr/0021-arma-tu-coleccion-reemplaza-a-nitsu.md)):** la app tiene su propio acceso en `/entrar` (diseño "Mostrador", del canvas): entrar, crear cuenta (solo emails invitados durante la alfa), confirmar el correo y reenviarlo, "¿Olvidaste tu contraseña?" con contraseña nueva, Google si está configurado, y "Cerrar sesión" al pie del riel. Usa **las mismas cuentas y la misma sesión que Nitsu**: las dos APIs atienden las cuentas con la misma configuración, que vive en el paquete `packages/auth` (`@pokenitsu/auth`: invitados, contraseña, correos, Google, duración de la sesión). La API de la app nueva responde `/api/auth/*` con la dirección `ARMA_AUTH_URL` (por defecto `http://localhost:5180`), así los links de los correos y de Google vuelven aquí. **Para Google**, agrega `http://localhost:5180/api/auth/callback/google` en la consola de Google Cloud (Credenciales → tu cliente OAuth → URIs de redirección autorizados); sin eso, entrar con email funciona igual. Sin sesión, cualquier página lleva a `/entrar` y, al entrar, vuelve a donde ibas.
-- **Navegación:** el riel de la izquierda lleva a "Arma · Eevee", "Cargar" (`/cargar`), "Mi inventario" (`/inventario`) y "Cajas y carpetas" (`/cajas`), sin recargar la página.
+- **Navegación:** el riel de la izquierda lleva a "Arma · Eevee", "Cargar" (`/cargar`), "Mi inventario" (`/inventario`), "Cajas y carpetas" (`/cajas`), "Ilustradores" (`/ilustradores`) y "Pokédex" (`/pokedex`), sin recargar la página.
 - **Cargar** (diseño AO del canvas, "La expansión se enciende"):
   - **Elegir la expansión:** la expansión abierta es un **botón en la cabecera** (nombre, idioma, serie, año y código). Al tocarlo, con la tecla `/` o con Esc en la caja vacía, se abre un panel con:
     - un **buscador** por código (con idioma, como `MEW ES`), nombre o serie, con los mismos criterios de Nitsu;
@@ -328,6 +328,24 @@ Una opción nueva, separada de la app actual ([ADR 0020](docs/adr/0020-arma-tu-c
     - Nunca toca cargas de antes de abrir la página ni de otro dispositivo. Con la lista vacía, avisa "No hay nada que deshacer en esta sesión".
     - Va por el registro de la carga (`POST /api/inventory/undo` con `{ logId }` o `{ batch }`). Sin ellos, la ruta deshace la última carga de la cuenta, como en Nitsu.
 - **Mi inventario** (diseño AR, "Estantería por ubicación"): una repisa por cada caja o carpeta, en tu orden, con "Sin ubicación" al final si hay copias sin ubicación. En el riel, "Todas" y cada ubicación con sus copias y lo que recibe. Arriba, el total de copias, las cartas distintas y el valor para vender (sin las personales). Búsqueda por nombre, expansión, número o ilustrador, y filtro "Para". La ficha permite −1/+1, mover algunas copias o todas (ubicación, variante, idioma, estado: "¿Cuántas de las N copias?"), marcar personales y poner tu precio en US$ (vacío vuelve al de mercado).
+- **Ilustradores** (`/ilustradores`): una galería de firmas. Cada ilustrador tiene una tarjeta de cartulina con:
+  - su nombre en letra de firma (Fraunces itálica);
+  - sus años;
+  - un anillo con cuántas de sus cartas tienes, de cuántas existen.
+
+  Al pasar el mouse, su mejor carta asoma detrás (la imagen se pide solo en ese momento); en el teléfono va como miniatura. Hay buscador y orden (más avance, más cartas mías, más cartas en total o nombre).
+
+  Al entrar a uno (`/ilustradores/<nombre>`), sus cartas aparecen en la vitrina, con una repisa por expansión de la más nueva a la más antigua, cada una con su "tengo / total". Las que tienes van en color y con ×copias; las que faltan, en blanco y negro, y al pasarles el mouse asoma su color a medias. Se filtra con Todas · Tengo · Me faltan.
+- **Pokédex** (`/pokedex`): las 1.025 especies en pestañas por región (Kanto, Johto, Hoenn, Sinnoh, Teselia, Kalos, Alola, Galar y Paldea), cada una con su avance. Cada Pokémon es una ventanita con:
+  - su número y su nombre, con el japonés debajo;
+  - "tengo / total";
+  - el arte de tu carta más reciente en color o, si no tienes ninguna, una carta suya en blanco y negro.
+
+  La galería de un Pokémon (`/pokedex/<n>`) es como la de un ilustrador, e incluye las cartas de varios Pokémon (TAG TEAM) donde aparece.
+- **En las dos pantallas:**
+  - el riel elige **Todas · Internacionales · Japonesas** (`?ver=intl|ja`, así Atrás vuelve igual);
+  - "tengo" es cualquier copia de tu inventario, en cualquier idioma, variante, estado o ubicación; cada cuenta ve solo lo suyo;
+  - son de solo lectura y usan `GET /api/artists`, `/api/artists/cards?name=`, `/api/pokedex` y `/api/pokedex/:dex`, con `scope=all|intl|ja`.
 - **Cajas y carpetas** (`/cajas`, como la pestaña Ubicaciones de Nitsu):
   - **El estante:** las carpetas van como lomos de pie y las cajas con tapa y etiqueta (nombre, cartas y valor) sobre repisas de madera. Primero la repisa "Con cartas" y después "Vacías por ahora", apagadas, en el orden de la lista. Morado = colección personal, dorado = especiales o precio mínimo. Con el mouse, la carpeta se inclina o se levanta la tapa y asoman sus 3 cartas más valiosas; con "reducir movimiento" nada se mueve.
   - **La ficha:** cartas, expansiones y valor (todas las copias a su precio), miniaturas, lo que recibe en chips y en una frase, los avisos ⚠️ cuando otra ubicación se queda con esas cartas, la nota, y **Ver las N cartas** (abre Mi inventario con esa caja elegida, `/inventario?ubicacion=<id>`), **Editar**, **↑ / ↓** (solo desempatan) y **Borrar** (sus copias quedan sin ubicación, no se pierden).
