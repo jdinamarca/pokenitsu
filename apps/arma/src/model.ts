@@ -1,6 +1,6 @@
 // What the screen derives from the Full: labels, the permission sticker of each printing, shelves and pictures
 import { normNumber, photoShows, STAMP_LABEL, variantLabel, type ArmaRules, type RuleId, type RuleResult } from '@pokenitsu/core';
-import type { Copy, FactValue, Permission, Printing, Source } from './api.ts';
+import type { Copy, FactValue, ImportSummary, Permission, Printing, Source } from './api.ts';
 
 export const LANG_NAME: Record<string, string> = {
   EN: 'Inglés',
@@ -268,3 +268,20 @@ export function ownership(printings: Pick<Printing, 'code'>[], result: Map<strin
 export type Seeing = 'all' | 'have' | 'miss';
 /** "Todas · Las que tengo · Me faltan" */
 export const keepFor = (seeing: Seeing, have: boolean) => seeing === 'all' || (seeing === 'have' ? have : !have);
+
+/** the rail's note after bringing a Full again (volver-a-traer-el-full): what changed, and the sources that didn't answer */
+export function importLines(species: string, r: ImportSummary, sources: Map<string, Source>): string[] {
+  const n = (x: number) => x.toLocaleString('es-CL');
+  const lines = [
+    `Full de ${species} actualizado: ${n(r.printings)} ${r.printings === 1 ? 'impresión' : 'impresiones'} · +${n(r.added || 0)} ${
+      r.added === 1 ? 'nueva' : 'nuevas'
+    } · −${n(r.removed || 0)} ${r.removed === 1 ? 'quitada' : 'quitadas'}`,
+  ];
+  if (r.carried) lines.push(`${n(r.carried)} ${r.carried === 1 ? 'foto local traspasada' : 'fotos locales traspasadas'}`);
+  for (const [id, s] of Object.entries(r.sources || {}))
+    if (!s.ok) lines.push(`${sources.get(id)?.name || id} no respondió: quedó lo de la última vez`);
+  return lines;
+}
+/** "18 oct, 10:42" */
+export const importedAt = (iso: string) =>
+  new Date(iso).toLocaleString('es-CL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });

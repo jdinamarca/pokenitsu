@@ -124,6 +124,92 @@ button {
   font-size: 12.5px;
   font-variant-numeric: tabular-nums;
 }
+/* bringing the Full again (volver-a-traer-el-full): when, the button, and what changed */
+.again {
+  margin-top: 8px;
+  padding-top: 9px;
+  border-top: 1px solid var(--felt-line);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 10px;
+}
+.again-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--felt-line);
+  background: none;
+  border-radius: 7px;
+  padding: 5px 9px;
+  color: var(--felt-ink);
+  font-size: 12.5px;
+  transition:
+    border-color 160ms var(--ease-out),
+    transform 120ms var(--ease-out);
+}
+.again-btn:hover:not(:disabled) {
+  border-color: var(--felt-mute);
+}
+.again-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.again-btn:disabled {
+  color: var(--felt-mute);
+  cursor: progress;
+}
+.again-note {
+  position: relative;
+  flex-basis: 100%;
+  margin-top: 2px;
+  padding: 8px 26px 8px 10px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--ok) 45%, var(--felt-line));
+  background: color-mix(in srgb, var(--ok) 10%, var(--felt-deep));
+  color: var(--felt-ink);
+  font-size: 12.5px;
+  line-height: 1.4;
+  animation: again-in 220ms var(--ease-out);
+}
+.again-note p {
+  margin: 0;
+}
+.again-note p + p {
+  margin-top: 3px;
+  color: var(--felt-mute);
+}
+.again-note.bad {
+  border-color: color-mix(in srgb, var(--none) 55%, var(--felt-line));
+  background: color-mix(in srgb, var(--none) 10%, var(--felt-deep));
+}
+.again-x {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 0;
+  border-radius: 5px;
+  background: none;
+  color: var(--felt-mute);
+}
+.again-x:hover {
+  color: var(--light);
+}
+@keyframes again-in {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .again-note {
+    animation: none;
+  }
+}
 .rail-h {
   font: 600 11px Archivo;
   letter-spacing: 0.12em;
