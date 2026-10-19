@@ -1,6 +1,7 @@
 // Builds the Full of one Pokémon from every source and stores it in arma.* (never anywhere else).
 // A source that fails keeps what it had brought before; the summary says which one failed and why.
 import {
+  additionalCardClaims,
   battleAcademyClaims,
   buildEquivalences,
   catalogCode,
@@ -101,12 +102,21 @@ async function run(dex: number): Promise<ImportSummary> {
   // by card from WikiDex (cartas-en-otros-idiomas), and Italian and Portuguese deduced from TCGdex only where Bulbapedia
   // lists nothing
   let listed = new Set<string>();
-  await attempt(['bulbapedia-idiomas'], async () => {
+  await attempt(['bulbapedia-idiomas', 'bulbapedia-adicionales'], async () => {
     const sets = [...new Set(claims.filter(c => !/^(ja-|pc:|td)/.test(c.setKey)).map(c => c.setKey))];
     const r = await bulbapediaLanguages(cat, sets);
     listed = new Set(r.bySet.keys());
+    // the finish the set's additional cards give a stamped card (sellos-y-cruce-de-expansiones), before the languages
+    const extra = additionalCardClaims(claims, new Map([...r.bySet].map(([k, v]) => [k, v.additional])));
+    claims.splice(0, claims.length, ...extra.claims);
     const c = confirmedClaims(r.bySet, claims);
-    return { claims: c.claims, sets: r.bySet.size, notReleased: c.notReleased, unmatched: r.unmatched };
+    return {
+      claims: [...c.claims, ...extra.added],
+      sets: r.bySet.size,
+      notReleased: c.notReleased,
+      unmatched: r.unmatched,
+      finishes: extra.changed,
+    };
   });
   await attempt(['wikidex'], async () => {
     const r = await wikidexSpanish(cat, en);

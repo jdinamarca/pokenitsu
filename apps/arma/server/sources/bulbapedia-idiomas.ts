@@ -1,7 +1,7 @@
 // In which languages each international set came out, and with which variants, from Bulbapedia (idiomas-desde-bulbapedia):
 // the tables of "List of Pokémon Trading Card Game expansions in other languages" and the sentence on each set's page.
 // CC BY-NC-SA like the Bulbapedia links: text only, to review before production.
-import { parseLanguageSentence, parseLanguageTables } from '@pokenitsu/core';
+import { parseAdditionalCards, parseLanguageSentence, parseLanguageTables, type AdditionalCard } from '@pokenitsu/core';
 import { bySeriesSuffix, intlSetByName, type Catalog } from './catalog.ts';
 import { fetchJson } from './http.ts';
 
@@ -15,6 +15,8 @@ export interface SetLanguages {
   names: Record<string, string | null>;
   firstEdition: string[];
   reverse: string[];
+  /** its stamped additional cards, from the same page (sellos-y-cruce-de-expansiones) */
+  additional: AdditionalCard[];
 }
 
 /** the languages of the international sets of the Full (setKeys), by our set key */
@@ -33,7 +35,7 @@ export async function bulbapediaLanguages(cat: Catalog, setKeys: string[]) {
       unmatched.push(english);
       continue;
     }
-    if (wanted.has(setKey)) bySet.set(setKey, { english, page: `${english} (TCG)`, names, firstEdition: [], reverse: [] });
+    if (wanted.has(setKey)) bySet.set(setKey, { english, page: `${english} (TCG)`, names, firstEdition: [], reverse: [], additional: [] });
   }
   // each set's page says its variants by language: 50 pages per request
   const sets = [...bySet.values()];
@@ -53,6 +55,7 @@ export async function bulbapediaLanguages(cat: Catalog, setKeys: string[]) {
       const v = parseLanguageSentence(texts.get(to) || '', s.english);
       s.firstEdition = v.firstEdition;
       s.reverse = v.reverse;
+      s.additional = parseAdditionalCards(texts.get(to) || '', s.english);
     }
   }
   return { bySet, unmatched };

@@ -18,6 +18,8 @@ import {
   stampKey,
   variantFromInventory,
   inventoryVariant,
+  parseAdditionalCards,
+  additionalCardClaims,
   compactStamp,
   variantFromPokecottage,
   variantFromTcgdex,
@@ -571,5 +573,90 @@ describe('mazos con sello y de campeonato (mazos-y-campeonatos-de-la-familia)', 
     );
     expect(r.get('a')).toEqual({ in: false, by: 'wcd' });
     expect(r.get('b')).toEqual({ in: false, by: 'wcd' });
+  });
+});
+
+describe('sellos-y-cruce-de-expansiones', () => {
+  const pcStamp = (setKey: string, number: string, stamp: string): Claim => ({
+    ...claim(setKey, number, 'EN', 'normal', 'pokecottage', stamp),
+    finishUnknown: true,
+  });
+  const shape = (m: ReturnType<typeof mergeClaims>) => m.map(p => `${p.finish}|${p.stamp}`).sort();
+  it('Prismatic Evolutions #75: el sello de PokeCottage toma el acabado holo de TCGdex', () => {
+    const m = mergeClaims([
+      claim('sv8pt5', '75', 'EN', 'holo', 'tcgplayer'),
+      claim('sv8pt5', '75', 'EN', 'holo', 'tcgdex'),
+      claim('sv8pt5', '75', 'EN', 'holo', 'tcgdex', 'set-logo'),
+      claim('sv8pt5', '75', 'EN', 'holo', 'pokecottage'),
+      pcStamp('sv8pt5', '75', 'set-logo'),
+    ]);
+    expect(shape(m)).toEqual(['holo|null', 'holo|set-logo']);
+    expect(
+      m
+        .find(p => p.stamp)!
+        .facts.filter(f => f.field === 'exists')
+        .map(f => f.source),
+    ).toEqual(['tcgdex', 'pokecottage']);
+  });
+  it('TCGdex con dos acabados para el sello: PokeCottage no toma ninguno', () => {
+    const m = mergeClaims([
+      claim('sv3', '86', 'EN', 'holo', 'tcgdex', 'set-logo'),
+      claim('sv3', '86', 'EN', 'reverse', 'tcgdex', 'set-logo'),
+      pcStamp('sv3', '86', 'set-logo'),
+    ]);
+    expect(shape(m)).toEqual(['holo|set-logo', 'normal|set-logo', 'reverse|set-logo']);
+  });
+  it('un sello sin TCGdex sigue normal', () =>
+    expect(shape(mergeClaims([pcStamp('sv3', '130', 'gamestop')]))).toEqual(['normal|gamestop']));
+  it('un sello con su año: trick-or-trade de TCGdex es trick-or-trade24 de PokeCottage', () => {
+    const m = mergeClaims([claim('sv3', '130', 'EN', 'normal', 'tcgdex', 'trick-or-trade'), pcStamp('sv3', '130', 'trick-or-trade24')]);
+    expect(shape(m)).toEqual(['normal|trick-or-trade24']);
+  });
+  it('Espeon #86 y Umbreon #130 de Obsidian Flames quedan como dice Bulbapedia', () => {
+    const notes = new Map([
+      [
+        'sv3',
+        [
+          { number: '86', stamp: 'set-logo', finish: 'reverse' as const },
+          { number: '130', stamp: 'game-stop', finish: 'reverse' as const },
+        ],
+      ],
+    ]);
+    const r = additionalCardClaims(
+      [
+        claim('sv3', '86', 'EN', 'reverse', 'tcgdex'),
+        claim('sv3', '86', 'EN', 'holo', 'tcgdex', 'set-logo'),
+        claim('sv3', '86', 'EN', 'reverse', 'tcgdex', 'set-logo'),
+        pcStamp('sv3', '86', 'set-logo'),
+        claim('sv3', '130', 'EN', 'normal', 'tcgdex', 'gamestop'),
+        pcStamp('sv3', '130', 'gamestop'),
+        claim('sv3', '130', 'FR', 'normal', 'tcgdex', 'gamestop'),
+      ],
+      notes,
+    );
+    const m = mergeClaims([...r.claims, ...r.added]);
+    expect(shape(m.filter(p => p.lang === 'EN'))).toEqual(['reverse|gamestop', 'reverse|null', 'reverse|set-logo']);
+    expect(
+      m
+        .find(p => p.number === '86' && p.stamp)!
+        .facts.filter(f => f.field === 'exists')
+        .map(f => f.source),
+    ).toEqual(['tcgdex', 'pokecottage', 'bulbapedia-adicionales']);
+    expect(m.find(p => p.lang === 'FR')!.finish).toBe('normal');
+  });
+  it('parseAdditionalCards: las cartas adicionales de Obsidian Flames y Prismatic Evolutions', () => {
+    const of = [
+      '{{Setlist/nmentry|086/197|{{TCG ID|Obsidian Flames|Espeon|86}}|Psychic|||Reverse Holo "Obsidian Flames" stamp Best Buy gift with purchase exclusive (USA)}}',
+      '{{Setlist/nmentry|130/197|{{TCG ID|Obsidian Flames|Umbreon|130}}|Darkness|||Reverse Holo "GameStop" stamp gift with purchase exclusive (USA & Canada)}}',
+      "{{Setlist/nmentry|130/197|{{TCG ID|Obsidian Flames|Umbreon|130}}|Darkness|||Pikachu jack-o'-lantern stamp {{TCGMerch|Scarlet & Violet|Series|Trick or Trade BOOster Bundle 2024}} exclusive}}",
+    ].join('\n');
+    expect(parseAdditionalCards(of, 'Obsidian Flames')).toEqual([
+      { number: '86', stamp: 'set-logo', finish: 'reverse' },
+      { number: '130', stamp: 'game-stop', finish: 'reverse' },
+    ]);
+    const pre =
+      '{{Setlist/nmentry|075/131|{{TCG ID|Prismatic Evolutions|Eevee ex|75|Eevee}}{{Tera ex}}|Colorless|||{{TCGMerch|Scarlet & Violet|Series|Prismatic Evolutions Surprise Box}} exclusive with "Prismatic Evolutions" stamp}}\n' +
+      '{{Setlist/nmentry|026/131|{{TCG ID|Prismatic Evolutions|Glaceon ex|26|Glaceon}}{{Tera ex}}|Water|6=Snowflake Stamp {{TCGMerch|Scarlet & Violet|Series|Holiday Calendar 2025}} exclusive}}';
+    expect(parseAdditionalCards(pre, 'Prismatic Evolutions')).toEqual([{ number: '75', stamp: 'set-logo', finish: null }]);
   });
 });
