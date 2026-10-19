@@ -871,6 +871,15 @@ button {
   background: #2a2722;
   color: var(--ink-mute);
 }
+/* a card that did not come out in the session's language (idioma-al-abrir-expansion) */
+.lang-warn {
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  background: #3a2c17;
+  color: #f3cf96;
+}
 .own {
   background: var(--felt);
   border-radius: 10px;

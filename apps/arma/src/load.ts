@@ -55,6 +55,32 @@ export interface Session {
   cond: Cond;
   personal: boolean;
   dest: 'auto' | number;
+  /** the last Western language used, to go back to when an international expansion opens after an Asian one */
+  west?: Lang;
+}
+
+// idioma-al-abrir-expansion: the languages no international expansion is printed in
+const ASIAN = new Set<string>(['JA', 'KO', 'ZH']);
+const LANG_ORDER = ['EN', 'ES', 'ES-MX', 'PT', 'PT-BR', 'FR', 'DE', 'IT', 'NL', 'JA', 'ZH-TW', 'ZH-CN', 'KO', 'TH', 'ID'];
+/** the session with its last Western language remembered */
+export const withWest = (s: Session): Session => (ASIAN.has(s.lang) ? s : { ...s, west: s.lang });
+/**
+ * The language an expansion opens in: the one typed in the search ("SWSHP JA"), the expansion's own (a Japanese one), or
+ * the recent's or the session's; an international expansion never opens in an Asian language unless typed: it goes back
+ * to the last Western one, or English
+ */
+export function openLang(o: { typed: Lang | null; setLang: Lang | null; current: Lang; west?: Lang | undefined }): Lang {
+  if (o.typed) return o.typed;
+  if (o.setLang) return o.setLang;
+  return ASIAN.has(o.current) ? o.west || 'EN' : o.current;
+}
+/** the languages a card came out in, per its Full, when the session's isn't one of them (ZH covers ZH-TW and ZH-CN);
+ *  null when it is, or when the Full doesn't know the card */
+export function otherLangs(card: Pick<SetCard, 'full'>, lang: string): string[] | null {
+  const langs = [...new Set((card.full || []).map(f => f.lang))];
+  if (!langs.length || langs.some(l => l === lang || l.startsWith(lang + '-'))) return null;
+  const rank = (l: string) => (LANG_ORDER.includes(l) ? LANG_ORDER.indexOf(l) : LANG_ORDER.length);
+  return langs.sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
 }
 /** what Cargar knows about the expansion open in it */
 export interface SetContext {
