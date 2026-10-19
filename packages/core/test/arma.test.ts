@@ -665,6 +665,34 @@ describe('mazos con sello y de campeonato (mazos-y-campeonatos-de-la-familia)', 
   });
 });
 
+describe('burger-king-2009: la promo de Burger King de 2009', () => {
+  it('Eevee #62 de Majestic Dawn: una sola impresión Reverse con las tres fuentes y su nombre', () => {
+    const td = variantFromTcgdex({ type: 'reverse', stamp: ['platinum'] })!;
+    const pc = variantFromPokecottage('burgerKing09', 'Burger King (Reverse Holo)');
+    const m = mergeClaims([
+      claim('dp5', '62', 'EN', 'normal', 'tcgdex'),
+      claim('dp5', '62', 'EN', 'reverse', 'tcgdex'),
+      claim('dp5', '62', 'EN', td.finish, 'tcgdex', td.stamp),
+      claim('dp5', '62', 'EN', 'reverse', 'bulbapedia-adicionales', stampKey('Platinum')),
+      { ...claim('dp5', '62', 'EN', pc.finish, 'pokecottage', pc.stamp), finishUnknown: true },
+    ]);
+    const bk = m.filter(p => p.stamp);
+    expect(
+      bk.map(
+        p =>
+          `${p.finish}|${p.stamp}|${p.facts
+            .filter(f => f.field === 'exists')
+            .map(f => f.source)
+            .join('+')}`,
+      ),
+    ).toEqual(['reverse|burger-king-2009|tcgdex+bulbapedia-adicionales+pokecottage']);
+    expect(variantLabel({ finish: bk[0]!.finish, stamp: bk[0]!.stamp })).toBe('Reverse · Burger King 2009 (sello Platinum)');
+    expect(stampKey('burgerKing')).toBe('burger-king-2009');
+    // the inventory's name goes and comes back
+    expect(variantFromInventory(inventoryVariant('reverse', 'burger-king-2009'))).toEqual({ finish: 'reverse', stamp: 'burger-king-2009' });
+  });
+});
+
 describe('sellos-y-cruce-de-expansiones', () => {
   const pcStamp = (setKey: string, number: string, stamp: string): Claim => ({
     ...claim(setKey, number, 'EN', 'normal', 'pokecottage', stamp),

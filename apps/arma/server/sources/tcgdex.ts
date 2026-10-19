@@ -139,7 +139,8 @@ export async function tcgdexClaims(cat: Catalog, dex: number): Promise<{ claims:
           setName: d.set.name,
           ...(d.illustrator ? { artist: d.illustrator } : {}),
           ...(d.set.releaseDate ? { release: d.set.releaseDate } : {}),
-          ...(d.image ? { image: `${d.image}/high.webp` } : {}),
+          // its one picture is the plain card's: a stamped variant's would show it without its stamp (burger-king-2009)
+          ...(d.image && !v.stamp ? { image: `${d.image}/high.webp` } : {}),
           ...(cardId ? { cardId } : {}),
         });
       }

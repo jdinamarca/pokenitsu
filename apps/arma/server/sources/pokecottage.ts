@@ -1,7 +1,7 @@
 // PokeCottage's master set of one Pokémon (https://pokecottage.com/pokemon-master-sets/…).
 // Its text is authorized, also for production: the claims never keep an image URL. Its pictures only for local use
 // (fotos-pokecottage-en-catalogo): the album with its picture URLs is cached apart, under its own key.
-import { compactStamp, normNumber, variantFromPokecottage, type Claim } from '@pokenitsu/core';
+import { compactStamp, normNumber, variantFromPokecottage, variantLabel, type Claim } from '@pokenitsu/core';
 import { tdSetId } from '@pokenitsu/inventory';
 import { cardIdOf, intlSetByName, nameKey, tdSetByName, type Catalog } from './catalog.ts';
 import { fetchJson } from './http.ts';
@@ -103,7 +103,8 @@ export async function pokecottageClaims(
       number: String(e.cardNumber).split('/')[0]!.replace(/^#/, ''),
       lang,
       ...v,
-      label: e.variant,
+      // Burger King's 2009 cards, all reverse holo, by our name: PokeCottage calls them two ways (burger-king-2009)
+      label: v.stamp === 'burger-king-2009' ? variantLabel({ finish: 'reverse', stamp: v.stamp }) : e.variant,
       ...(finishUnknown ? { finishUnknown } : {}),
       source: 'pokecottage',
       ref: e.id,
