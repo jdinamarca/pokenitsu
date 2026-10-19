@@ -3520,3 +3520,54 @@ button {
     transform: none;
   }
 }
+
+/* the sheet's variants in Cargar (variantes-al-cargar): the one that loads in cardstock, like a picked chip */
+.vpick {
+  display: grid;
+  gap: 6px;
+}
+.vpick-h {
+  font-size: 12px;
+  color: var(--ink-mute);
+}
+.vpick-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.vchip {
+  min-height: 32px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--room-line);
+  background: var(--room-2);
+  color: var(--ink);
+  font: 500 12.5px Archivo;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+  transition:
+    background-color 160ms var(--ease-out),
+    border-color 160ms var(--ease-out),
+    transform 120ms var(--ease-out);
+}
+.vchip:hover:not(.on) {
+  border-color: #4a463d;
+}
+.vchip:active {
+  transform: scale(0.97);
+}
+.vchip.on {
+  background: var(--stock);
+  border-color: var(--stock);
+  color: var(--stock-ink);
+  font-weight: 600;
+}
+.vchip:focus-visible {
+  outline: 2px solid var(--light);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .vchip {
+    transition: none;
+  }
+}

@@ -66,6 +66,9 @@ const STAMP_ALIAS: Record<string, string> = {
   'jreast-rally2000': 'jr-stamp-rally',
   'jr-east-rally2000': 'jr-stamp-rally',
   'pokemon-card-gym': 'pokemon-card-gym',
+  // the catalog's (and the inventory's) names: setstamp, jreastrally2000
+  setstamp: 'set-logo',
+  jreastrally2000: 'jr-stamp-rally',
   // PokeCottage names Eevee's copy of Jimmy Ballard's 2006 deck apart from his other cards (mazos-y-campeonatos-de-la-familia)
   worldchampionshipsdeck2006eeveelutionsbyjimmyballard: 'world-championships-deck2006-jimmy-ballard',
 };
@@ -151,9 +154,38 @@ export function variantFromInventory(v: string): ArmaVariant {
     reversecosmos: { finish: 'reversecosmos', stamp: null },
   };
   if (known[v]) return known[v];
+  // a stamped holo or reverse, as the catalog writes them (reverseholohd5chxcnz) and inventoryVariant gives them
+  const pre = /^(reverseholo|holo)(.+)$/.exec(v);
+  if (pre) return { finish: pre[1] === 'holo' ? 'holo' : 'reverse', stamp: stampKey(pre[2]) };
   const [f, s] = v.split('~');
   const finish = (ARMA_FINISHES as readonly string[]).includes(f!) ? (f as ArmaFinish) : 'normal';
   return { finish, stamp: stampKey(s ?? v) };
+}
+
+/** a stamp without its dashes: ba-charizard-26 and bacharizard26 are the same */
+export const compactStamp = (s: string | null | undefined) => (s || '').replace(/-/g, '');
+const INV_FINISH: Record<ArmaFinish, string> = {
+  normal: 'normal',
+  holo: 'holo',
+  reverse: 'reverse',
+  cosmos: 'cosmosholo',
+  reversecosmos: 'reversecosmos',
+  pokeball: 'pokeballholo',
+  masterball: 'masterballholo',
+};
+// the catalog's names of some stamps (variant_labels)
+const INV_STAMP: Record<string, string> = { '1st-edition': 'firstedition', 'set-logo': 'setstamp', 'jr-stamp-rally': 'jreastrally2000' };
+/**
+ * A Full's variant as the inventory names it (variantes-al-cargar), the inverse of variantFromInventory: normal,
+ * cosmosholo…; a normal with a stamp is the stamp without dashes (fxewtfg7z, firstedition), a holo or a reverse one
+ * goes after holo / reverseholo, as the catalog writes them (reverseholohd5chxcnz)
+ */
+export function inventoryVariant(finish: string, stamp: string | null | undefined): string {
+  const f = (ARMA_FINISHES as readonly string[]).includes(finish) ? (finish as ArmaFinish) : 'normal';
+  if (!stamp) return INV_FINISH[f];
+  const st = INV_STAMP[stamp] || compactStamp(stamp).replace(/[^a-z0-9]/g, '');
+  const out = f === 'normal' ? st : f === 'holo' ? 'holo' + st : f === 'reverse' ? 'reverseholo' + st : st;
+  return out.slice(0, 60) || INV_FINISH[f];
 }
 
 // ---------- Battle Academy (mazos-y-campeonatos-de-la-familia) ----------

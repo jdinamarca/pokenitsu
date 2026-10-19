@@ -1,7 +1,7 @@
 // Cargar and Mi inventario (cargar-e-inventario-en-arma): the same inventory as Nitsu, through @pokenitsu/inventory,
 // always inside asViewer. Prices are only read: what Nitsu has stored, never downloaded here.
 import type { FastifyInstance } from 'fastify';
-import { searchSetsLang } from '@pokenitsu/core';
+import { inventoryVariant, searchSetsLang } from '@pokenitsu/core';
 import { CARD_COLS, createInventory, createLocations, getFx, ownClp, priceSettings, type RowBody } from '@pokenitsu/inventory';
 import { pool, tx } from './db.ts';
 import { requireViewer } from './session.ts';
@@ -146,7 +146,7 @@ export function inventoryRoutes(app: FastifyInstance) {
     return asViewer(
       v,
       async c => {
-        const [cards, prices, copies, own, cfg, photos] = await Promise.all([
+        const [cards, prices, copies, own, cfg, prints, photos] = await Promise.all([
           c.query<Pictured & { id: string }>(
             `SELECT c.id, ${CARD_COLS}, c.variants, c.variants_guessed AS vguess FROM cards c WHERE c.set_id = $1
              ORDER BY c.number_norm ~ '^[0-9]+$' DESC, nullif(regexp_replace(c.number_norm, '[^0-9]', '', 'g'), '')::int NULLS LAST, c.number`,
@@ -168,6 +168,11 @@ export function inventoryRoutes(app: FastifyInstance) {
             [sid],
           ),
           priceSettings(c),
+          // the variants of each card in its Full, in the inventory's names (variantes-al-cargar)
+          pool.query<{ card_id: string; lang: string; finish: string; stamp: string | null }>(
+            `SELECT DISTINCT p.card_id, p.lang, p.finish, p.stamp FROM arma.printings p JOIN cards k ON k.id = p.card_id WHERE k.set_id = $1`,
+            [sid],
+          ),
           // the account's own photos of a variant (variant_images, set in Nitsu)
           c.query<{ card_id: string; variant: string; img: string }>(
             `SELECT v.card_id, v.variant, v.img FROM variant_images v JOIN cards k ON k.id = v.card_id WHERE k.set_id = $1`,
@@ -177,6 +182,9 @@ export function inventoryRoutes(app: FastifyInstance) {
         const photosOf = new Map<string, Record<string, string>>();
         for (const p of photos.rows) photosOf.set(p.card_id, { ...photosOf.get(p.card_id), [p.variant]: p.img });
         const [photosOfCard, speciesEn] = await Promise.all([cardPhotos(cards.rows.map(r => r.id)), speciesNamesEn()]);
+        const fullOf = new Map<string, { lang: string; variant: string }[]>();
+        for (const p of prints.rows)
+          fullOf.set(p.card_id, [...(fullOf.get(p.card_id) || []), { lang: p.lang, variant: inventoryVariant(p.finish, p.stamp) }]);
         const priceOf = new Map(prices.rows.map(({ card_id, ...p }) => [card_id, p]));
         const copiesOf = new Map<string, unknown[]>();
         for (const { card_id, ...r } of copies.rows) copiesOf.set(card_id, [...(copiesOf.get(card_id) || []), r]);
@@ -192,6 +200,7 @@ export function inventoryRoutes(app: FastifyInstance) {
             photos: photosOf.get(r.id) || {},
             prices: priceOf.get(r.id) || null,
             copies: copiesOf.get(r.id) || [],
+            full: fullOf.get(r.id) || [],
           })),
         };
       },

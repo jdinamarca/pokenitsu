@@ -22,12 +22,14 @@ import { Shell } from './components/Shell.tsx';
 import {
   cardQty,
   COND_LABEL,
+  firstVariant,
   setVariantLabels,
   LANG_LABEL,
   litCount,
   planRow,
   setLine,
   variantName,
+  variantsOf,
   withRow,
   type LoadRow,
   type Session,
@@ -89,6 +91,8 @@ export function Cargar() {
   const [notice, setNotice] = useState<{ text: string; tone: Tone } | null>(null);
   const [pending, setPending] = useState<{ entry: Entry; nums: string[]; skipped: number[]; raw: string } | null>(null);
   const [loaded, setLoaded] = useState<Loaded[]>([]);
+  // the variant marked in the sheet (variantes-al-cargar), only for that card
+  const [chosen, setChosen] = useState<{ num: string; variant: string } | null>(null);
   // read by the queued writes, which run after the render that queued them
   const dataRef = useRef<SetCards | null>(null);
   const setIdRef = useRef<string | null>(setId);
@@ -180,6 +184,15 @@ export function Cargar() {
     return onlyMissing ? base.filter(c => !cardQty(c) || c.num === focusNum) : base;
   }, [cards, matches, onlyMissing, focusNum]);
 
+  // marking another card goes back to its automatic variant (adjusted while rendering, as React suggests)
+  if (chosen && chosen.num !== focusNum) setChosen(null);
+  const variantsFor = (card: SetCard) => variantsOf(card, session.lang);
+  /** the variant a card loads without a suffix: the one marked in its sheet, else the automatic one (or its first) */
+  const marked = (card: SetCard) => {
+    const list = variantsFor(card);
+    return chosen?.num === card.num && list.includes(chosen.variant) ? chosen.variant : firstVariant(card, list);
+  };
+
   // the marked card comes into view while typing
   useEffect(() => {
     if (focusNum) document.querySelector(`[data-num="${CSS.escape(focusNum)}"]`)?.scrollIntoView({ block: 'nearest' });
@@ -195,10 +208,10 @@ export function Cargar() {
     setProgress(null);
     queue.current = queue.current.then(fn).catch(e => authOr(e, m => say(m, 'err')));
   };
-  async function loadOne(num: string, e: EntryLike, batch?: string) {
+  async function loadOne(num: string, e: EntryLike, batch?: string, variant?: string) {
     const card = dataRef.current?.cards.find(c => c.num === num);
     if (!card || !ctx) return null;
-    const row = planRow(card, e, session, ctx);
+    const row = planRow(card, e, session, ctx, variant);
     const wasNew = cardQty(card) === 0;
     const r = await api.add({ ...row, delta: e.sign * e.qty, personal: session.personal, ...(batch ? { batch } : {}) });
     if (setIdRef.current === card.sid) updateCard(num, c => withRow(c, r));
@@ -206,8 +219,12 @@ export function Cargar() {
   }
   function runOne(num: string, e: EntryLike, raw: string, repeated: boolean) {
     const sid = setIdRef.current!;
+    const card = byNum.get(num);
+    const variant = card ? marked(card) : undefined;
+    // the card stays marked (with its variant) while the box empties
+    setLastNum(num);
     enqueue(async () => {
-      const r = await loadOne(num, e);
+      const r = await loadOne(num, e, undefined, variant);
       if (!r) return;
       if (!r.real) return say('No había copias de esa carta para quitar.', 'warn');
       lastEntry.current = { raw, set: sid };
@@ -430,7 +447,8 @@ export function Cargar() {
         return { text: `Enter cambia el estado a ${COND_LABEL[resolved.cond]} (${resolved.cond})`, muted: true };
       case 'bad':
         if (!matches) return { text: 'No entiendo esa entrada', muted: true };
-        if (matches.length === 1) return { text: `Enter carga una: ${describe(matches[0]!, planRow(matches[0]!, ONE, session, ctx))}` };
+        if (matches.length === 1)
+          return { text: `Enter carga una: ${describe(matches[0]!, planRow(matches[0]!, ONE, session, ctx, marked(matches[0]!)))}` };
         return {
           text: matches.length
             ? `${matches.length} cartas con «${text.trim()}»: clic en una para marcarla, o escribe su número`
@@ -455,15 +473,15 @@ export function Cargar() {
         if (!card) return null;
         const q = resolved.entry.qty;
         return {
-          text: `${resolved.entry.sign < 0 ? 'Se quitará' : 'Se cargará'}${q > 1 ? ` ${q}×` : ''}: ${describe(card, planRow(card, resolved.entry, session, ctx))}`,
+          text: `${resolved.entry.sign < 0 ? 'Se quitará' : 'Se cargará'}${q > 1 ? ` ${q}×` : ''}: ${describe(card, planRow(card, resolved.entry, session, ctx, marked(card)))}`,
         };
       }
       default:
-        return focus ? { text: `Cargar una: ${describe(focus, planRow(focus, ONE, session, ctx))}`, muted: true } : null;
+        return focus ? { text: `Cargar una: ${describe(focus, planRow(focus, ONE, session, ctx, marked(focus)))}`, muted: true } : null;
     }
-    // describe and locName only read the locations, already in ctx
+    // describe and locName only read the locations, already in ctx; marked reads chosen and the session
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resolved, ctx, set, index, byNum, session, focus, matches, text]);
+  }, [resolved, ctx, set, index, byNum, session, focus, matches, text, chosen]);
 
   const totals = loaded.reduce((a, l) => ({ copies: a.copies + l.copies, fresh: a.fresh + l.fresh }), { copies: 0, fresh: 0 });
   const recents = saved.recents.map(r => ({ r, s: sets?.find(x => x.id === r.id) })).filter(x => x.s);
@@ -702,11 +720,11 @@ export function Cargar() {
           <>
             <p className="code">
               {set.code || set.id} · {focus.num}
-              {set.printed ? `/${set.printed}` : ''} · {variantName(autoVariant(focus.rarity))}
+              {set.printed ? `/${set.printed}` : ''} · {variantName(marked(focus))}
             </p>
             <div className="big sheet-big">
               <CardPicture
-                own={focus.photos[autoVariant(focus.rarity)]}
+                own={focus.photos[marked(focus)]}
                 ownCard={focus.own_card}
                 img={focus.img}
                 local={focus.local}
@@ -722,6 +740,14 @@ export function Cargar() {
             <p className={'status' + (cardQty(focus) ? '' : ' out')}>
               {cardQty(focus) ? `Tienes ${copies(cardQty(focus))} · encendida` : 'Te falta · está en penumbra'}
             </p>
+            <VariantPick
+              list={variantsFor(focus)}
+              value={marked(focus)}
+              onPick={v => {
+                setChosen({ num: focus.num, variant: v });
+                entryRef.current?.focus({ preventScroll: true });
+              }}
+            />
             {focus.copies.some(r => r.qty > 0) && (
               <ul className="my-copies" aria-label={`Tus copias de ${focus.name}`}>
                 {[...focus.copies]
@@ -766,7 +792,7 @@ export function Cargar() {
             onClick={() => focus && runOne(focus.num, ONE, focus.num, false)}
           >
             <Plus size={16} strokeWidth={2} aria-hidden="true" />
-            Cargar una
+            Cargar una{focus ? ` · ${variantName(marked(focus))}` : ''}
           </button>
         </div>
         {pending && (
@@ -841,6 +867,31 @@ export function Cargar() {
         </section>
       </aside>
     </Shell>
+  );
+}
+
+/** the sheet's variants (variantes-al-cargar): one chip each, the one that loads marked */
+function VariantPick({ list, value, onPick }: { list: string[]; value: string; onPick: (v: string) => void }) {
+  return (
+    <div className="vpick">
+      <span className="vpick-h" id="vpick-h">
+        Variante
+      </span>
+      <div className="vpick-list" role="radiogroup" aria-labelledby="vpick-h">
+        {list.map(v => (
+          <button
+            key={v}
+            type="button"
+            role="radio"
+            aria-checked={v === value}
+            className={'vchip' + (v === value ? ' on' : '')}
+            onClick={() => onPick(v)}
+          >
+            {variantName(v)}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 

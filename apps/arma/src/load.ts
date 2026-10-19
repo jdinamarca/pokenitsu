@@ -80,12 +80,19 @@ export interface LoadRow {
   loc: number;
 }
 /**
- * The row an entry loads in a card, as Nitsu's loadOne: the suffix's variant or the automatic one, the entry's condition
+ * The row an entry loads in a card, as Nitsu's loadOne: the suffix's variant, the one marked or the automatic one, the entry's condition
  * or the session's, and the location: to remove, where there are copies (the fixed one first); to add, the fixed one or
  * the most specific rule that takes it (with its stored price for price rules).
  */
-export function planRow(card: SetCard, e: Pick<Entry, 'v' | 'cond' | 'sign'>, s: Session, ctx: SetContext): LoadRow {
-  const variant = e.v || autoVariant(card.rarity);
+export function planRow(
+  card: SetCard,
+  e: Pick<Entry, 'v' | 'cond' | 'sign'>,
+  s: Session,
+  ctx: SetContext,
+  chosen?: string | null,
+): LoadRow {
+  // a typed suffix first, then the variant marked in the sheet (variantes-al-cargar), then the automatic one
+  const variant = e.v || chosen || autoVariant(card.rarity);
   const cond = e.cond || s.cond;
   const same = card.copies.filter(c => c.variant === variant && c.lang === s.lang && c.cond === cond);
   let loc: number;
@@ -107,6 +114,31 @@ export function planRow(card: SetCard, e: Pick<Entry, 'v' | 'cond' | 'sign'>, s:
     });
   return { sid: card.sid, num: card.num, variant, lang: s.lang, cond, loc };
 }
+
+// the basic variants first, in this order; the stamped ones after, by name
+const VARIANT_RANK = ['normal', 'holo', 'reverse', 'firstedition', 'pokeballholo', 'masterballholo', 'cosmosholo', 'reversecosmos'];
+/**
+ * The variants a card can be loaded as (variantes-al-cargar), without repeats: its Full's in the session's language (or
+ * in all its languages when the Full doesn't have it in that one), the catalog's and the ones the account has of it;
+ * Normal, Holo and Reverse when none is known
+ */
+export function variantsOf(card: Pick<SetCard, 'full' | 'variants' | 'copies'>, lang: string): string[] {
+  const full = card.full || [];
+  const inLang = full.filter(f => f.lang === lang);
+  const found = new Set([
+    ...(inLang.length ? inLang : full).map(f => f.variant),
+    ...(card.variants || []),
+    ...card.copies.map(c => c.variant),
+  ]);
+  const list = found.size ? [...found] : ['normal', 'holo', 'reverse'];
+  const rank = (v: string) => (VARIANT_RANK.includes(v) ? VARIANT_RANK.indexOf(v) : VARIANT_RANK.length);
+  return list.sort((a, b) => rank(a) - rank(b) || variantName(a).localeCompare(variantName(b), 'es'));
+}
+/** the variant marked at first: the automatic one when the card has it, else the first */
+export const firstVariant = (card: Pick<SetCard, 'rarity'>, list: string[]) => {
+  const auto = autoVariant(card.rarity);
+  return list.includes(auto) ? auto : list[0] || auto;
+};
 
 /** copies of a card in every variant, language and condition */
 export const cardQty = (card: Pick<SetCard, 'copies'>) => card.copies.reduce((n, c) => n + c.qty, 0);
