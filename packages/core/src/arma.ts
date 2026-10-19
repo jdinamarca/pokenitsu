@@ -43,6 +43,7 @@ export const STAMP_LABEL: Record<string, string> = {
   'pokemon-card-gym': 'Pokémon TCG Gym',
   glossy: 'Glossy',
   'starlight-holo': 'Starlight Holo',
+  'burger-king-2009': 'Burger King 2009 (sello Platinum)',
 };
 
 /** "Pokémon Card Gym" / "pokemonCardGym" → "pokemon-card-gym" */
@@ -71,6 +72,12 @@ const STAMP_ALIAS: Record<string, string> = {
   jreastrally2000: 'jr-stamp-rally',
   // PokeCottage names Eevee's copy of Jimmy Ballard's 2006 deck apart from his other cards (mazos-y-campeonatos-de-la-familia)
   worldchampionshipsdeck2006eeveelutionsbyjimmyballard: 'world-championships-deck2006-jimmy-ballard',
+  // Burger King's 2009 promotion (burger-king-2009): TCGdex and Bulbapedia call its stamp "Platinum", PokeCottage
+  // "burgerKing09"; the inventory writes it burgerking2009
+  platinum: 'burger-king-2009',
+  'burger-king': 'burger-king-2009',
+  'burger-king09': 'burger-king-2009',
+  burgerking2009: 'burger-king-2009',
 };
 export const stampKey = (s: unknown): string | null => {
   const k = slug(s);
