@@ -81,6 +81,17 @@ describe('carga-en-la-vitrina: elegir la expansión', () => {
     expect(searchSets(sets, 'scarlet').map(s => s.id)).toEqual(['sv1', 'sv3pt5', 'ja-SV2a']));
   it('nombre japonés', () => expect(searchSets(sets, 'ポケモン')[0]!.id).toBe('ja-SV2a'));
   it('vacío no busca', () => expect(searchSets(sets, '  ')).toEqual([]));
+  it('trainer-kit-sun-moon: por palabras en el nombre y la serie, después de lo demás', () => {
+    const kits = [
+      ...sets,
+      { id: 'sm1', code: 'SUM', name: 'Sun & Moon', series: 'Sun & Moon', source: 'pokemontcg' },
+      { id: 'td-tk-sm-l', code: 'TK10L', name: 'SM trainer Kit (Lycanroc)', series: 'Sun & Moon', source: 'tcgdex-en' },
+      { id: 'td-tk-sm-r', code: 'TK10A', name: 'SM trainer Kit (Alolan Raichu)', series: 'Sun & Moon', source: 'tcgdex-en' },
+    ];
+    expect(searchSets(kits, 'sun & moon trainer kit').map(s => s.id)).toEqual(['td-tk-sm-l', 'td-tk-sm-r']);
+    expect(searchSets(kits, 'Sun & Moon')[0]!.id).toBe('sm1');
+    expect(searchSets(kits, 'kit raichu').map(s => s.id)).toEqual(['td-tk-sm-r']);
+  });
   it('sufijo de idioma', () => expect(searchSetsLang(sets, 'MEW ES')).toMatchObject({ lang: 'ES', sets: [{ id: 'sv3pt5' }] }));
   it('sin sufijo', () => expect(searchSetsLang(sets, 'jungle')).toMatchObject({ lang: null, sets: [{ id: 'base2' }] }));
 });
