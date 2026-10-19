@@ -97,6 +97,11 @@ describe('2.1 código de catálogo y variantes', () => {
     ] as const)
       expect(back(f, st)).toEqual({ finish: f, stamp: st && compactStamp(st) });
   });
+  it('PokeCottage: normal, nonHolo y holofoil son acabados, no sellos', () => {
+    expect(variantFromPokecottage('normal')).toEqual({ finish: 'normal', stamp: null });
+    expect(variantFromPokecottage('nonHolo')).toEqual({ finish: 'normal', stamp: null });
+    expect(variantFromPokecottage('holofoil')).toEqual({ finish: 'holo', stamp: null });
+  });
   it('mazos y productos de PokeCottage quedan como sello con su nombre', () => {
     const v = variantFromPokecottage('charizarddeck', 'Charizard Deck');
     expect(v).toEqual({ finish: 'normal', stamp: 'charizarddeck', label: 'Charizard Deck' });

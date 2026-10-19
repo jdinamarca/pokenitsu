@@ -13,6 +13,17 @@ import { fillJaDetails } from './details.ts';
 
 // catalog downloads (cards, exchange rate) are shared by every account: plain connections
 const inv = createInventory({ query: (text, params) => pool.query(text, params) as Promise<never>, tx });
+/**
+ * The international sets only TCGdex has (catalogo-desde-tcgdex), when there are none yet or the last sync is over 3 days
+ * old: in the background at start, so the server never waits for TCGdex
+ */
+export async function ensureTdSets() {
+  const { rows } = await pool.query<{ n: number; fresh: boolean }>(
+    `SELECT count(*)::int AS n, coalesce(max(synced_at) > now() - interval '3 days', false) AS fresh FROM sets WHERE source = 'tcgdex-en'`,
+  );
+  if (rows[0]!.n && rows[0]!.fresh) return 0;
+  return inv.syncTdSets();
+}
 // boxes and binders (cajas-y-carpetas-en-arma): the same operations as Nitsu's Ubicaciones
 const locs = createLocations(inv);
 

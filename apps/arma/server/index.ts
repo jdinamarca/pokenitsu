@@ -9,7 +9,7 @@ import { detailsJob, pendingDetails, startJaDetails } from './details.ts';
 import { LOCAL_IMAGE_DIR, localPhotosOn } from './local.ts';
 import { isOwner, ownedCopies, requireOwner, requireViewer, viewerOf } from './session.ts';
 import { authRoutes, initAuth } from './auth.ts';
-import { inventoryRoutes } from './inventory.ts';
+import { ensureTdSets, inventoryRoutes } from './inventory.ts';
 import { galleryRoutes } from './gallery.ts';
 import { masterSetRoutes } from './masterSets.ts';
 import { auditPrintings, FULL_RULES, type ArmaFinish, type ArmaRules, type AuditReason } from '@pokenitsu/core';
@@ -384,4 +384,9 @@ const port = Number(process.env.ARMA_PORT || 3002);
 for (const m of await migrate()) console.log('migración aplicada:', m);
 initAuth();
 await app.listen({ port, host: '127.0.0.1' });
+// the sets only TCGdex has, in the background (catalogo-desde-tcgdex)
+ensureTdSets().then(
+  n => n && console.log(`expansiones de TCGdex agregadas o actualizadas: ${n}`),
+  e => console.warn('no pude actualizar las expansiones de TCGdex:', e instanceof Error ? e.message : e),
+);
 console.log(`Arma tu colección (API) en http://127.0.0.1:${port}`);

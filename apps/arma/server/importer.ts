@@ -16,7 +16,8 @@ import { pool, tx } from './db.ts';
 import { confirmedClaims, deducedClaims, spanishClaims } from './languages.ts';
 import { bulbapediaLanguages } from './sources/bulbapedia-idiomas.ts';
 import { wikidexSpanish } from './sources/wikidex.ts';
-import { cardIdOf, catalogClaims, loadCatalog } from './sources/catalog.ts';
+import { addCards, cardIdOf, catalogClaims, loadCatalog } from './sources/catalog.ts';
+import { createCatalog } from '@pokenitsu/inventory';
 import { stats } from './sources/http.ts';
 import { battleAcademyList } from './sources/battleAcademy.ts';
 import { bulbapediaLinks } from './sources/bulbapedia.ts';
@@ -46,6 +47,9 @@ export interface ImportSummary {
 
 const running = new Map<number, Promise<ImportSummary>>();
 /** one import per Pokémon at a time */
+// downloads a set's cards once, as Cargar does (shared with Nitsu)
+const catalog = createCatalog({ query: (text, params) => pool.query(text, params) as Promise<never>, tx });
+
 export function importDex(dex: number): Promise<ImportSummary> {
   if (!running.has(dex))
     running.set(
@@ -143,6 +147,10 @@ async function run(dex: number): Promise<ImportSummary> {
       for (const b of cards.slice(1)) if (b.setKey !== cards[0]!.setKey) links.push({ a: cards[0]!, b, source: 'bulbapedia' });
     sources.bulbapedia = { ...sources.bulbapedia!, kept: links.length };
   }
+  // the cards of the sets only TCGdex has, downloaded the first time an import brings them (catalogo-desde-tcgdex)
+  const onlyTd = [...new Set(claims.map(c => c.setKey))].filter(k => cat.sets.get(k)?.source === 'tcgdex-en');
+  for (const k of onlyTd) await catalog.ensureSetCards(k).catch(() => {});
+  await addCards(cat, onlyTd);
   const merged = mergeClaims(claims);
   for (const p of merged) p.cardId ||= cardIdOf(cat, p.setKey, p.number) ?? null;
   // a link whose Japanese number Bulbapedia does not give: the only card of the species in that set, if there is one

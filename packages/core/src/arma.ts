@@ -129,6 +129,10 @@ export function variantFromPokecottage(variantId: string, label?: string): ArmaV
   const id = String(variantId);
   const base: Record<string, ArmaFinish> = {
     standard: 'normal',
+    // finishes some entries name another way (catalogo-desde-tcgdex): McDonald's 2024 "normal", Undaunted's "nonHolo"
+    normal: 'normal',
+    nonHolo: 'normal',
+    holofoil: 'holo',
     holo: 'holo',
     reverseHolo: 'reverse',
     cosmosHolo: 'cosmos',

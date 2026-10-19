@@ -1,15 +1,11 @@
 // The current app's catalog, read-only (public.sets, cards, card_prices): set keys, its own card pictures
 // and the TCGplayer variants stored with the prices
 import { normNumber, variantFromTcgplayer, type ArmaVariant, type Claim } from '@pokenitsu/core';
+import { crossTcgdex, nameKey, tdSetId } from '@pokenitsu/inventory';
 import { pool } from '../db.ts';
 import { fetchJson } from './http.ts';
 
-export const nameKey = (x: unknown) =>
-  String(x ?? '')
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, '');
+export { nameKey };
 
 interface SetRow {
   id: string;
@@ -26,6 +22,8 @@ export interface Catalog {
   intlByName: Map<string, string>;
   /** Japanese set by its English collector name (PokeCottage, Bulbapedia's jpset) */
   jaByName: Map<string, string>;
+  /** the international sets only TCGdex has (catalogo-desde-tcgdex), by their name */
+  tdByName: Map<string, string>;
   /** TCGdex's international set id → our set id */
   fromTcgdex: Map<string, string>;
   /** "set|number" → our card id */
@@ -34,41 +32,53 @@ export interface Catalog {
 
 export async function loadCatalog(): Promise<Catalog> {
   const { rows: sets } = await pool.query<SetRow>(
-    `SELECT id, name, name_en, code, source, release_date, tcgdex_en FROM public.sets WHERE source IN ('ptcg', 'tcgdex-ja')`,
+    `SELECT id, name, name_en, code, source, release_date, tcgdex_en FROM public.sets WHERE source IN ('ptcg', 'tcgdex-ja', 'tcgdex-en')`,
   );
   const { rows: cards } = await pool.query<{ id: string; set_id: string; number_norm: string }>(
-    `SELECT c.id, c.set_id, c.number_norm FROM public.cards c JOIN public.sets s ON s.id = c.set_id WHERE s.source IN ('ptcg', 'tcgdex-ja')`,
+    `SELECT c.id, c.set_id, c.number_norm FROM public.cards c JOIN public.sets s ON s.id = c.set_id
+     WHERE s.source IN ('ptcg', 'tcgdex-ja', 'tcgdex-en')`,
   );
   const intl = sets.filter(s => s.source === 'ptcg');
-  const fromTcgdex = new Map<string, string>();
-  for (const s of intl) if (s.tcgdex_en) fromTcgdex.set(s.tcgdex_en, s.id);
-  // the rest by name, the way the API does it (prices.js), only when the name is unambiguous on both sides
+  const onlyTd = sets.filter(s => s.source === 'tcgdex-en');
+  // by tcgdex_en, by name and by id, as the catalog does (sellos-y-cruce-de-expansiones)
   const td = (await fetchJson<{ id: string; name: string }[]>('https://api.tcgdex.net/v2/en/sets')) || [];
-  const tdByName = new Map<string, string[]>();
-  for (const x of td) tdByName.set(nameKey(x.name), [...(tdByName.get(nameKey(x.name)) || []), x.id]);
-  const ourByName = new Map<string, SetRow[]>();
-  for (const s of intl) ourByName.set(nameKey(s.name), [...(ourByName.get(nameKey(s.name)) || []), s]);
-  for (const [k, ours] of ourByName) {
-    const theirs = tdByName.get(k);
-    if (ours.length === 1 && theirs?.length === 1 && !fromTcgdex.has(theirs[0]!) && !ours[0]!.tcgdex_en)
-      fromTcgdex.set(theirs[0]!, ours[0]!.id);
-  }
-  // what did not cross by name, by its id when one of ours has it and nobody took it (sellos-y-cruce-de-expansiones):
-  // TCGdex's "Undaunted" (hgss3) is our "HS—Undaunted", its "SVP Black Star Promos" (svp) our Scarlet & Violet ones
-  const taken = new Set(fromTcgdex.values());
-  const ourIds = new Set(intl.map(s => s.id));
-  for (const x of td) if (!fromTcgdex.has(x.id) && ourIds.has(x.id) && !taken.has(x.id)) fromTcgdex.set(x.id, x.id);
+  const fromTcgdex = crossTcgdex(intl, td);
+  // and what did not cross is its own set in the catalog when it has it (catalogo-desde-tcgdex): tk-xy-sy → td-tk-xy-sy
+  const ids = new Set(onlyTd.map(s => s.id));
+  for (const x of td) if (!fromTcgdex.has(x.id) && ids.has(tdSetId(x.id))) fromTcgdex.set(x.id, tdSetId(x.id));
   return {
     sets: new Map(sets.map(s => [s.id, s])),
     intlByName: new Map(intl.map(s => [nameKey(s.name), s.id])),
+    tdByName: new Map(onlyTd.map(s => [nameKey(s.name), s.id])),
     jaByName: new Map(sets.filter(s => s.source === 'tcgdex-ja' && s.name_en).map(s => [nameKey(s.name_en), s.id])),
     fromTcgdex,
     cardIds: new Map(cards.map(c => [`${c.set_id}|${c.number_norm}`, c.id])),
   };
 }
+/** the cards of these sets, added to the catalog once they are downloaded (an import that brought them first) */
+export async function addCards(cat: Catalog, setIds: string[]) {
+  if (!setIds.length) return;
+  const { rows } = await pool.query<{ id: string; set_id: string; number_norm: string }>(
+    `SELECT id, set_id, number_norm FROM public.cards WHERE set_id = ANY ($1)`,
+    [setIds],
+  );
+  for (const c of rows) cat.cardIds.set(`${c.set_id}|${c.number_norm}`, c.id);
+}
 /** an international set by its name, also without the "EX " prefix Bulbapedia uses for the EX era */
 export const intlSetByName = (cat: Catalog, name: unknown) =>
   cat.intlByName.get(nameKey(name)) ?? cat.intlByName.get(nameKey(String(name ?? '').replace(/^EX /, '')));
+/**
+ * A set only TCGdex has, by its name or, for a trainer kit, by its Pokémon (catalogo-desde-tcgdex): PokeCottage's
+ * "XY Trainer Kit: Sylveon Half Deck" is TCGdex's "XY trainer Kit (Sylveon)"
+ */
+export function tdSetByName(cat: Catalog, name: unknown): string | undefined {
+  const hit = cat.tdByName.get(nameKey(name));
+  if (hit) return hit;
+  const kit = String(name ?? '').match(/^(.*?)\s*Trainer Kit:?\s*(.+?)(?:\s+Half Deck)?$/i);
+  if (!kit) return undefined;
+  const want = nameKey(`${kit[1]} trainer kit (${kit[2]})`);
+  return cat.tdByName.get(want);
+}
 // "Undaunted" is our "HS—Undaunted": the only set whose name ends with it after a series prefix
 export function bySeriesSuffix(cat: Catalog, english: string): string | undefined {
   const k = nameKey(english);
