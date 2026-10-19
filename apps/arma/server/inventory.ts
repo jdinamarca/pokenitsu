@@ -1,7 +1,7 @@
 // Cargar and Mi inventario (cargar-e-inventario-en-arma): the same inventory as Nitsu, through @pokenitsu/inventory,
 // always inside asViewer. Prices are only read: what Nitsu has stored, never downloaded here.
 import type { FastifyInstance } from 'fastify';
-import { inventoryVariant, searchSetsLang } from '@pokenitsu/core';
+import { inventoryVariant, searchSetsLang, variantLabel, type ArmaFinish } from '@pokenitsu/core';
 import { CARD_COLS, createInventory, createLocations, getFx, ownClp, priceSettings, type RowBody } from '@pokenitsu/inventory';
 import { pool, tx } from './db.ts';
 import { requireViewer } from './session.ts';
@@ -50,6 +50,19 @@ const variantLabels = () =>
   pool
     .query<{ slug: string; label: string }>('SELECT slug, label FROM variant_labels')
     .then(r => Object.fromEntries(r.rows.map(x => [x.slug, x.label])));
+
+// a Full's stamp the catalog has no name for, by its inventory name (trainer-kit-sun-moon): tksmalolanninetales26 →
+// "Trainer Kit Sun & Moon · Mazo Alolan Ninetales #26"; a stamp without a better name than itself is left out
+type Stamped = { finish: string; stamp: string | null };
+const stampLabels = (rows: Stamped[]): Record<string, string> => {
+  const out: Record<string, string> = {};
+  for (const p of rows) {
+    if (!p.stamp) continue;
+    const name = variantLabel({ finish: p.finish as ArmaFinish, stamp: p.stamp });
+    if (!name.endsWith(p.stamp)) out[inventoryVariant(p.finish, p.stamp)] = name;
+  }
+  return out;
+};
 
 // for a card without a picture: one of the same Pokémon from an international expansion, as Nitsu's /api/dex
 // (shown dimmed, as a reference, never as the card's own)
@@ -196,13 +209,14 @@ export function inventoryRoutes(app: FastifyInstance) {
         const fullOf = new Map<string, { lang: string; variant: string }[]>();
         for (const p of prints.rows)
           fullOf.set(p.card_id, [...(fullOf.get(p.card_id) || []), { lang: p.lang, variant: inventoryVariant(p.finish, p.stamp) }]);
+        const fullLabels = stampLabels(prints.rows);
         const priceOf = new Map(prices.rows.map(({ card_id, ...p }) => [card_id, p]));
         const copiesOf = new Map<string, unknown[]>();
         for (const { card_id, ...r } of copies.rows) copiesOf.set(card_id, [...(copiesOf.get(card_id) || []), r]);
         return {
           cfg,
           fx,
-          labels,
+          labels: { ...fullLabels, ...labels },
           own: ownMap(own.rows, fx),
           cards: (await withRefs(cards.rows)).map(r => ({
             ...r,
@@ -242,11 +256,15 @@ export function inventoryRoutes(app: FastifyInstance) {
           c.query<OwnRow>('SELECT o.card_id, o.variant, o.clp, o.usd::float AS usd FROM price_overrides o'),
           priceSettings(c),
         ]);
-        const photosOfCard = await cardPhotos([...new Set(rows.rows.map(r => r.card_id))]);
+        const ids = [...new Set(rows.rows.map(r => r.card_id))];
+        const [photosOfCard, stamped] = await Promise.all([
+          cardPhotos(ids),
+          pool.query<Stamped>('SELECT DISTINCT finish, stamp FROM arma.printings WHERE card_id = ANY ($1) AND stamp IS NOT NULL', [ids]),
+        ]);
         return {
           cfg,
           fx,
-          labels,
+          labels: { ...stampLabels(stamped.rows), ...labels },
           own: ownMap(own.rows, fx),
           rows: (await withRefs(rows.rows)).map(r => ({ ...r, ...(photosOfCard.get(r.card_id) || NO_PHOTOS) })),
           locations: locations.rows,

@@ -111,6 +111,13 @@ export interface SearchableSet extends SetLike {
 export function searchSets<S extends SearchableSet>(sets: readonly S[], q: string, limit = 14): S[] {
   q = q.trim().toLowerCase();
   if (!q) return [];
+  // after those: every word in its name, series or era, in any order ("sun & moon trainer kit" is "SM trainer Kit (…)")
+  const fold = (s: string) =>
+    s
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+  const words = fold(q).split(/\s+/);
   const score = (s: S) => {
     const code = (s.code || '').toLowerCase(),
       id = s.id.toLowerCase(),
@@ -122,6 +129,8 @@ export function searchSets<S extends SearchableSet>(sets: readonly S[], q: strin
     if (name.includes(q) || (ja && ja.includes(q))) return 3;
     if ((s.series || '').toLowerCase().includes(q) || eraOf(s).toLowerCase().includes(q) || code.startsWith(q) || id.startsWith(q))
       return 4;
+    const all = fold([s.name, s.name_ja, s.series, eraOf(s)].filter(Boolean).join(' '));
+    if (words.length > 1 && words.every(w => all.includes(w))) return 5;
     return 99;
   };
   return sets

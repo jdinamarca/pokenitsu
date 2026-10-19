@@ -1,6 +1,6 @@
-// Bulbapedia's deck lists of each Battle Academy (mazos-y-campeonatos-de-la-familia): which original card each deck
-// reprints and, in the numbered decks, its number there. License CC BY-NC-SA (to review before production); text only.
-import { normNumber, type BattleAcademyCard } from '@pokenitsu/core';
+// Bulbapedia's deck lists of each Battle Academy (mazos-y-campeonatos-de-la-familia) and of the 2018 Sun & Moon Trainer
+// Kit (trainer-kit-sun-moon): which original card each deck reprints and, in the numbered decks, its number there. License CC BY-NC-SA (to review before production); text only.
+import { normNumber, type ArmaFinish, type BattleAcademyCard } from '@pokenitsu/core';
 import { intlSetByName, type Catalog } from './catalog.ts';
 import { fetchJson } from './http.ts';
 
@@ -14,6 +14,31 @@ export interface ListedCard {
   name: string;
   setName: string;
   number: string;
+  kit?: string;
+  finish?: ArmaFinish;
+  langs?: string[];
+}
+// the Sun & Moon Trainer Kit whose cards are reprints with the deck's number in a circle (trainer-kit-sun-moon)
+export const SM_KIT_PAGE = 'Sun & Moon Trainer Kit: Alolan Sandslash & Alolan Ninetales (TCG)';
+const LANG_NAMES: Record<string, string> = {
+  English: 'EN',
+  German: 'DE',
+  French: 'FR',
+  Italian: 'IT',
+  Spanish: 'ES',
+  Portuguese: 'PT',
+  Dutch: 'NL',
+};
+/** "are released in English, German, French, Italian, Spanish, and Portuguese": its codes; English when it doesn't say */
+export function releasedIn(wikitext: string): string[] {
+  const m = wikitext.match(/released in ([A-Za-z ,]+?)\./);
+  const langs = m
+    ? m[1]!
+        .split(/,\s*(?:and\s+)?|\s+and\s+/)
+        .map(x => LANG_NAMES[x.trim()])
+        .filter((x): x is string => !!x)
+    : [];
+  return langs.length ? [...new Set(langs)] : ['EN'];
 }
 // {{TCGV}}, {{ex}}, {{TT GX}}… after a card's link: its suffix
 const SUFFIX = /\{\{(?:TCG|TT )?(VMAX|VSTAR|V|ex|EX|GX)\}\}/;
@@ -27,12 +52,12 @@ export function parseBattleAcademy(wikitext: string, year: number): ListedCard[]
   const out: ListedCard[] = [];
   let deck = '';
   for (const line of wikitext.split('\n')) {
-    const h = line.match(/\{\{halfdecklist\/(?:nm)?header\|title=([^|}]+?)(?: Deck)?\s*[|}]/);
+    const h = line.match(/\{\{[Hh]alfdecklist\/(?:nm)?header\|title=([^|}]+?)(?: Half)?(?: Deck)?\s*[|}]/);
     if (h) {
       deck = h[1]!.trim();
       continue;
     }
-    const e = line.match(/\{\{halfdecklist\/(?:nm)?entry\|([^|]*)\|(.*)$/);
+    const e = line.match(/\{\{[Hh]alfdecklist\/(?:nm)?entry\|([^|]*)\|(.*)$/);
     if (!e || !deck) continue;
     const first = e[1]!.trim();
     const deckNo = /^\d{1,2}$/.test(first) ? String(Number(first)) : null;
@@ -43,6 +68,15 @@ export function parseBattleAcademy(wikitext: string, year: number): ListedCard[]
     else if (link) [, name, setName, number] = link as unknown as [string, string, string, string];
     else continue;
     const suffix = !id && e[2]!.match(SUFFIX)?.[1];
+    // the kit's note says the finish: [SM Promo 128; Water Web Holofoil], [SM Promo 128; Non Holofoil]
+    const note = e[2]!.match(/\[[^\]]*;\s*([^\]]+)\]/)?.[1];
+    const finish: ArmaFinish | undefined = note
+      ? /non[- ]holo/i.test(note)
+        ? 'normal'
+        : /holo/i.test(note)
+          ? 'holo'
+          : undefined
+      : undefined;
     out.push({
       year,
       deck,
@@ -50,6 +84,7 @@ export function parseBattleAcademy(wikitext: string, year: number): ListedCard[]
       name: (suffix && !name.endsWith(' ' + suffix) ? `${name} ${suffix}` : name).trim(),
       setName: setName.trim(),
       number: number.trim(),
+      ...(finish ? { finish } : {}),
     });
   }
   return out;
@@ -84,7 +119,7 @@ export function placeBattleAcademy(cat: Catalog, listed: readonly ListedCard[]):
   return { cards, unmatched };
 }
 
-/** every Battle Academy's lists, one page after another (cached a day) */
+/** every Battle Academy's lists and the Sun & Moon Trainer Kit's, one page after another (cached a day) */
 export async function battleAcademyList(cat: Catalog): Promise<{ cards: BattleAcademyCard[]; listed: number; unmatched: number }> {
   const listed: ListedCard[] = [];
   for (const year of BATTLE_ACADEMY_YEARS) {
@@ -98,6 +133,16 @@ export async function battleAcademyList(cat: Catalog): Promise<{ cards: BattleAc
     if (!cards.length) throw new Error(`Battle Academy ${year}: ninguna carta (¿cambió el formato?)`);
     listed.push(...cards);
   }
+  // the Sun & Moon Trainer Kit of 2018, in every language it came out in
+  const d = await fetchJson<{ parse?: { wikitext?: { '*': string } } }>(
+    `${API}?action=parse&page=${encodeURIComponent(SM_KIT_PAGE)}&prop=wikitext&format=json&redirects=1`,
+  );
+  const kit = d?.parse?.wikitext?.['*'];
+  if (!kit) throw new Error('Bulbapedia no trajo el Trainer Kit Sun & Moon');
+  const langs = releasedIn(kit);
+  const kitCards = parseBattleAcademy(kit, 2018).filter(c => c.deckNo);
+  if (!kitCards.length) throw new Error('Trainer Kit Sun & Moon: ninguna carta (¿cambió el formato?)');
+  listed.push(...kitCards.map(c => ({ ...c, kit: 'sm', langs })));
   const placed = placeBattleAcademy(cat, listed);
   return { ...placed, listed: listed.length };
 }

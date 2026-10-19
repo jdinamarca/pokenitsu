@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('../db.ts', () => ({ pool: { query: async () => ({ rows: [] }) } }));
-const { parseBattleAcademy, placeBattleAcademy } = await import('./battleAcademy.ts');
+const { parseBattleAcademy, placeBattleAcademy, releasedIn } = await import('./battleAcademy.ts');
 
 // lines as Bulbapedia writes them (Battle Academy 2020, 2022 and 2024)
 const p2020 = `This product contains exclusive prints of {{TCG ID|Dragon Majesty|Charizard|3}}
@@ -60,5 +60,37 @@ describe('mazos-y-campeonatos-de-la-familia: las listas de Battle Academy', () =
       'swshp|SWSH065|Eevee|null|SWSH Black Star Promos',
     ]);
     expect(r.unmatched).toBe(2);
+  });
+});
+
+// the 2018 Sun & Moon Trainer Kit, as Bulbapedia writes it
+const kit = `{{Halfdecklist/nmheader|title=Alolan Ninetales Half Deck|type=Fairy|symbol=no}}
+{{Halfdecklist/nmentry|1|{{TCG|Grass Energy}}|Energy|Grass|1}}
+{{Halfdecklist/nmentry|17|{{TCG ID|SM Promo|Alolan Ninetales|128}} <small>'''[SM Promo 128; Non Holofoil]'''</small>|Fairy||1}}
+{{Halfdecklist/nmentry|26|{{TCG ID|Ultra Prism|Eevee|104}} <small>'''[Ultra Prism 104/156]'''</small>|Colorless||1}}
+{{Halfdecklist/nmentry|30|{{TCG ID|SM Promo|Alolan Ninetales|128}} <small>'''[SM Promo 128; Water Web Holofoil]'''</small>|Fairy||1}}
+{{Halfdecklist/nmfooter}}
+
+==Languages this set is released in==
+The Sun & Moon Trainer Kits: Alolan Sandslash & Alolan Ninetales are released in English, German, French, Italian, Spanish, and Portuguese.`;
+
+describe('trainer-kit-sun-moon: la lista del kit de Alolan Sandslash y Alolan Ninetales', () => {
+  it('el mazo sin "Half Deck", el número del mazo y el acabado de la nota', () =>
+    expect(parseBattleAcademy(kit, 2018)).toEqual([
+      {
+        year: 2018,
+        deck: 'Alolan Ninetales',
+        deckNo: '17',
+        name: 'Alolan Ninetales',
+        setName: 'SM Promo',
+        number: '128',
+        finish: 'normal',
+      },
+      { year: 2018, deck: 'Alolan Ninetales', deckNo: '26', name: 'Eevee', setName: 'Ultra Prism', number: '104' },
+      { year: 2018, deck: 'Alolan Ninetales', deckNo: '30', name: 'Alolan Ninetales', setName: 'SM Promo', number: '128', finish: 'holo' },
+    ]));
+  it('los idiomas en que salió; inglés si la página no lo dice', () => {
+    expect(releasedIn(kit)).toEqual(['EN', 'DE', 'FR', 'IT', 'ES', 'PT']);
+    expect(releasedIn('nada')).toEqual(['EN']);
   });
 });

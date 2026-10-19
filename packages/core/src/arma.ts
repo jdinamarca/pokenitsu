@@ -82,9 +82,11 @@ export const variantLabel = (v: ArmaVariant): string => {
   if (!v.stamp) return f;
   if (v.stamp === '1st-edition' && v.finish === 'normal') return '1st Edition';
   const ba = BA_STAMP.exec(v.stamp);
+  const tk = KIT_STAMP.exec(v.stamp);
   const s =
     STAMP_LABEL[v.stamp] ||
     v.label ||
+    (tk && kitLabel(tk[1]!, titled(tk[2]!), tk[3]!)) ||
     (ba
       ? baLabel(
           null,
@@ -204,12 +206,33 @@ export interface BattleAcademyCard {
   setKey: string;
   setName?: string;
   number: string;
+  /** a Trainer Kit's deck instead of Battle Academy's (trainer-kit-sun-moon): 'sm' for the 2018 Sun & Moon kit */
+  kit?: string;
+  /** the finish the list states ("Water Web Holofoil"); otherwise holo for V/ex/GX and normal for the rest */
+  finish?: ArmaFinish;
+  /** the languages the product came out in; English when the list doesn't say */
+  langs?: string[];
 }
 /** the deck's stamp on its original card: ba-charizard-26, ba-mewtwo (as the current app's inventory: normal~ba-charizard-12) */
 export const baStamp = (deck: string, deckNo?: string | null) => `ba-${slug(deck)}${deckNo ? '-' + normNumber(deckNo) : ''}`;
 export const baLabel = (year: number | null, deck: string, deckNo?: string | null) =>
   `Battle Academy${year ? ' ' + year : ''} · Mazo ${deck}${deckNo ? ' #' + normNumber(deckNo) : ''}`;
 const BA_STAMP = /^ba-([a-z-]+?)(?:-(\d+))?$/;
+// a Trainer Kit's reprint keeps its card's number and symbol, with the deck's number in a circle (trainer-kit-sun-moon)
+const KIT_NAME: Record<string, string> = { sm: 'Sun & Moon' };
+const KIT_STAMP = /^tk-([a-z]+)-([a-z-]+?)-(\d+)$/;
+const kitLabel = (kit: string, deck: string, deckNo: string) =>
+  `Trainer Kit ${KIT_NAME[kit] ?? kit.toUpperCase()} · Mazo ${deck} #${normNumber(deckNo)}`;
+/** the stamp and name of a deck's card: Battle Academy's, or a Trainer Kit's (tk-sm-alolan-ninetales-26) */
+export const deckStamp = (b: Pick<BattleAcademyCard, 'kit' | 'deck' | 'deckNo'>) =>
+  b.kit && b.deckNo ? `tk-${b.kit}-${slug(b.deck)}-${normNumber(b.deckNo)}` : baStamp(b.deck, b.deckNo);
+export const deckLabel = (b: Pick<BattleAcademyCard, 'kit' | 'deck' | 'deckNo' | 'year'>) =>
+  b.kit && b.deckNo ? kitLabel(b.kit, b.deck, b.deckNo) : baLabel(b.year, b.deck, b.deckNo);
+const titled = (s: string) =>
+  s
+    .split('-')
+    .map(w => w.replace(/^./, x => x.toUpperCase()))
+    .join(' ');
 /** the species' own cards: "Eevee", "Eevee V", "Eevee δ" (not "Eevee & Snorlax-GX"'s partner) */
 const ofSpecies = (name: string, species: string) => name === species || (name.startsWith(species + ' ') && !name.includes('&'));
 const HOLO_NAME = /\s(V|VMAX|VSTAR|ex|EX|GX)$/;
@@ -236,13 +259,20 @@ export function battleAcademyClaims(
       setKey: b.setKey,
       number: b.number,
       // PokeCottage's variant names the deck ("eeveedeck"); its id ends in the finish: 133-ba22e-1-holo
-      finish: c.finish === 'normal' && c.ref?.endsWith('-holo') ? 'holo' : c.finish,
-      stamp: baStamp(b.deck, b.deckNo),
-      label: baLabel(b.year, b.deck, b.deckNo),
+      finish: b.finish ?? (c.finish === 'normal' && c.ref?.endsWith('-holo') ? 'holo' : c.finish),
+      stamp: deckStamp(b),
+      label: deckLabel(b),
       ...(b.setName ? { setName: b.setName } : {}),
     };
   };
   const out = claims.map(c => {
+    // a Trainer Kit PokeCottage files as its own set (pc:tk11a #26): the species' card with that deck number
+    if (/^pc:tk11[a-z]$/.test(c.setKey)) {
+      const hit = list.filter(
+        b => b.kit === 'sm' && b.deckNo && normNumber(b.deckNo) === normNumber(c.number) && ofSpecies(b.name, species),
+      );
+      return hit.length === 1 ? as(c, hit[0]!) : c;
+    }
     const set = /^pc:ba(\d\d)([a-z])$/.exec(c.setKey);
     if (set) {
       const deck = list.filter(b => b.year === 2000 + Number(set[1]) && slug(b.deck)[0] === set[2] && ofSpecies(b.name, species));
@@ -260,6 +290,7 @@ export function battleAcademyClaims(
       const [, deck, no] = st;
       const hit = list.find(
         b =>
+          !b.kit &&
           slug(b.deck) === deck &&
           (b.deckNo ? normNumber(b.deckNo) : '') === (no ? normNumber(no) : '') &&
           b.setKey === c.setKey &&
@@ -282,21 +313,25 @@ export function battleAcademyClaims(
   });
   const added: Claim[] = list
     .filter(b => ofSpecies(b.name, species))
-    .map(b => {
-      const stamp = baStamp(b.deck, b.deckNo);
+    .flatMap(b => {
+      const stamp = deckStamp(b);
       const same = out.find(c => c.setKey === b.setKey && normNumber(c.number) === normNumber(b.number) && c.stamp === stamp);
-      return {
-        setKey: b.setKey,
-        number: b.number,
-        lang: 'EN',
-        finish: same?.finish ?? (HOLO_NAME.test(b.name) ? 'holo' : 'normal'),
-        stamp,
-        label: baLabel(b.year, b.deck, b.deckNo),
-        source: 'bulbapedia-mazos',
-        ref: `Battle Academy ${b.year} (TCG)`,
-        name: b.name,
-        ...(b.setName ? { setName: b.setName } : {}),
-      };
+      return (b.langs?.length ? b.langs : ['EN']).map(lang => {
+        // the set's name in that language, as the other sources wrote it (Ultraprisma); the list's is English
+        const setName = lang === 'EN' ? b.setName : out.find(c => c.setKey === b.setKey && c.lang === lang && c.setName)?.setName;
+        return {
+          setKey: b.setKey,
+          number: b.number,
+          lang,
+          finish: b.finish ?? same?.finish ?? (HOLO_NAME.test(b.name) ? 'holo' : 'normal'),
+          stamp,
+          label: deckLabel(b),
+          source: 'bulbapedia-mazos',
+          ref: b.kit ? `Trainer Kit ${b.kit} ${b.year} (TCG)` : `Battle Academy ${b.year} (TCG)`,
+          name: b.name,
+          ...(setName ? { setName } : {}),
+        };
+      });
     });
   return { claims: out, added, converted };
 }

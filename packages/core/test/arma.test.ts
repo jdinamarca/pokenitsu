@@ -566,6 +566,90 @@ describe('mazos con sello y de campeonato (mazos-y-campeonatos-de-la-familia)', 
     expect(variantLabel({ finish: 'normal', stamp: 'ba-charizard-12' })).toBe('Battle Academy · Mazo Charizard #12');
   });
 
+  it('trainer-kit-sun-moon: la Eevee del kit de Alolan Ninetales es Ultra Prism #104 con el sello del mazo, en sus idiomas', () => {
+    const langs = ['EN', 'DE', 'FR', 'IT', 'ES', 'PT'];
+    const kit: BattleAcademyCard[] = [
+      {
+        year: 2018,
+        kit: 'sm',
+        deck: 'Alolan Ninetales',
+        deckNo: '26',
+        name: 'Eevee',
+        setKey: 'sm5',
+        setName: 'Ultra Prism',
+        number: '104',
+        finish: 'normal',
+        langs,
+      },
+      {
+        year: 2018,
+        kit: 'sm',
+        deck: 'Alolan Ninetales',
+        deckNo: '17',
+        name: 'Alolan Ninetales',
+        setKey: 'smp',
+        number: 'SM128',
+        finish: 'normal',
+        langs,
+      },
+      {
+        year: 2018,
+        kit: 'sm',
+        deck: 'Alolan Ninetales',
+        deckNo: '30',
+        name: 'Alolan Ninetales',
+        setKey: 'smp',
+        number: 'SM128',
+        finish: 'holo',
+        langs,
+      },
+    ];
+    const r = battleAcademyClaims(
+      [
+        { setKey: 'sm5', number: '104', lang: 'ES', finish: 'normal', stamp: null, source: 'tcgdex', setName: 'Ultraprisma' },
+        {
+          ...pc('pc:tk11a', '26', '133-tk11a-26-normal', 'alolanninetalesdeck'),
+          setName: 'Sun & Moon Trainer Kit: Alolan Ninetales Half Deck',
+        },
+      ],
+      [...list, ...kit],
+      'Eevee',
+    );
+    const order = (l: string) => langs.indexOf(l);
+    const all = mergeClaims([...r.claims, ...r.added])
+      .filter(p => p.setKey === 'sm5' && p.stamp)
+      .sort((x, y) => order(x.lang) - order(y.lang));
+    expect(
+      all.map(
+        p =>
+          `${p.lang}|${p.stamp}|${p.facts
+            .filter(f => f.field === 'exists')
+            .map(f => f.source)
+            .join('+')}`,
+      ),
+    ).toEqual([
+      'EN|tk-sm-alolan-ninetales-26|pokecottage+bulbapedia-mazos',
+      ...langs.slice(1).map(l => `${l}|tk-sm-alolan-ninetales-26|bulbapedia-mazos`),
+    ]);
+    expect(r.claims.find(c => c.source === 'pokecottage')).toMatchObject({
+      setKey: 'sm5',
+      number: '104',
+      label: 'Trainer Kit Sun & Moon · Mazo Alolan Ninetales #26',
+      setName: 'Ultra Prism',
+    });
+    expect(r.claims.some(c => c.setKey.startsWith('pc:'))).toBe(false);
+    // in another language, the set's name as the other sources write it
+    expect(r.added.find(c => c.lang === 'ES' && c.setKey === 'sm5')!.setName).toBe('Ultraprisma');
+    const ninetales = battleAcademyClaims([], kit, 'Alolan Ninetales').added.filter(c => c.lang === 'EN');
+    expect(ninetales.map(c => `${c.number}|${c.finish}|${c.stamp}`)).toEqual([
+      'SM128|normal|tk-sm-alolan-ninetales-17',
+      'SM128|holo|tk-sm-alolan-ninetales-30',
+    ]);
+    expect(variantLabel({ finish: 'normal', stamp: 'tk-sm-alolan-ninetales-26' })).toBe(
+      'Trainer Kit Sun & Moon · Mazo Alolan Ninetales #26',
+    );
+  });
+
   it('el mazo de Ballard escrito sin guiones es el mismo y cuenta como campeonato', () => {
     const ballard = stampKey('worldchampionshipsdeck2006eeveelutionsbyjimmyballard');
     expect(ballard).toBe(stampKey('worldChampionshipsDeck2006JimmyBallard'));
