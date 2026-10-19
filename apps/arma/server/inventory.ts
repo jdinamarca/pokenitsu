@@ -6,7 +6,7 @@ import { CARD_COLS, createInventory, createLocations, getFx, ownClp, priceSettin
 import { pool, tx } from './db.ts';
 import { requireViewer } from './session.ts';
 import { ensureLocalCardPhotos, PRINTED_PHOTOS } from './catalogPhotos.ts';
-import { pickCardPhotos, type CardPhotos } from './photoOrder.ts';
+import { pickCardPhotos, pickVariantPhotos, type CardPhotos, type VariantPhotoRow } from './photoOrder.ts';
 import { localPhotosOn } from './local.ts';
 import { asViewer } from './viewerTx.ts';
 import { fillJaDetails } from './details.ts';
@@ -96,6 +96,24 @@ export async function cardPhotos(ids: string[]): Promise<Map<string, CardPhotos>
   return pickCardPhotos([...rows.map(r => ({ ...r, printed: false })), ...printed.map(r => ({ ...r, printed: true }))], localPhotosOn());
 }
 const NO_PHOTOS: CardPhotos = { own_card: null, local: null };
+// the photos of each card's stamped variants, from their printings in the Full (foto-de-la-variante-con-sello); a photo
+// marked as another variant's is left out
+async function variantPhotos(ids: string[]) {
+  if (!ids.length) return new Map<string, Record<string, Record<string, { src: string; source: string; local: boolean }>>>();
+  const { rows } = await pool.query<VariantPhotoRow & { finish: string; stamp: string }>(
+    `SELECT DISTINCT p.card_id, p.lang, p.finish, p.stamp, f.value AS src, s.name, s.permission
+     FROM arma.printings p JOIN arma.facts f ON f.printing_code = p.code AND f.field = 'image' AND f.value IS NOT NULL
+     JOIN arma.sources s ON s.id = f.source_id AND s.images
+     LEFT JOIN arma.photo_marks m ON m.src = f.value
+     WHERE p.card_id = ANY ($1) AND p.stamp IS NOT NULL AND coalesce(m.shows, p.stamp) = p.stamp
+     ORDER BY p.card_id, p.lang, src`,
+    [ids],
+  );
+  return pickVariantPhotos(
+    rows.map(r => ({ ...r, variant: inventoryVariant(r.finish, r.stamp) })),
+    localPhotosOn(),
+  );
+}
 
 // each Pokémon's English name, from the international catalog (the most common name of its single-Pokémon cards):
 // computed once while the server runs, since the catalog doesn't change in a session (cargar-selector-y-nombre)
@@ -205,7 +223,11 @@ export function inventoryRoutes(app: FastifyInstance) {
         ]);
         const photosOf = new Map<string, Record<string, string>>();
         for (const p of photos.rows) photosOf.set(p.card_id, { ...photosOf.get(p.card_id), [p.variant]: p.img });
-        const [photosOfCard, speciesEn] = await Promise.all([cardPhotos(cards.rows.map(r => r.id)), speciesNamesEn()]);
+        const [photosOfCard, speciesEn, variantsOfCard] = await Promise.all([
+          cardPhotos(cards.rows.map(r => r.id)),
+          speciesNamesEn(),
+          variantPhotos(cards.rows.map(r => r.id)),
+        ]);
         const fullOf = new Map<string, { lang: string; variant: string }[]>();
         for (const p of prints.rows)
           fullOf.set(p.card_id, [...(fullOf.get(p.card_id) || []), { lang: p.lang, variant: inventoryVariant(p.finish, p.stamp) }]);
@@ -226,6 +248,7 @@ export function inventoryRoutes(app: FastifyInstance) {
             prices: priceOf.get(r.id) || null,
             copies: copiesOf.get(r.id) || [],
             full: fullOf.get(r.id) || [],
+            variant_photos: variantsOfCard.get(r.id) || {},
           })),
         };
       },
@@ -241,7 +264,7 @@ export function inventoryRoutes(app: FastifyInstance) {
       v,
       async c => {
         const [rows, locations, own, cfg] = await Promise.all([
-          c.query<Pictured & { card_id: string }>(
+          c.query<Pictured & { card_id: string; variant: string }>(
             `SELECT i.card_id, i.variant, i.lang, i.cond, i.loc, i.qty, i.personal, (extract(epoch FROM i.added_at) * 1000)::bigint AS added,
                     ${CARD_COLS}, coalesce(s.name_en, s.name) AS set_name, coalesce(s.code, '') AS set_code,
                     s.series AS set_series, s.source AS set_source, s.lang AS set_lang,
@@ -257,16 +280,22 @@ export function inventoryRoutes(app: FastifyInstance) {
           priceSettings(c),
         ]);
         const ids = [...new Set(rows.rows.map(r => r.card_id))];
-        const [photosOfCard, stamped] = await Promise.all([
+        const [photosOfCard, stamped, variantsOfCard] = await Promise.all([
           cardPhotos(ids),
           pool.query<Stamped>('SELECT DISTINCT finish, stamp FROM arma.printings WHERE card_id = ANY ($1) AND stamp IS NOT NULL', [ids]),
+          variantPhotos(ids),
         ]);
         return {
           cfg,
           fx,
           labels: { ...stampLabels(stamped.rows), ...labels },
           own: ownMap(own.rows, fx),
-          rows: (await withRefs(rows.rows)).map(r => ({ ...r, ...(photosOfCard.get(r.card_id) || NO_PHOTOS) })),
+          rows: (await withRefs(rows.rows)).map(r => ({
+            ...r,
+            ...(photosOfCard.get(r.card_id) || NO_PHOTOS),
+            // its variant's photos with a stamp, by language (foto-de-la-variante-con-sello)
+            variant_photo: variantsOfCard.get(r.card_id)?.[r.variant] || {},
+          })),
           locations: locations.rows,
         };
       },

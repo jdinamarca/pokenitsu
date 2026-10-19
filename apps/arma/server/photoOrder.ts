@@ -21,3 +21,21 @@ export function pickCardPhotos(rows: PhotoRow[], localOn: boolean): Map<string, 
   }
   return new Map([...out].map(([id, { own_card, local }]) => [id, { own_card, local }]));
 }
+
+/** a variant's photo with a stamp (foto-de-la-variante-con-sello): its printing's in the Full, by language */
+export type VariantPhoto = { src: string; source: string; local: boolean };
+export type VariantPhotoRow = { card_id: string; variant: string; lang: string; src: string; name: string; permission: string };
+/** each card's photos of its stamped variants: { variant: { lang: photo } }; one that may be shown wins over a local one */
+export function pickVariantPhotos(rows: VariantPhotoRow[], localOn: boolean): Map<string, Record<string, Record<string, VariantPhoto>>> {
+  const out = new Map<string, Record<string, Record<string, VariantPhoto>>>();
+  for (const r of rows) {
+    const local = r.permission === 'local';
+    if (local && !localOn) continue;
+    const card = out.get(r.card_id) || {};
+    const langs = (card[r.variant] ||= {});
+    const cur = langs[r.lang];
+    if (!cur || (cur.local && !local)) langs[r.lang] = { src: r.src, source: r.name, local };
+    out.set(r.card_id, card);
+  }
+  return out;
+}

@@ -5,6 +5,7 @@ import {
   litCount,
   pictureOf,
   planRow,
+  variantPhoto,
   variantsOf,
   rowFor,
   rowMatches,
@@ -178,6 +179,19 @@ describe('fotos-del-catalogo-en-arma: qué foto muestra una carta', () => {
     expect(pictureOf(null, null, null, L, '/ref.webp')).toEqual({ src: L.src, kind: 'local', source: 'Limitless TCG' }));
   it('después la de referencia', () => expect(pictureOf(null, null, null, null, '/ref.webp')).toEqual({ src: '/ref.webp', kind: 'ref' }));
   it('sin nada', () => expect(pictureOf(null, null, null, null, null)).toEqual({ src: null, kind: 'none' }));
+  // foto-de-la-variante-con-sello
+  const kit = { src: '/img-local/pokecottage-fotos/tk11a-26.webp', source: 'PokeCottage (fotos)', local: true };
+  it('la foto de la variante con sello va antes que la de la carta, con la marca de solo local', () =>
+    expect(pictureOf(null, '/own.jpg', '/cat.webp', L, null, kit)).toEqual({ src: kit.src, kind: 'local', source: 'PokeCottage (fotos)' }));
+  it('tu foto de la variante le gana', () =>
+    expect(pictureOf('/v.jpg', null, '/cat.webp', null, null, kit)).toMatchObject({ src: '/v.jpg' }));
+  it('la del idioma pedido; si no, la de inglés; en una japonesa, no', () => {
+    const es = { ...kit, src: '/es.webp' };
+    expect(variantPhoto({ EN: kit, ES: es }, 'ES')).toBe(es);
+    expect(variantPhoto({ EN: kit }, 'ES')).toBe(kit);
+    expect(variantPhoto({ EN: kit }, 'JA')).toBeNull();
+    expect(variantPhoto(undefined, 'EN')).toBeNull();
+  });
 });
 
 describe('variantes-al-cargar: las variantes de una carta', () => {

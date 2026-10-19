@@ -125,12 +125,20 @@ export interface SetCard {
   name_en?: string | null;
   /** its variants in its Full, each in a language, in the inventory's names (variantes-al-cargar) */
   full?: { lang: string; variant: string }[];
+  /** the photos of its variants with a stamp, from the Full: { variant: { lang: photo } } (foto-de-la-variante-con-sello) */
+  variant_photos?: Record<string, VariantPhotos>;
 }
 export interface LocalPhoto {
   src: string;
   /** the source's name: "Limitless TCG" */
   source: string;
 }
+/** a stamped variant's photo, from its printing in the Full; local when only for local use */
+export interface VariantPhoto extends LocalPhoto {
+  local: boolean;
+}
+/** a variant's photos by language */
+export type VariantPhotos = Record<string, VariantPhoto>;
 export interface PriceCfg {
   source: string;
   cond: Record<string, number>;
@@ -181,6 +189,8 @@ export interface InvRow extends CopyRow {
   ref: string | null;
   own_card: string | null;
   local: LocalPhoto | null;
+  /** its variant's photos with a stamp, by language (foto-de-la-variante-con-sello) */
+  variant_photo?: VariantPhotos;
 }
 export interface Inventory {
   labels: Record<string, string>;

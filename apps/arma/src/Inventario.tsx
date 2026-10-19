@@ -7,7 +7,18 @@ import { Gate } from './Cargar.tsx';
 import { CardPicture } from './components/CardPicture.tsx';
 import { Shell } from './components/Shell.tsx';
 import { navigate } from './router.ts';
-import { clp, LANG_LABEL, setVariantLabels, rowFor, rowMatches, shelvesOf, VARIANT_LABEL, variantName, type ForFilter } from './load.ts';
+import {
+  clp,
+  LANG_LABEL,
+  setVariantLabels,
+  rowFor,
+  rowMatches,
+  shelvesOf,
+  VARIANT_LABEL,
+  variantName,
+  variantPhoto,
+  type ForFilter,
+} from './load.ts';
 
 const keyOf = (r: InvRow) => `${r.card_id}|${r.variant}|${r.lang}|${r.cond}|${r.loc}`;
 const rowBody = (r: InvRow) => ({ sid: r.sid, num: r.num, variant: r.variant, lang: r.lang, cond: r.cond, loc: r.loc });
@@ -220,6 +231,7 @@ export function Inventario() {
                                 img={r.img}
                                 local={r.local}
                                 reference={r.ref}
+                                variant={variantPhoto(r.variant_photo, r.lang)}
                                 name={r.name}
                               />
                               {r.qty > 1 && <span className="owned">×{r.qty}</span>}
@@ -299,7 +311,16 @@ function Sheet({
         {(r.set_code || r.sid).toUpperCase()} · {r.num} · {r.set_name}
       </p>
       <div className="big sheet-big">
-        <CardPicture own={r.own_img} ownCard={r.own_card} img={r.img} local={r.local} reference={r.ref} name={r.name} big />
+        <CardPicture
+          own={r.own_img}
+          ownCard={r.own_card}
+          img={r.img}
+          local={r.local}
+          reference={r.ref}
+          variant={variantPhoto(r.variant_photo, r.lang)}
+          name={r.name}
+          big
+        />
       </div>
       <h2 className="card-name">{r.name}</h2>
       <div className="own">
