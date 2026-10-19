@@ -367,8 +367,21 @@ export function mergeClaims(claims: readonly Claim[]): MergedPrinting[] {
       tp = (f: ArmaFinish) => has('tcgplayer', f);
     // what the sources that name the holo say (PokeCottage, TCGdex with its foil)
     const specific = (f: ArmaFinish) => list.some(c => !generic(c) && c.finish === f && !c.stamp);
+    // the EX era's reverse holo carries its expansion's logo (reverse-con-sello-ex): where PokeCottage has the stamp and no
+    // plain reverse, and another source has that reverse, the set's logo is it, however a source types it (TCGdex says
+    // normal, reverse or holo; PokeCottage normal)
+    const pcs = list.filter(c => c.source === 'pokecottage');
+    const exReverse =
+      /^ex\d+$/.test(list[0]!.setKey) &&
+      pcs.some(c => c.stamp === 'set-logo') &&
+      !pcs.some(c => c.finish === 'reverse' && !c.stamp) &&
+      list.some(c => c.source !== 'pokecottage' && c.finish === 'reverse' && !c.stamp);
     const out: Claim[] = [];
     for (const c of list) {
+      if (exReverse && c.stamp === 'set-logo') {
+        out.push({ ...c, finish: 'reverse', stamp: null, label: c.label || variantLabel(c) });
+        continue;
+      }
       let finish = c.finish;
       let inferred = false;
       if (c.source === 'tcgplayer' && !c.stamp && finish === 'normal' && !td('normal') && (td('holo') || td('cosmos')) && !tp('holo'))

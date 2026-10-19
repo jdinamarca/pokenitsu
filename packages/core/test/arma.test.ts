@@ -108,6 +108,59 @@ describe('2.1 código de catálogo y variantes', () => {
     expect(m[0]!.finish).toBe('cosmos');
     expect(m[0]!.facts.filter(f => f.field === 'exists').map(f => f.source)).toEqual(['tcgdex', 'tcgplayer']);
   });
+  it('era EX: el sello de la expansión de TCGdex y PokeCottage es la Reverse (reverse-con-sello-ex)', () => {
+    const m = mergeClaims([
+      claim('ex11', '68', 'EN', 'normal', 'tcgplayer'),
+      claim('ex11', '68', 'EN', 'reverse', 'tcgplayer'),
+      claim('ex11', '68', 'EN', 'reverse', 'pokemontcg'),
+      claim('ex11', '68', 'EN', 'normal', 'tcgdex'),
+      claim('ex11', '68', 'EN', 'normal', 'tcgdex', 'set-logo'),
+      { ...claim('ex11', '68', 'EN', 'normal', 'pokecottage', 'set-logo'), label: 'Expansion Stamp' },
+      claim('ex11', '68', 'EN', 'normal', 'pokecottage', 'hd5chx3d3'),
+    ]);
+    const rev = m.filter(p => p.finish === 'reverse');
+    expect(rev).toHaveLength(1);
+    expect(rev[0]!.stamp).toBeNull();
+    expect(rev[0]!.facts.filter(f => f.field === 'exists').map(f => f.source)).toEqual([
+      'tcgplayer',
+      'pokemontcg',
+      'tcgdex',
+      'pokecottage',
+    ]);
+    expect(rev[0]!.facts.filter(f => f.field === 'variant').map(f => f.value)).toEqual([
+      'Reverse',
+      'Reverse',
+      'Sello de la expansión',
+      'Expansion Stamp',
+    ]);
+    expect(m.some(p => p.stamp === 'set-logo')).toBe(false);
+  });
+  it('era EX: también cuando TCGdex anota el sello como reverse o como holo', () => {
+    for (const f of ['reverse', 'holo'] as const) {
+      const m = mergeClaims([
+        claim('ex11', '18', 'EN', 'holo', 'tcgplayer'),
+        claim('ex11', '18', 'EN', 'reverse', 'tcgplayer'),
+        claim('ex11', '18', 'EN', 'holo', 'tcgdex'),
+        claim('ex11', '18', 'EN', f, 'tcgdex', 'set-logo'),
+        claim('ex11', '18', 'EN', 'holo', 'pokecottage'),
+        claim('ex11', '18', 'EN', 'normal', 'pokecottage', 'set-logo'),
+      ]);
+      expect(m.map(p => `${p.finish}|${p.stamp}`).sort()).toEqual(['holo|null', 'reverse|null']);
+    }
+  });
+  it('el sello de la expansión sigue aparte fuera de la era EX o si PokeCottage tiene una reverse sin sello', () => {
+    const sv = mergeClaims([
+      claim('sv3', '86', 'EN', 'reverse', 'tcgplayer'),
+      claim('sv3', '86', 'EN', 'normal', 'pokecottage', 'set-logo'),
+    ]);
+    expect(sv.map(p => `${p.finish}|${p.stamp}`).sort()).toEqual(['normal|set-logo', 'reverse|null']);
+    const ex = mergeClaims([
+      claim('ex2', '63', 'EN', 'reverse', 'tcgplayer'),
+      claim('ex2', '63', 'EN', 'reverse', 'pokecottage'),
+      claim('ex2', '63', 'EN', 'normal', 'pokecottage', 'set-logo'),
+    ]);
+    expect(ex.map(p => `${p.finish}|${p.stamp}`).sort()).toEqual(['normal|set-logo', 'reverse|null']);
+  });
   it('promo GX: el "normal" de TCGdex es el holo de TCGplayer', () => {
     const m = mergeClaims([claim('smp', 'SM233', 'EN', 'normal', 'tcgdex'), claim('smp', 'SM233', 'EN', 'holo', 'tcgplayer')]);
     expect(m.map(p => p.finish)).toEqual(['holo']);

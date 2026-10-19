@@ -115,7 +115,11 @@ export const variantName = (p: Printing): string => {
   // a Battle Academy card only Bulbapedia's lists bring is named by them: "Battle Academy 2020 · Mazo Mewtwo"
   const named = (src: string) => p.facts.variant?.find(f => f.source === src)?.value;
   const pc = named('pokecottage') ?? named('bulbapedia-mazos');
-  return p.stamp && pc && !/^(standard|holo|reverse holo)$/i.test(pc) ? pc : variantLabel({ finish: p.finish, stamp: p.stamp });
+  if (p.stamp && pc && !/^(standard|holo|reverse holo)$/i.test(pc)) return pc;
+  // the EX era's reverse holo, which a source calls by its expansion's logo (reverse-con-sello-ex)
+  const logo =
+    !p.stamp && p.finish === 'reverse' && p.facts.variant?.some(f => /^(expansion stamp|sello de la expansión)$/i.test(f.value || ''));
+  return logo ? variantLabel({ finish: 'reverse', stamp: 'set-logo' }) : variantLabel({ finish: p.finish, stamp: p.stamp });
 };
 export const tagOf = (p: Printing) => `${p.lang} · ${variantName(p)}`;
 
