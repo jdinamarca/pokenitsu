@@ -6,7 +6,7 @@ import { LANG_LABEL, setLine } from '../load.ts';
 
 type Tab = 'ja' | 'intl';
 /** one expansion of the list, with the language it opens in (a recent's, or a search's "MEW ES") */
-type Option = { s: CardSet; lang: Lang | null };
+type Option = { s: CardSet; lang: Lang | null; typed?: boolean };
 type Section = { title: string; options: Option[] };
 
 /**
@@ -28,7 +28,8 @@ export function SetPicker({
   sessionLang: Lang;
   /** distinct cards with copies per expansion; null while it loads */
   progress: Record<string, number> | null;
-  onChoose: (s: CardSet, lang: Lang | null) => void;
+  /** typed: the language was written in the search, not a recent's (idioma-al-abrir-expansion) */
+  onChoose: (s: CardSet, lang: Lang | null, typed: boolean) => void;
   onClose: () => void;
 }) {
   const [q, setQ] = useState('');
@@ -40,7 +41,7 @@ export function SetPicker({
   const sections = useMemo((): Section[] => {
     if (q.trim()) {
       const r = searchSetsLang(sets, q, 50);
-      return [{ title: r.sets.length ? 'Resultados' : '', options: r.sets.map(s => ({ s, lang: r.lang })) }];
+      return [{ title: r.sets.length ? 'Resultados' : '', options: r.sets.map(s => ({ s, lang: r.lang, typed: !!r.lang })) }];
     }
     return [
       ...(recents.length ? [{ title: 'Recientes', options: recents }] : []),
@@ -67,7 +68,7 @@ export function SetPicker({
     } else if (e.key === 'Enter' && flat.length) {
       e.preventDefault();
       const o = flat[Math.min(sel, flat.length - 1)]!;
-      onChoose(o.s, o.lang);
+      onChoose(o.s, o.lang, !!o.typed);
     } else if (e.key === 'Escape') {
       e.preventDefault();
       onClose();
@@ -145,7 +146,7 @@ export function SetPicker({
                   className={'result' + (k === sel ? ' on' : '') + (o.s.id === current ? ' now' : '')}
                   tabIndex={-1}
                   onMouseEnter={() => setSel(k)}
-                  onClick={() => onChoose(o.s, o.lang)}
+                  onClick={() => onChoose(o.s, o.lang, !!o.typed)}
                 >
                   <b>
                     {o.s.name}

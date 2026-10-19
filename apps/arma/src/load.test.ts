@@ -13,6 +13,9 @@ import {
   withRow,
   type Session,
   type SetContext,
+  openLang,
+  otherLangs,
+  withWest,
 } from './load.ts';
 
 const set: CardSet = {
@@ -228,5 +231,36 @@ describe('variantes-al-cargar: las variantes de una carta', () => {
     expect(planRow(sandstorm, { v: null, cond: null, sign: 1 }, session, ctx, 'fxewtfg7z').variant).toBe('fxewtfg7z');
     expect(planRow(sandstorm, { v: 'reverse', cond: null, sign: 1 }, session, ctx, 'fxewtfg7z').variant).toBe('reverse');
     expect(planRow(sandstorm, { v: null, cond: null, sign: 1 }, session, ctx, null).variant).toBe('normal');
+  });
+});
+
+describe('the language an expansion opens in (idioma-al-abrir-expansion)', () => {
+  it('an international expansion after a Japanese one goes back to the last Western language, or English', () => {
+    expect(openLang({ typed: null, setLang: null, current: 'JA', west: 'ES' })).toBe('ES');
+    expect(openLang({ typed: null, setLang: null, current: 'JA' })).toBe('EN');
+    expect(openLang({ typed: null, setLang: null, current: 'ZH' })).toBe('EN');
+  });
+  it('a typed language and a Japanese expansion keep theirs; a Western one stays', () => {
+    expect(openLang({ typed: 'JA', setLang: null, current: 'ES', west: 'ES' })).toBe('JA');
+    expect(openLang({ typed: null, setLang: 'JA', current: 'ES', west: 'ES' })).toBe('JA');
+    expect(openLang({ typed: null, setLang: null, current: 'FR', west: 'ES' })).toBe('FR');
+  });
+  it('remembers the last Western language only', () => {
+    const s = { lang: 'IT' as const, cond: 'NM' as const, personal: false, dest: 'auto' as const };
+    expect(withWest(s).west).toBe('IT');
+    expect(withWest({ ...s, lang: 'JA', west: 'IT' }).west).toBe('IT');
+  });
+});
+
+describe('a card that did not come out in the language (idioma-al-abrir-expansion)', () => {
+  const swsh190 = { full: ['DE', 'EN', 'ES', 'FR', 'IT', 'PT'].map(lang => ({ lang, variant: lang === 'EN' ? 'cosmosholo' : 'holo' })) };
+  it('says where it did', () => {
+    expect(otherLangs(swsh190, 'JA')).toEqual(['EN', 'ES', 'PT', 'FR', 'DE', 'IT']);
+  });
+  it('nothing when it did, when Chinese covers ZH-TW, or when the Full does not know the card', () => {
+    expect(otherLangs(swsh190, 'EN')).toBeNull();
+    expect(otherLangs({ full: [{ lang: 'ZH-TW', variant: 'holo' }] }, 'ZH')).toBeNull();
+    expect(otherLangs({ full: [] }, 'JA')).toBeNull();
+    expect(otherLangs({}, 'JA')).toBeNull();
   });
 });

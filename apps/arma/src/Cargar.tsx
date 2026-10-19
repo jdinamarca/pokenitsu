@@ -30,8 +30,11 @@ import {
   setLine,
   variantName,
   variantPhoto,
+  openLang,
+  otherLangs,
   variantsOf,
   withRow,
+  withWest,
   type LoadRow,
   type Session,
 } from './load.ts';
@@ -121,7 +124,7 @@ export function Cargar() {
       writeSaved(next);
       return next;
     });
-  const setSession = (patch: Partial<Session>) => updateSaved(s => ({ ...s, session: { ...s.session, ...patch } }));
+  const setSession = (patch: Partial<Session>) => updateSaved(s => ({ ...s, session: withWest({ ...s.session, ...patch }) }));
 
   const openSet = useCallback(
     (id: string) => {
@@ -155,8 +158,19 @@ export function Cargar() {
         setSets(s.sets);
         setLocations([...inv.locations].sort((a, b) => a.pos - b.pos || a.id - b.id));
         const last = readSaved().recents[0];
-        if (last && s.sets.some(x => x.id === last.id)) openSet(last.id);
-        else {
+        const lastSet = last && s.sets.find(x => x.id === last.id);
+        if (lastSet) {
+          // reopened with the rule of opening it (idioma-al-abrir-expansion): an international one not in an Asian language
+          const sv = readSaved().session;
+          const lang = openLang({ typed: null, setLang: langCode(lastSet.lang), current: sv.lang, west: sv.west });
+          if (lang !== sv.lang)
+            setSaved(x => {
+              const next = { ...x, session: withWest({ ...x.session, lang }) };
+              writeSaved(next);
+              return next;
+            });
+          openSet(lastSet.id);
+        } else {
           setStatus('idle');
           setPicking(true);
         }
@@ -176,6 +190,10 @@ export function Cargar() {
   const resolved = useMemo(() => (data ? resolveEntry(text, index) : null), [data, text, index]);
   const focusNum = resolved?.kind === 'card' ? resolved.num : lastNum;
   const focus = focusNum ? byNum.get(focusNum) || null : null;
+  // a card its Full doesn't know in the session's language (idioma-al-abrir-expansion): a warning, never a block
+  const langWord = (LANG_LABEL[session.lang] || session.lang).toLowerCase();
+  const notIn = (card: SetCard) => (otherLangs(card, session.lang) ? ` · no salió en ${langWord}` : '');
+  const focusLangs = focus ? otherLangs(focus, session.lang) : null;
   const count = useMemo(() => (set ? litCount(set, cards) : { have: 0, total: 0 }), [set, cards]);
   // a name instead of a number (cargar-selector-y-nombre): the case shows only the cards that match
   const named = useMemo(() => (resolved?.kind === 'bad' ? nameQuery(text) : null), [resolved, text]);
@@ -379,11 +397,12 @@ export function Cargar() {
     runOne(r.num, r.entry, raw, repeated);
   }
 
-  function chooseSet(s: CardSet, suffixLang: Lang | null) {
-    // a language suffix ("MEW ES") changes the session's; a single-language expansion sets its own
-    const lang = suffixLang || langCode(s.lang) || session.lang;
+  function chooseSet(s: CardSet, given: Lang | null, typed = false) {
+    // a language typed in the search ("MEW ES") changes the session's; a single-language expansion sets its own; an
+    // international one doesn't keep an Asian language: it goes back to the last Western one (idioma-al-abrir-expansion)
+    const lang = openLang({ typed: typed ? given : null, setLang: langCode(s.lang), current: given || session.lang, west: session.west });
     updateSaved(sv => ({
-      session: { ...sv.session, lang },
+      session: withWest({ ...sv.session, lang }),
       recents: [{ id: s.id, lang }, ...sv.recents.filter(r => r.id !== s.id)].slice(0, 8),
     }));
     setPicking(false);
@@ -474,11 +493,13 @@ export function Cargar() {
         if (!card) return null;
         const q = resolved.entry.qty;
         return {
-          text: `${resolved.entry.sign < 0 ? 'Se quitará' : 'Se cargará'}${q > 1 ? ` ${q}×` : ''}: ${describe(card, planRow(card, resolved.entry, session, ctx, marked(card)))}`,
+          text: `${resolved.entry.sign < 0 ? 'Se quitará' : 'Se cargará'}${q > 1 ? ` ${q}×` : ''}: ${describe(card, planRow(card, resolved.entry, session, ctx, marked(card)))}${notIn(card)}`,
         };
       }
       default:
-        return focus ? { text: `Cargar una: ${describe(focus, planRow(focus, ONE, session, ctx, marked(focus)))}`, muted: true } : null;
+        return focus
+          ? { text: `Cargar una: ${describe(focus, planRow(focus, ONE, session, ctx, marked(focus)))}${notIn(focus)}`, muted: true }
+          : null;
     }
     // describe and locName only read the locations, already in ctx; marked reads chosen and the session
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -742,6 +763,11 @@ export function Cargar() {
             <p className={'status' + (cardQty(focus) ? '' : ' out')}>
               {cardQty(focus) ? `Tienes ${copies(cardQty(focus))} · encendida` : 'Te falta · está en penumbra'}
             </p>
+            {focusLangs && (
+              <p className="lang-warn" role="note">
+                Esta carta no salió en {langWord}. Salió en: {focusLangs.join(', ')}
+              </p>
+            )}
             <VariantPick
               list={variantsFor(focus)}
               value={marked(focus)}
