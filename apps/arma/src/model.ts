@@ -147,11 +147,22 @@ export function shelvesOf(printings: Printing[], sources: Map<string, Source>): 
         (a.stamp || '').localeCompare(b.stamp || ''),
     );
     const lead = ps.find(p => p.lang === 'EN') || ps[0]!;
+    // a promo series' opening date is not the card's (Radiant Eevee SWSH230 has swshp's 2019): the other printings' date
+    // first, then that one, then the design's (fecha-real-de-las-promos)
+    const dates = ps.map(p => day(p.release)).filter((d): d is string => !!d);
+    const real = ps
+      .filter(p => p.release && !(/promo/i.test(p.set_name || '') && day(p.release) === day(p.set_release)))
+      .map(p => day(p.release)!);
     const date =
-      ps
-        .map(p => p.design_date || p.release)
-        .filter(Boolean)
-        .sort()[0] || '';
+      real.sort()[0] ||
+      dates.sort()[0] ||
+      day(
+        ps
+          .map(p => p.design_date)
+          .filter(Boolean)
+          .sort()[0],
+      ) ||
+      '';
     return {
       id,
       date,

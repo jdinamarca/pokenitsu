@@ -9,6 +9,7 @@ import {
   ownership,
   regionOf,
   shelvesBySet,
+  shelvesOf,
   variantName,
   withPhotoShows,
 } from './model.ts';
@@ -198,4 +199,53 @@ describe('reverse-con-sello-ex: el nombre de la Reverse de la era EX', () => {
         pr({ set_key: 'ex2', number: '63', lang: 'EN', finish: 'reverse', facts: { variant: [fact('pokecottage', 'Reverse Holo')] } }),
       ),
     ).toBe('Reverse'));
+});
+
+describe('shelvesOf dates (fecha-real-de-las-promos)', () => {
+  const promo = { set_key: 'swshp', set_name: 'SWSH Black Star Promos', set_release: '2019-11-15', release: '2019-11-15' };
+  it("a promo series' opening date gives way to the card's: Radiant Eevee SWSH230 is 2022", () => {
+    const ps = [
+      pr({ ...promo, number: 'SWSH230', lang: 'EN', design_id: 'r', design_date: '2019-11-15', artist: 'Souichirou Gunjima' }),
+      pr({ ...promo, number: 'SWSH230', lang: 'EN', stamp: 'jumbo', release: '2022-06-30', design_id: 'r', design_date: '2019-11-15' }),
+      pr({
+        set_key: 'ja-S10b',
+        set_name: 'Pokémon GO',
+        number: '55',
+        lang: 'JA',
+        release: '2022-06-17',
+        design_id: 'r',
+        design_date: '2019-11-15',
+      }),
+      pr({
+        set_key: 'ja-S10b',
+        set_name: 'Pokémon GO',
+        number: '54',
+        lang: 'JA',
+        release: '2022-06-17',
+        design_id: 'g',
+        design_date: '2022-06-17',
+      }),
+      pr({
+        set_key: 'swsh1',
+        set_name: 'Sword & Shield',
+        number: '1',
+        lang: 'EN',
+        release: '2020-02-07',
+        design_id: 's',
+        design_date: '2020-02-07',
+      }),
+    ];
+    expect(shelvesOf(ps, sources).map(s => `${s.title} | ${s.subtitle}`)).toEqual([
+      'Sword & Shield · #1 | 2020',
+      'Pokémon GO · #54 | 2022',
+      'SWSH Black Star Promos · #SWSH230 | Souichirou Gunjima · 2022',
+    ]);
+  });
+  it('a promo with no other date keeps the series one, and one with none the design one', () => {
+    const ps = [
+      pr({ ...promo, number: 'SWSH065', lang: 'EN', design_id: 'a', design_date: '2019-11-15' }),
+      pr({ set_key: 'x', number: '1', lang: 'FR', design_id: 'b', design_date: '2018-01-01' }),
+    ];
+    expect(shelvesOf(ps, sources).map(s => s.subtitle)).toEqual(['2018', '2019']);
+  });
 });
