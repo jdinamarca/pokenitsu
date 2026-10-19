@@ -1,6 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import type { CardSet, InvLocation, InvRow, SetCard } from './api.ts';
-import { litCount, pictureOf, planRow, rowFor, rowMatches, shelvesOf, withRow, type Session, type SetContext } from './load.ts';
+import {
+  firstVariant,
+  litCount,
+  pictureOf,
+  planRow,
+  variantsOf,
+  rowFor,
+  rowMatches,
+  shelvesOf,
+  withRow,
+  type Session,
+  type SetContext,
+} from './load.ts';
 
 const set: CardSet = {
   id: 'sv3pt5',
@@ -166,4 +178,41 @@ describe('fotos-del-catalogo-en-arma: qué foto muestra una carta', () => {
     expect(pictureOf(null, null, null, L, '/ref.webp')).toEqual({ src: L.src, kind: 'local', source: 'Limitless TCG' }));
   it('después la de referencia', () => expect(pictureOf(null, null, null, null, '/ref.webp')).toEqual({ src: '/ref.webp', kind: 'ref' }));
   it('sin nada', () => expect(pictureOf(null, null, null, null, null)).toEqual({ src: null, kind: 'none' }));
+});
+
+describe('variantes-al-cargar: las variantes de una carta', () => {
+  const sandstorm = {
+    ...card('63', 'Common'),
+    full: [
+      { lang: 'EN', variant: 'normal' },
+      { lang: 'EN', variant: 'reverse' },
+      { lang: 'EN', variant: 'noereaderlogo' },
+      { lang: 'EN', variant: 'fxewtfg7z' },
+      { lang: 'FR', variant: 'normal' },
+      { lang: 'FR', variant: 'reverse' },
+    ],
+  };
+  it('las del Full en el idioma de la sesión, los básicos primero', () =>
+    expect(variantsOf(sandstorm, 'EN')).toEqual(['normal', 'reverse', 'fxewtfg7z', 'noereaderlogo']));
+  it('sin el idioma en el Full, las de todos sus idiomas', () =>
+    expect(variantsOf(sandstorm, 'ES')).toEqual(['normal', 'reverse', 'fxewtfg7z', 'noereaderlogo']));
+  it('suma las del catálogo y las que ya tienes, sin repetir', () => {
+    const c = {
+      ...card('63', 'Common', [{ variant: 'holo', lang: 'FR', cond: 'NM', loc: 0, qty: 1, personal: 0 }]),
+      variants: ['normal', 'firstedition'],
+    };
+    expect(variantsOf(c, 'FR')).toEqual(['normal', 'holo', 'firstedition']);
+  });
+  it('sin nada conocido, Normal, Holo y Reverse', () =>
+    expect(variantsOf(card('63', 'Common'), 'ES')).toEqual(['normal', 'holo', 'reverse']));
+  it('marcada: la automática si está, si no la primera', () => {
+    expect(firstVariant({ rarity: 'Rare Holo' }, ['normal', 'reverse'])).toBe('normal');
+    expect(firstVariant({ rarity: 'Common' }, ['normal', 'reverse'])).toBe('normal');
+    expect(firstVariant({ rarity: 'Rare Holo' }, ['normal', 'holo'])).toBe('holo');
+  });
+  it('planRow: el sufijo manda, después la marcada, después la automática', () => {
+    expect(planRow(sandstorm, { v: null, cond: null, sign: 1 }, session, ctx, 'fxewtfg7z').variant).toBe('fxewtfg7z');
+    expect(planRow(sandstorm, { v: 'reverse', cond: null, sign: 1 }, session, ctx, 'fxewtfg7z').variant).toBe('reverse');
+    expect(planRow(sandstorm, { v: null, cond: null, sign: 1 }, session, ctx, null).variant).toBe('normal');
+  });
 });

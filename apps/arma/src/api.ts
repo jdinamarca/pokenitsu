@@ -123,6 +123,8 @@ export interface SetCard {
   local: LocalPhoto | null;
   /** its Pokémon's English name ("Meowth" for ニャース), to find it by name; null without a Pokédex number */
   name_en?: string | null;
+  /** its variants in its Full, each in a language, in the inventory's names (variantes-al-cargar) */
+  full?: { lang: string; variant: string }[];
 }
 export interface LocalPhoto {
   src: string;

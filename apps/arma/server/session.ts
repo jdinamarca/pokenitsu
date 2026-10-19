@@ -1,7 +1,7 @@
 // Who is asking: the Better Auth session (cookie pokenitsu.session_token, its signature checked), served by this API
 // itself since cuentas-en-arma; the same session as Nitsu's.
 import type { FastifyRequest } from 'fastify';
-import { variantFromInventory } from '@pokenitsu/core';
+import { compactStamp, variantFromInventory } from '@pokenitsu/core';
 import { sessionOf } from './auth.ts';
 import { pool } from './db.ts';
 
@@ -71,13 +71,14 @@ export async function ownedCopies(userId: string, dex: number): Promise<OwnedCop
     'SELECT code, card_id, lang, finish, stamp FROM arma.printings WHERE dex = $1 AND card_id IS NOT NULL',
     [dex],
   );
-  const index = new Map(prints.map(p => [`${p.card_id}|${p.lang}|${p.finish}|${p.stamp || ''}`, p.code]));
+  // stamps compared without dashes: the inventory's bacharizard26 is the Full's ba-charizard-26 (variantes-al-cargar)
+  const index = new Map(prints.map(p => [`${p.card_id}|${p.lang}|${p.finish}|${compactStamp(p.stamp)}`, p.code]));
   const out: OwnedCopy[] = [];
   for (const r of inv) {
     const v = variantFromInventory(r.variant);
     // an international card without a language counts as English, a Japanese set's card as Japanese
     const lang = r.lang || (r.card_id.startsWith('ja-') ? 'JA' : 'EN');
-    const code = index.get(`${r.card_id}|${lang}|${v.finish}|${v.stamp || ''}`);
+    const code = index.get(`${r.card_id}|${lang}|${v.finish}|${compactStamp(v.stamp)}`);
     if (code) out.push({ code, qty: r.qty, personal: r.personal, lang, cond: r.cond, loc: r.loc });
   }
   return out;

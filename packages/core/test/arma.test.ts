@@ -17,6 +17,8 @@ import {
   printingKey,
   stampKey,
   variantFromInventory,
+  inventoryVariant,
+  compactStamp,
   variantFromPokecottage,
   variantFromTcgdex,
   variantFromTcgplayer,
@@ -63,6 +65,35 @@ describe('2.1 código de catálogo y variantes', () => {
     expect(variantFromTcgdex({ type: 'reverse', foil: 'cosmos' })!.finish).toBe('reversecosmos');
     expect(variantFromPokecottage('pokeBallHolo').finish).toBe('pokeball');
     expect(variantFromInventory('masterballholo').finish).toBe('masterball');
+  });
+  it('variante del Full → nombre del inventario, de ida y vuelta (variantes-al-cargar)', () => {
+    expect(inventoryVariant('normal', null)).toBe('normal');
+    expect(inventoryVariant('pokeball', null)).toBe('pokeballholo');
+    expect(inventoryVariant('cosmos', null)).toBe('cosmosholo');
+    expect(inventoryVariant('normal', '1st-edition')).toBe('firstedition');
+    expect(inventoryVariant('normal', 'fxewtfg7z')).toBe('fxewtfg7z');
+    expect(inventoryVariant('normal', 'set-logo')).toBe('setstamp');
+    expect(inventoryVariant('normal', 'ba-charizard-26')).toBe('bacharizard26');
+    expect(inventoryVariant('reverse', 'hd5chxcnz')).toBe('reverseholohd5chxcnz');
+    expect(inventoryVariant('holo', 'jumbo')).toBe('holojumbo');
+    const back = (f: string, st: string | null) => {
+      const v = variantFromInventory(inventoryVariant(f, st));
+      return { finish: v.finish, stamp: v.stamp && compactStamp(v.stamp) };
+    };
+    for (const [f, st] of [
+      ['normal', null],
+      ['holo', null],
+      ['reverse', null],
+      ['masterball', null],
+      ['normal', '1st-edition'],
+      ['normal', 'fxewtfg7z'],
+      ['normal', 'set-logo'],
+      ['normal', 'ba-charizard-26'],
+      ['reverse', 'hd5chxcnz'],
+      ['holo', 'jumbo'],
+      ['normal', 'jr-stamp-rally'],
+    ] as const)
+      expect(back(f, st)).toEqual({ finish: f, stamp: st && compactStamp(st) });
   });
   it('mazos y productos de PokeCottage quedan como sello con su nombre', () => {
     const v = variantFromPokecottage('charizarddeck', 'Charizard Deck');
