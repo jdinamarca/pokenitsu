@@ -339,6 +339,10 @@ Una opción nueva, separada de la app actual ([ADR 0020](docs/adr/0020-arma-tu-c
     - Mientras corre, la vitrina queda a la vista con lo de antes.
     - Al terminar muestra un resumen: impresiones, nuevas, quitadas, fotos locales traspasadas y las fuentes que no respondieron. El resumen se cierra solo a los 10 s, salvo un error.
   - La familia se define en `FAMILIES` (`packages/core/src/family.ts`), y `GET /api/master-sets` trae lo que necesita el abanico.
+  - **Productos que solo tiene TCGdex:** el catálogo suma como `tcgdex-en` (ids `td-…`) las expansiones internacionales de TCGdex que pokemontcg.io no tiene: los Trainer Kits, McDonald's 2023 y 2024, las promos MEP, My First Battle y otras, sin Pokémon TCG Pocket.
+    - Arma las sincroniza al arrancar, en segundo plano, si no hay o tienen más de 3 días; Nitsu, junto a sus expansiones.
+    - Sus cartas se bajan de TCGdex la primera vez que se abren. TCGdex casi no tiene fotos de ellas.
+    - En el Full quedan enlazadas a su carta: el "XY Trainer Kit: Sylveon Half Deck" de PokeCottage es el "XY trainer Kit (Sylveon)" de TCGdex.
   - **Sellos y acabados al juntar las fuentes:**
     - PokeCottage no dice el acabado de sus sellos. Si TCGdex tiene el mismo sello con un solo acabado, se usa ese (las ex selladas de Prismatic Evolutions son holo).
     - El acabado de las cartas adicionales de cada expansión en Bulbapedia ("Reverse Holo "Obsidian Flames" stamp…") manda sobre los dos. Es la fuente "Bulbapedia (cartas adicionales)", solo texto y de uso local.

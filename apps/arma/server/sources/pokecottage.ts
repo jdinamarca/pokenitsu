@@ -1,8 +1,9 @@
 // PokeCottage's master set of one Pokémon (https://pokecottage.com/pokemon-master-sets/…).
 // Its text is authorized, also for production: the claims never keep an image URL. Its pictures only for local use
 // (fotos-pokecottage-en-catalogo): the album with its picture URLs is cached apart, under its own key.
-import { normNumber, variantFromPokecottage, type Claim } from '@pokenitsu/core';
-import { cardIdOf, intlSetByName, nameKey, type Catalog } from './catalog.ts';
+import { compactStamp, normNumber, variantFromPokecottage, type Claim } from '@pokenitsu/core';
+import { tdSetId } from '@pokenitsu/inventory';
+import { cardIdOf, intlSetByName, nameKey, tdSetByName, type Catalog } from './catalog.ts';
 import { fetchJson } from './http.ts';
 
 interface PcEntry {
@@ -80,12 +81,20 @@ export async function pokecottageClaims(
     let setKey: string | undefined;
     // a few use their own ids (sv35 for 151, sv85 for Prismatic Evolutions): then by name
     if (region === 'International') setKey = cat.sets.has(e.set.id) ? e.set.id : intlSetByName(cat, e.set.name);
+    // a set only TCGdex has (catalogo-desde-tcgdex): by the same id (mep), by name, or a trainer kit by its Pokémon
+    let kit = false;
+    if (region === 'International' && !setKey) {
+      setKey = cat.sets.has(tdSetId(e.set.id)) ? tdSetId(e.set.id) : tdSetByName(cat, e.set.name);
+      kit = !!setKey && /trainer kit/i.test(e.set.name);
+    }
     if (region === 'Japan') setKey = cat.jaByName.get(nameKey(e.set.name));
     if (!setKey) {
       setKey = `pc:${e.set.id}`;
       unmatched++;
     }
-    const v = variantFromPokecottage(e.variantId, e.variant);
+    let v = variantFromPokecottage(e.variantId, e.variant);
+    // a kit's card carries its half deck as a stamp ("Sylveon Deck"): the set already says it
+    if (kit && v.stamp && /deck$/.test(compactStamp(v.stamp))) v = { finish: v.finish, stamp: null };
     // a stamp PokeCottage gives no finish for: "normal" is only the default (sellos-y-cruce-de-expansiones)
     const finishUnknown = !!v.stamp && !e.foil && !KNOWN_FINISH.has(e.variantId);
     const cardId = cardIdOf(cat, setKey, e.cardNumber);

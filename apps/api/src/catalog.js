@@ -40,6 +40,7 @@ export async function ensureSets() {
   if (n && Date.now() - new Date(t).getTime() < SETS_MAX_AGE_MS) return;
   try { await syncSets(); } catch (e) { if (!n) throw e; console.warn('no pude actualizar expansiones:', e.message); }
   try { await syncJaSets(); } catch (e) { console.warn('no pude actualizar expansiones japonesas:', e.message); }
+  try { await inv.syncTdSets(); } catch (e) { console.warn('no pude actualizar las expansiones de TCGdex:', e.message); }
 }
 // first run after adding Japanese support: the list of Japanese sets is still missing
 let jaChecked = false;
@@ -47,6 +48,9 @@ async function ensureJaSets() {
   if (jaChecked) return;
   const { rows } = await pool.query("SELECT count(*)::int AS n FROM sets WHERE source = 'tcgdex-ja' AND synced_at > now() - interval '3 days'");
   if (rows[0].n < 50) await syncJaSets().catch(e => console.warn('no pude actualizar expansiones japonesas:', e.message));
+  // the international sets only TCGdex has (catalogo-desde-tcgdex), the first time
+  const td = await pool.query("SELECT count(*)::int AS n FROM sets WHERE source = 'tcgdex-en'");
+  if (!td.rows[0].n) await inv.syncTdSets().catch(e => console.warn('no pude actualizar las expansiones de TCGdex:', e.message));
   jaChecked = true;
 }
 

@@ -12,7 +12,8 @@ import type { CardPhotos } from './photoOrder.ts';
 
 type Scope = 'all' | 'intl' | 'ja';
 const scopeOf = (v: unknown): Scope => (v === 'intl' || v === 'ja' ? v : 'all');
-const SOURCES: Record<Scope, string[]> = { all: ['ptcg', 'tcgdex-ja'], intl: ['ptcg'], ja: ['tcgdex-ja'] };
+// the international sets only TCGdex has (catalogo-desde-tcgdex) count as international
+const SOURCES: Record<Scope, string[]> = { all: ['ptcg', 'tcgdex-en', 'tcgdex-ja'], intl: ['ptcg', 'tcgdex-en'], ja: ['tcgdex-ja'] };
 // the account's cards with copies (inside asViewer: only its own)
 const MINE = `mine AS (SELECT card_id, sum(qty)::int AS q FROM inventory WHERE qty > 0 GROUP BY card_id)`;
 // promos, McDonald's, Rumble, trainer kits… last: several have no picture or look odd (Nitsu's /api/dex)

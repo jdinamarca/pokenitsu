@@ -37,7 +37,11 @@ El usuario quiso cargar una carta del XY Trainer Kit de Sylveon y no encontró l
   - PokeCottage cruza por el id cuando es el mismo (`mep`), y si no, por el nombre. Para los Trainer Kits, "XY Trainer Kit: Sylveon Half Deck" (`tk6b`) es "XY trainer Kit (Sylveon)".
   - Así el kit de Sylveon deja de estar dos veces.
 
+- **PokeCottage nombra algunos acabados como variantes** (`normal` en McDonald's 2024, `nonHolo` en Undaunted, `holofoil`). Ahora se leen como acabados y no como sellos, así que esas cartas dejan de estar dos veces.
+
 **Fuera del alcance:**
+- las McDonald's que solo salieron en francés (`td:2013bw`, `td:2018sm-fr`, `td:2019sm-fr`), que TCGdex no tiene en inglés;
+- las cartas que PokeCottage tiene y TCGdex no: el SM Trainer Kit de Alolan Ninetales y las promos MEP #100, #108 y #110;
 - precios de esas cartas (pokemontcg.io y TCGplayer no las tienen);
 - descargar fotos de otras fuentes para producción.
 
@@ -54,7 +58,7 @@ El usuario quiso cargar una carta del XY Trainer Kit de Sylveon y no encontró l
 - **Depende de `sellos-y-cruce-de-expansiones`:** el cruce por identificador tiene que estar antes, para no agregar como nuevas expansiones que el catálogo ya tiene (Undaunted, las promos SVP).
 - **Datos:**
   - filas nuevas en `sets` y, al abrirlas, en `cards`, en las mismas tablas que usa Nitsu, así que también aparecen en Nitsu;
-  - sin migración de esquema: `source` es texto.
+  - la restricción `sets_source_check` suma `tcgdex-en`. Lo hacen la migración 033 de Nitsu y la 011 de Arma, porque Arma puede correr sola; aplicar las dos no hace daño.
 - **Fuentes:**
   - una request a la lista de expansiones de TCGdex, que ya se pide, y una por expansión nueva al sincronizarlas (unas 27, una vez);
   - las cartas, de a una expansión cuando se abre.
