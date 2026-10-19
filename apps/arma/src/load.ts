@@ -14,7 +14,7 @@ import {
   type LocationLike,
   type PickedPrice,
 } from '@pokenitsu/core';
-import type { CardSet, Fx, InvLocation, InvRow, PriceCfg, SetCard } from './api.ts';
+import type { CardSet, Fx, InvLocation, InvRow, PriceCfg, SetCard, VariantPhoto, VariantPhotos } from './api.ts';
 
 export const VARIANT_LABEL: Record<string, string> = {
   normal: 'Normal',
@@ -221,12 +221,19 @@ export function pictureOf(
   img: string | null,
   local: { src: string; source: string } | null | undefined,
   ref: string | null,
+  variant?: VariantPhoto | null,
 ): { src: string | null; kind: CardPictureKind; source?: string } {
+  // a stamped variant's own photo goes before the card's, which doesn't show the stamp (foto-de-la-variante-con-sello)
+  if (!own && variant)
+    return variant.local ? { src: variant.src, kind: 'local', source: variant.source } : { src: variant.src, kind: 'photo' };
   const photo = own || ownCard || img;
   if (photo) return { src: photo, kind: 'photo' };
   if (local) return { src: local.src, kind: 'local', source: local.source };
   return ref ? { src: ref, kind: 'ref' } : { src: null, kind: 'none' };
 }
+/** a stamped variant's photo in a language; for an international card, the English one when that language has none */
+export const variantPhoto = (byLang: VariantPhotos | null | undefined, lang: string): VariantPhoto | null =>
+  byLang?.[lang] || (lang !== 'JA' ? byLang?.EN : undefined) || null;
 export const REF_NOTE = 'Foto de referencia: esta carta no tiene foto';
 
 export const clp = (n: number) => '$' + Math.round(n).toLocaleString('es-CL');

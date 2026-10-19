@@ -1,9 +1,10 @@
 import { Info } from 'lucide-react';
-import type { LocalPhoto } from '../api.ts';
+import type { LocalPhoto, VariantPhoto } from '../api.ts';
 import { pictureOf, REF_NOTE } from '../load.ts';
 
 /**
- * A card's picture in Cargar and Mi inventario, in order: your photo of the variant, the card's own photo, the
+ * A card's picture in Cargar and Mi inventario, in order: your photo of the variant, its stamped variant's photo from the
+ * Full (foto-de-la-variante-con-sello), the card's own photo, the
  * catalog's, the one for local use only (violet mark) or a reference of the same Pokémon, dimmed like the Eevee case's;
  * the sheet's big one says which.
  */
@@ -13,6 +14,7 @@ export function CardPicture({
   img,
   local,
   reference,
+  variant,
   name,
   big = false,
 }: {
@@ -21,10 +23,11 @@ export function CardPicture({
   img: string | null;
   local?: LocalPhoto | null;
   reference: string | null;
+  variant?: VariantPhoto | null;
   name: string;
   big?: boolean;
 }) {
-  const p = pictureOf(own, ownCard, img, local, reference);
+  const p = pictureOf(own, ownCard, img, local, reference, variant);
   if (!p.src) return <span className="blank">{big ? `${name} · sin foto` : name}</span>;
   const note = p.kind === 'ref' ? REF_NOTE : p.kind === 'local' ? `Foto solo para uso local · ${p.source}` : '';
   return (

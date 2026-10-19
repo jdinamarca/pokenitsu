@@ -29,6 +29,7 @@ import {
   planRow,
   setLine,
   variantName,
+  variantPhoto,
   variantsOf,
   withRow,
   type LoadRow,
@@ -729,6 +730,7 @@ export function Cargar() {
                 img={focus.img}
                 local={focus.local}
                 reference={focus.ref}
+                variant={variantPhoto(focus.variant_photos?.[marked(focus)], session.lang)}
                 name={focus.name}
                 big
               />
