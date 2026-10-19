@@ -53,6 +53,11 @@ export async function loadCatalog(): Promise<Catalog> {
     if (ours.length === 1 && theirs?.length === 1 && !fromTcgdex.has(theirs[0]!) && !ours[0]!.tcgdex_en)
       fromTcgdex.set(theirs[0]!, ours[0]!.id);
   }
+  // what did not cross by name, by its id when one of ours has it and nobody took it (sellos-y-cruce-de-expansiones):
+  // TCGdex's "Undaunted" (hgss3) is our "HS—Undaunted", its "SVP Black Star Promos" (svp) our Scarlet & Violet ones
+  const taken = new Set(fromTcgdex.values());
+  const ourIds = new Set(intl.map(s => s.id));
+  for (const x of td) if (!fromTcgdex.has(x.id) && ourIds.has(x.id) && !taken.has(x.id)) fromTcgdex.set(x.id, x.id);
   return {
     sets: new Map(sets.map(s => [s.id, s])),
     intlByName: new Map(intl.map(s => [nameKey(s.name), s.id])),

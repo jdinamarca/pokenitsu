@@ -329,6 +329,8 @@ export interface Claim extends PrintingId {
   label?: string;
   /** the source only says "holo", not which holo (pokemontcg.io, TCGplayer, TCGdex without foil) */
   genericFinish?: boolean;
+  /** a stamp whose finish the source does not say (PokeCottage without foil): "normal" is only a default */
+  finishUnknown?: boolean;
 }
 export interface Fact {
   field: ArmaField;
@@ -376,8 +378,19 @@ export function mergeClaims(claims: readonly Claim[]): MergedPrinting[] {
       pcs.some(c => c.stamp === 'set-logo') &&
       !pcs.some(c => c.finish === 'reverse' && !c.stamp) &&
       list.some(c => c.source !== 'pokecottage' && c.finish === 'reverse' && !c.stamp);
+    // the finishes TCGdex gives a stamp on this card (sellos-y-cruce-de-expansiones)
+    const tdStamp = (st: string) => list.filter(x => x.source === 'tcgdex' && x.stamp && compactStamp(x.stamp) === compactStamp(st));
     const out: Claim[] = [];
     for (const c of list) {
+      // a PokeCottage stamp without its finish takes TCGdex's when TCGdex has that stamp with only one
+      if (c.finishUnknown && c.stamp && !exReverse) {
+        const tds = tdStamp(c.stamp);
+        const fs = new Set(tds.map(x => x.finish));
+        if (fs.size === 1) {
+          out.push({ ...c, finish: tds[0]!.finish, stamp: tds[0]!.stamp });
+          continue;
+        }
+      }
       if (exReverse && c.stamp === 'set-logo') {
         out.push({ ...c, finish: 'reverse', stamp: null, label: c.label || variantLabel(c) });
         continue;
@@ -394,10 +407,13 @@ export function mergeClaims(claims: readonly Claim[]): MergedPrinting[] {
       if (!c.stamp && finish === 'holo' && (generic(c) || inferred) && specific('cosmos') && !specific('holo')) finish = 'cosmos';
       out.push(finish === c.finish ? c : { ...c, finish });
     }
-    // one stamp under two names: TCGdex's "jun-hasebe" is PokeCottage's "world-championships-deck2007-jun-hasebe"
+    // one stamp under two names: TCGdex's "jun-hasebe" is PokeCottage's "world-championships-deck2007-jun-hasebe", and
+    // its "trick-or-trade" is PokeCottage's "trick-or-trade24" (the same with its year)
     const pc = out.filter(c => c.source === 'pokecottage' && c.stamp);
+    const sameStamp = (pcStamp: string, td: string) =>
+      pcStamp.endsWith('-' + td) || new RegExp(`^${compactStamp(td)}\\d+$`).test(compactStamp(pcStamp));
     for (const c of out) {
-      const longer = c.source === 'tcgdex' && c.stamp && pc.find(x => x.finish === c.finish && x.stamp!.endsWith('-' + c.stamp));
+      const longer = c.source === 'tcgdex' && c.stamp && pc.find(x => x.finish === c.finish && sameStamp(x.stamp!, c.stamp!));
       fixed.push(longer ? { ...c, stamp: longer.stamp } : c);
     }
   }
@@ -762,4 +778,107 @@ export function parseLanguageSentence(
     firstEdition: /in both 1st and unlimited edition/i.test(body) ? languages : [],
     reverse: /Reverse Holo/i.test(body) ? languages : [],
   };
+}
+
+// ---------- the additional cards of a set's page in Bulbapedia (sellos-y-cruce-de-expansiones) ----------
+export interface AdditionalCard {
+  /** the card's number in the set, normalized (86 for 086/197) */
+  number: string;
+  /** the stamp in quotes, as a stamp key; the set's own name is its logo (set-logo) */
+  stamp: string;
+  /** the finish the note opens with, null when it says none */
+  finish: ArmaFinish | null;
+}
+// the finish a note opens with: 'Reverse Holo "Obsidian Flames" stamp…', 'Cosmos Holo …'
+const NOTE_FINISH: [RegExp, ArmaFinish][] = [
+  [/^reverse holo(?:foil)?\b/i, 'reverse'],
+  [/^cosmos holo(?:foil)?\b/i, 'cosmos'],
+  [/^non-holo(?:foil)?\b/i, 'normal'],
+  [/^holo(?:foil)?\b/i, 'holo'],
+];
+const loose = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+/** the top-level fields of a template call, split on the pipes outside nested {{…}} and [[…]] */
+function templateFields(body: string): string[] {
+  const out: string[] = [];
+  let depth = 0,
+    cur = '';
+  for (let i = 0; i < body.length; i++) {
+    const two = body.slice(i, i + 2);
+    if (two === '{{' || two === '[[') {
+      depth++;
+      cur += two;
+      i++;
+    } else if (two === '}}' || two === ']]') {
+      depth--;
+      cur += two;
+      i++;
+    } else if (body[i] === '|' && depth === 0) {
+      out.push(cur);
+      cur = '';
+    } else cur += body[i];
+  }
+  out.push(cur);
+  return out;
+}
+/**
+ * The set list's stamped entries: {{Setlist/nmentry|086/197|{{TCG ID|Obsidian Flames|Espeon|86}}|Psychic|||Reverse Holo
+ * "Obsidian Flames" stamp …}} (the note is the sixth field, or "6=…"); only entries with a stamp in quotes count
+ */
+export function parseAdditionalCards(wikitext: string, setName: string): AdditionalCard[] {
+  const out: AdditionalCard[] = [];
+  for (const m of wikitext.matchAll(/\{\{Setlist\/nmentry\|/g)) {
+    // the entry up to its closing braces
+    let depth = 1,
+      i = m.index! + m[0].length;
+    const start = i;
+    while (i < wikitext.length && depth > 0) {
+      const two = wikitext.slice(i, i + 2);
+      if (two === '{{' || two === '}}') {
+        depth += two === '{{' ? 1 : -1;
+        i += 2;
+      } else i++;
+    }
+    const fields = templateFields(wikitext.slice(start, i - 2));
+    const named = fields.find(f => /^6=/.test(f));
+    const note = (named ? named.slice(2) : fields[5] || '').trim();
+    const quoted = note.match(/"([^"]+)"/)?.[1];
+    const num = fields[0]?.trim().split('/')[0];
+    if (!quoted || !num) continue;
+    const finish = NOTE_FINISH.find(([re]) => re.test(note))?.[1] ?? null;
+    const stamp = loose(quoted) === loose(setName) ? 'set-logo' : stampKey(quoted);
+    if (stamp) out.push({ number: normNumber(num), stamp, finish });
+  }
+  return out;
+}
+
+/**
+ * What the additional cards say of each stamped card's finish (sellos-y-cruce-de-expansiones): every English claim of that
+ * set, number and stamp takes it, under one stamp name (the first claim's), and Bulbapedia backs the printing (`added`).
+ * A note without a finish changes nothing.
+ */
+export function additionalCardClaims(
+  claims: readonly Claim[],
+  bySet: ReadonlyMap<string, readonly AdditionalCard[]>,
+  source = 'bulbapedia-adicionales',
+): { claims: Claim[]; added: Claim[]; changed: number } {
+  const keyOf = (setKey: string, number: string, stamp: string) => `${setKey}|${normNumber(number)}|${compactStamp(stamp)}`;
+  const notes = new Map<string, ArmaFinish>();
+  for (const [setKey, cards] of bySet) for (const a of cards) if (a.finish) notes.set(keyOf(setKey, a.number, a.stamp), a.finish);
+  const name = new Map<string, string>();
+  const added = new Map<string, Claim>();
+  let changed = 0;
+  const out = claims.map(c => {
+    const k = c.lang === 'EN' && c.stamp ? keyOf(c.setKey, c.number, c.stamp) : '';
+    const finish = notes.get(k);
+    if (!finish) return c;
+    if (!name.has(k)) name.set(k, c.stamp!);
+    const stamp = name.get(k)!;
+    if (!added.has(k)) added.set(k, { setKey: c.setKey, number: c.number, lang: 'EN', finish, stamp, source });
+    if (c.finish === finish && c.stamp === stamp && !c.finishUnknown) return c;
+    changed++;
+    const fixed: Claim = { ...c, finish, stamp };
+    delete fixed.finishUnknown;
+    return fixed;
+  });
+  return { claims: out, added: [...added.values()], changed };
 }

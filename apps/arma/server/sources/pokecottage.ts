@@ -13,6 +13,8 @@ interface PcEntry {
   variant: string;
   variantId: string;
   variantType: string;
+  /** the finish, only in some entries ("Normal") */
+  foil?: string;
   region: 'International' | 'Japan' | 'China' | string;
   releaseDate?: string;
   artist?: { name?: string } | null;
@@ -22,6 +24,8 @@ interface PcData {
   cards: PcEntry[];
 }
 const LANG: Record<string, string> = { International: 'EN', Japan: 'JA', China: 'ZH-CN' };
+// stamped variants whose finish PokeCottage's id does say
+const KNOWN_FINISH = new Set(['firstEdition', 'firstEditionReverseHolo', 'starlightHolo']);
 
 // every picture field (imageUrl, thumbnailUrl, lightboxImageUrl…) is dropped before anything is stored
 const withoutPictures = (x: unknown): unknown =>
@@ -82,6 +86,8 @@ export async function pokecottageClaims(
       unmatched++;
     }
     const v = variantFromPokecottage(e.variantId, e.variant);
+    // a stamp PokeCottage gives no finish for: "normal" is only the default (sellos-y-cruce-de-expansiones)
+    const finishUnknown = !!v.stamp && !e.foil && !KNOWN_FINISH.has(e.variantId);
     const cardId = cardIdOf(cat, setKey, e.cardNumber);
     claims.push({
       setKey,
@@ -89,6 +95,7 @@ export async function pokecottageClaims(
       lang,
       ...v,
       label: e.variant,
+      ...(finishUnknown ? { finishUnknown } : {}),
       source: 'pokecottage',
       ref: e.id,
       name: e.name,

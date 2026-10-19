@@ -339,6 +339,11 @@ Una opción nueva, separada de la app actual ([ADR 0020](docs/adr/0020-arma-tu-c
     - Mientras corre, la vitrina queda a la vista con lo de antes.
     - Al terminar muestra un resumen: impresiones, nuevas, quitadas, fotos locales traspasadas y las fuentes que no respondieron. El resumen se cierra solo a los 10 s, salvo un error.
   - La familia se define en `FAMILIES` (`packages/core/src/family.ts`), y `GET /api/master-sets` trae lo que necesita el abanico.
+  - **Sellos y acabados al juntar las fuentes:**
+    - PokeCottage no dice el acabado de sus sellos. Si TCGdex tiene el mismo sello con un solo acabado, se usa ese (las ex selladas de Prismatic Evolutions son holo).
+    - El acabado de las cartas adicionales de cada expansión en Bulbapedia ("Reverse Holo "Obsidian Flames" stamp…") manda sobre los dos. Es la fuente "Bulbapedia (cartas adicionales)", solo texto y de uso local.
+    - `trick-or-trade` y `trick-or-trade24` son el mismo sello.
+    - Las expansiones de TCGdex que no cruzan por nombre cruzan por identificador ("Undaunted" es `hgss3`).
   - El informe de la primera importación de las evoluciones está en el cambio OpenSpec archivado `master-set-familia-eevee` (`informe-auditoria.md`).
 - **Ilustradores** (`/ilustradores`): una galería de firmas. Cada ilustrador tiene una tarjeta de cartulina con:
   - su nombre en letra de firma (Fraunces itálica);
