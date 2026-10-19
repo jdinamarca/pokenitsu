@@ -1,6 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import type { Printing, Source } from './api.ts';
-import { cardOf, expansionOf, importLines, keepFor, LANG_NAME, ownership, regionOf, shelvesBySet, withPhotoShows } from './model.ts';
+import {
+  cardOf,
+  expansionOf,
+  importLines,
+  keepFor,
+  LANG_NAME,
+  ownership,
+  regionOf,
+  shelvesBySet,
+  variantName,
+  withPhotoShows,
+} from './model.ts';
 import { applyRules, FULL_RULES } from '@pokenitsu/core';
 import type { Copy } from './api.ts';
 
@@ -165,4 +176,26 @@ describe('volver-a-traer-el-full: el resumen', () => {
       'Bulbapedia (mazos) no respondió: quedó lo de la última vez',
       'wikidex no respondió: quedó lo de la última vez',
     ]));
+});
+
+describe('reverse-con-sello-ex: el nombre de la Reverse de la era EX', () => {
+  const fact = (source: string, value: string) => ({ source, value, ref: null });
+  it('"Reverse · Sello de la expansión" si una fuente dice que lleva el sello', () =>
+    expect(
+      variantName(
+        pr({
+          set_key: 'ex11',
+          number: '68',
+          lang: 'EN',
+          finish: 'reverse',
+          facts: { variant: [fact('tcgplayer', 'Reverse'), fact('pokecottage', 'Expansion Stamp')] },
+        }),
+      ),
+    ).toBe('Reverse · Sello de la expansión'));
+  it('una Reverse sin esa fuente sigue siendo "Reverse"', () =>
+    expect(
+      variantName(
+        pr({ set_key: 'ex2', number: '63', lang: 'EN', finish: 'reverse', facts: { variant: [fact('pokecottage', 'Reverse Holo')] } }),
+      ),
+    ).toBe('Reverse'));
 });
