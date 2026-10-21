@@ -16,7 +16,7 @@ En Cargar y en Mi inventario, cada carta SHALL mostrar la primera foto que tenga
 
 En Cargar, la variante SHALL ser la marcada en la ficha; en Mi inventario, la de la copia.
 
-La impresión del Full de una carta SHALL ser una que apunte a esa carta y esté en su mismo idioma: una impresión taiwanesa ligada a una carta japonesa MUST NOT darle su foto. Para la foto de la carta se prefiere la impresión sin sello y normal. Una foto marcada como de otra variante MUST NOT usarse.
+La impresión del Full de una carta SHALL ser una que apunte a esa carta y esté en el idioma de su expansión: japonés en una japonesa, chino simplificado o tradicional en una china, inglés en una internacional. Una impresión taiwanesa ligada a una carta japonesa MUST NOT darle su foto. Para la foto de la carta se prefiere la impresión sin sello y normal. Una foto marcada como de otra variante MUST NOT usarse.
 
 Una foto solo local SHALL verse con la marca violeta de "solo uso local" en la carta, y con la nota "Foto solo para uso local · {fuente}" en la ficha. Sin el interruptor, las fotos solo locales MUST NOT entregarse ni servirse, y la carta pasa a la siguiente foto de la lista.
 
@@ -27,6 +27,10 @@ Una foto solo local SHALL verse con la marca violeta de "solo uso local" en la c
 #### Scenario: La foto de la impresión del Full
 - **WHEN** el interruptor está encendido y la Eevee de Pokémon Jungle japonesa (#037) no tiene foto en el catálogo, pero su impresión del Full tiene la de PokeCottage
 - **THEN** Cargar la muestra con esa foto y la marca violeta, no con la foto de referencia
+
+#### Scenario: Carta china con foto en su Full
+- **WHEN** el interruptor está encendido y la Eevee 401 de Gem Pack Vol. 4 en chino simplificado (CBB4C) no tiene foto en el catálogo, pero su impresión del Full tiene la de PokeCottage
+- **THEN** Cargar la muestra con esa foto y la marca violeta
 
 #### Scenario: La variante con sello muestra su foto
 - **WHEN** el interruptor está encendido, el usuario abre Ultra Prism #104 en Cargar y marca "Trainer Kit Sun & Moon · Mazo Alolan Ninetales #26"
