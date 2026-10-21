@@ -13,8 +13,10 @@ El Full (`arma.printings`) guarda las impresiones chinas con claves de expansió
 - **Qué expansiones:** las claves del Full con idioma `ZH-CN` o `ZH-TW` que no son `ja-*`. Se calculan al importar un Full y al arrancar la API. Así, cada Pokémon que se importe suma las suyas.
 - **Una expansión por código e idioma:** `pc:scn_csmPi` y `td-zh-cn:CSMPiC` son la misma, porque comparten código e idioma. El cruce se hace con `upper(código de PokeCottage) + 'C'` contra el id de TCGdex en chino simplificado, o con el código igual. El id queda como `<idioma>-<código de TCGdex>`; si TCGdex no la tiene, `<idioma>-<CÓDIGO DE POKECOTTAGE>`.
 - **Lista:** si TCGdex trae cartas, se usa `tdCardRow`, igual que en `tcgdex-en`. Si no, una carta por número a partir del Full: id `<set>-<número>`, nombre en inglés del Full (PokeCottage no trae el nombre chino), `dex`, `artist`, sin foto y con `list_source = 'full'`. Una impresión del Full que no esté en la lista de TCGdex se agrega igual, marcada `full`.
-- **Enlace:** `UPDATE arma.printings SET card_id` por clave de expansión del Full y `normNumber`, como en `lista-de-limitless-en-japonesas-vacias`. El importador también enlaza esas claves en las importaciones siguientes, porque las expansiones `asia` entran en `loadCatalog`.
+- **Enlace:** `UPDATE arma.printings SET card_id` por clave de expansión del Full y `normNumber`, como en `lista-de-limitless-en-japonesas-vacias`. Este paso corre al arrancar la API y después de cada importación, así que también enlaza las impresiones de los Full que se importen más adelante. El importador conserva el enlace (`coalesce`).
 - **Idioma de la copia:** el inventario sigue guardando `ZH`. `ownedCopies` prueba primero el idioma de la expansión de la carta cuando es `ZH-CN` o `ZH-TW`, y después `ZH-TW` y `ZH-CN` para las cartas japonesas. No se toca ninguna copia guardada.
+- **Fuente `full`:** `list_source` referencia `arma.sources`, así que la migración agrega la fuente `full` ("Tu Master Set", `text_only`).
+- **Pestaña:** el buscador suma "Chinas" junto a "Internacionales" y "Japonesas" (`groupSets` por región). Sin ella, las chinas quedarían entre las internacionales.
 - **Cargar:** una expansión con `lang` `ZH-CN` o `ZH-TW` abre con idioma de sesión `ZH`, igual que las japonesas abren con `JA`. Esto sigue la regla de `idioma-al-abrir-expansion`.
 
 ## Risks / Trade-offs

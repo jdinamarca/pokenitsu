@@ -2,9 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { groupSets, searchSetsLang, type Lang } from '@pokenitsu/core';
 import { Search, X } from 'lucide-react';
 import type { CardSet } from '../api.ts';
-import { LANG_LABEL, setLine } from '../load.ts';
+import { CHINESE, LANG_LABEL, setLine } from '../load.ts';
 
-type Tab = 'ja' | 'intl';
+type Tab = 'ja' | 'zh' | 'intl';
 /** one expansion of the list, with the language it opens in (a recent's, or a search's "MEW ES") */
 type Option = { s: CardSet; lang: Lang | null; typed?: boolean };
 type Section = { title: string; options: Option[] };
@@ -33,7 +33,7 @@ export function SetPicker({
   onClose: () => void;
 }) {
   const [q, setQ] = useState('');
-  const [tab, setTab] = useState<Tab>(sessionLang === 'JA' ? 'ja' : 'intl');
+  const [tab, setTab] = useState<Tab>(sessionLang === 'JA' ? 'ja' : sessionLang === 'ZH' ? 'zh' : 'intl');
   const [sel, setSel] = useState(0);
   const box = useRef<HTMLDivElement>(null);
   const list = useRef<HTMLDivElement>(null);
@@ -112,6 +112,7 @@ export function SetPicker({
             [
               ['intl', 'Internacionales'],
               ['ja', 'Japonesas'],
+              ['zh', 'Chinas'],
             ] as const
           ).map(([id, label]) => (
             <button
@@ -154,7 +155,12 @@ export function SetPicker({
                   </b>
                   <em>{have(o.s)}</em>
                   <small>
-                    {[setLine(o.s), o.s.name_ja && o.s.name_ja !== o.s.name ? o.s.name_ja : '', o.s.has_cards ? '' : 'se bajan al abrirla']
+                    {[
+                      CHINESE[o.s.lang || ''],
+                      setLine(o.s),
+                      o.s.name_ja && o.s.name_ja !== o.s.name ? o.s.name_ja : '',
+                      o.s.has_cards ? '' : 'se bajan al abrirla',
+                    ]
                       .filter(Boolean)
                       .join(' · ')}
                   </small>

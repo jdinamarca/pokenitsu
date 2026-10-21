@@ -40,6 +40,16 @@ export interface OwnedCopy {
   loc: string | null;
 }
 /**
+ * The Full's languages a copy can be, in order: an international card without a language counts as English, a Japanese
+ * set's as Japanese and a Chinese set's in its own; the inventory's ZH is the Full's ZH-TW or ZH-CN, the expansion's first
+ * (expansiones-chinas-en-cargar)
+ */
+export function copyLangs(cardId: string, lang: string): string[] {
+  const own = cardId.startsWith('zh-cn-') ? 'ZH-CN' : cardId.startsWith('zh-tw-') ? 'ZH-TW' : null;
+  if (lang === 'ZH' || (!lang && own)) return own === 'ZH-CN' ? ['ZH-CN', 'ZH-TW'] : ['ZH-TW', 'ZH-CN'];
+  return [lang || (cardId.startsWith('ja-') ? 'JA' : 'EN')];
+}
+/**
  * The viewer's copies of one Pokémon's printings, read with their Row Level Security (app.user_id), never written.
  * A copy fills a printing when card, language and variant match.
  */
@@ -76,9 +86,8 @@ export async function ownedCopies(userId: string, dex: number): Promise<OwnedCop
   const out: OwnedCopy[] = [];
   for (const r of inv) {
     const v = variantFromInventory(r.variant);
-    // an international card without a language counts as English, a Japanese set's card as Japanese
-    const lang = r.lang || (r.card_id.startsWith('ja-') ? 'JA' : 'EN');
-    const code = index.get(`${r.card_id}|${lang}|${v.finish}|${compactStamp(v.stamp)}`);
+    const lang = copyLangs(r.card_id, r.lang).find(l => index.has(`${r.card_id}|${l}|${v.finish}|${compactStamp(v.stamp)}`));
+    const code = lang && index.get(`${r.card_id}|${lang}|${v.finish}|${compactStamp(v.stamp)}`);
     if (code) out.push({ code, qty: r.qty, personal: r.personal, lang, cond: r.cond, loc: r.loc });
   }
   return out;

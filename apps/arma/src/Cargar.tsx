@@ -4,7 +4,6 @@ import {
   CONDS,
   expandRange,
   indexNumbers,
-  langCode,
   LANGS,
   matchesCardName,
   nameQuery,
@@ -28,6 +27,7 @@ import {
   litCount,
   planRow,
   setLine,
+  setLangOf,
   variantName,
   variantPhoto,
   openLang,
@@ -162,7 +162,7 @@ export function Cargar() {
         if (lastSet) {
           // reopened with the rule of opening it (idioma-al-abrir-expansion): an international one not in an Asian language
           const sv = readSaved().session;
-          const lang = openLang({ typed: null, setLang: langCode(lastSet.lang), current: sv.lang, west: sv.west });
+          const lang = openLang({ typed: null, setLang: setLangOf(lastSet.lang), current: sv.lang, west: sv.west });
           if (lang !== sv.lang)
             setSaved(x => {
               const next = { ...x, session: withWest({ ...x.session, lang }) };
@@ -400,7 +400,7 @@ export function Cargar() {
   function chooseSet(s: CardSet, given: Lang | null, typed = false) {
     // a language typed in the search ("MEW ES") changes the session's; a single-language expansion sets its own; an
     // international one doesn't keep an Asian language: it goes back to the last Western one (idioma-al-abrir-expansion)
-    const lang = openLang({ typed: typed ? given : null, setLang: langCode(s.lang), current: given || session.lang, west: session.west });
+    const lang = openLang({ typed: typed ? given : null, setLang: setLangOf(s.lang), current: given || session.lang, west: session.west });
     updateSaved(sv => ({
       session: withWest({ ...sv.session, lang }),
       recents: [{ id: s.id, lang }, ...sv.recents.filter(r => r.id !== s.id)].slice(0, 8),
@@ -771,6 +771,11 @@ export function Cargar() {
             {focus.list === 'limitless' && (
               <p className="list-src" role="note">
                 Dato de Limitless · solo uso local
+              </p>
+            )}
+            {focus.list === 'full' && (
+              <p className="list-src" role="note">
+                Lista armada desde tu Master Set
               </p>
             )}
             <VariantPick

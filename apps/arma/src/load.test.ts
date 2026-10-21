@@ -15,6 +15,7 @@ import {
   type SetContext,
   openLang,
   otherLangs,
+  setLangOf,
   withWest,
 } from './load.ts';
 
@@ -211,6 +212,25 @@ describe('variantes-al-cargar: las variantes de una carta', () => {
   };
   it('las del Full en el idioma de la sesión, los básicos primero', () =>
     expect(variantsOf(sandstorm, 'EN')).toEqual(['normal', 'reverse', 'fxewtfg7z', 'noereaderlogo']));
+  it('chino: ZH son las impresiones ZH-CN y ZH-TW (expansiones-chinas-en-cargar)', () =>
+    expect(
+      variantsOf(
+        {
+          ...sandstorm,
+          full: [
+            { lang: 'ZH-CN', variant: 'holo' },
+            { lang: 'EN', variant: 'normal' },
+          ],
+        },
+        'ZH',
+      ),
+    ).toEqual(['holo']));
+  it('una expansión china se carga en chino, una japonesa en japonés', () => {
+    expect(setLangOf('ZH-CN')).toBe('ZH');
+    expect(setLangOf('ZH-TW')).toBe('ZH');
+    expect(setLangOf('JA')).toBe('JA');
+    expect(setLangOf(null)).toBeNull();
+  });
   it('sin el idioma en el Full, las de todos sus idiomas', () =>
     expect(variantsOf(sandstorm, 'ES')).toEqual(['normal', 'reverse', 'fxewtfg7z', 'noereaderlogo']));
   it('suma las del catálogo y las que ya tienes, sin repetir', () => {

@@ -3,6 +3,7 @@
 import {
   autoVariant,
   eraOf,
+  langCode,
   pickLocation,
   pickPrice,
   removalLocation,
@@ -150,7 +151,8 @@ const VARIANT_RANK = ['normal', 'holo', 'reverse', 'firstedition', 'pokeballholo
  */
 export function variantsOf(card: Pick<SetCard, 'full' | 'variants' | 'copies'>, lang: string): string[] {
   const full = card.full || [];
-  const inLang = full.filter(f => f.lang === lang);
+  // ZH covers ZH-TW and ZH-CN (expansiones-chinas-en-cargar)
+  const inLang = full.filter(f => f.lang === lang || f.lang.startsWith(lang + '-'));
   const found = new Set([
     ...(inLang.length ? inLang : full).map(f => f.variant),
     ...(card.variants || []),
@@ -186,6 +188,10 @@ export function litCount(set: CardSet, cards: SetCard[]) {
 }
 
 /** the expansion's line under its name: series · year · code */
+/** the language an expansion is loaded in: its own (JA), Chinese for a Chinese one (ZH-CN, ZH-TW → ZH), or null */
+export const setLangOf = (lang: string | null | undefined): Lang | null => langCode(lang?.split('-')[0]);
+/** a Chinese expansion's language (expansiones-chinas-en-cargar) */
+export const CHINESE: Record<string, string> = { 'ZH-CN': 'Chino simplificado', 'ZH-TW': 'Chino tradicional' };
 export const setLine = (s: CardSet) => [eraOf(s), s.date.slice(0, 4), s.code || s.id].filter(Boolean).join(' · ');
 
 export interface Shelf {
@@ -259,7 +265,10 @@ export function pictureOf(
 }
 /** a stamped variant's photo in a language; for an international card, the English one when that language has none */
 export const variantPhoto = (byLang: VariantPhotos | null | undefined, lang: string): VariantPhoto | null =>
-  byLang?.[lang] || (lang !== 'JA' ? byLang?.EN : undefined) || null;
+  byLang?.[lang] ||
+  (lang === 'ZH' ? byLang?.['ZH-CN'] || byLang?.['ZH-TW'] : undefined) ||
+  (lang !== 'JA' && lang !== 'ZH' ? byLang?.EN : undefined) ||
+  null;
 export const REF_NOTE = 'Foto de referencia: esta carta no tiene foto';
 
 export const clp = (n: number) => '$' + Math.round(n).toLocaleString('es-CL');

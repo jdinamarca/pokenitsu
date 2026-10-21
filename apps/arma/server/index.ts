@@ -3,6 +3,7 @@ import Fastify from 'fastify';
 import { migrate } from './migrate.ts';
 import { pool } from './db.ts';
 import { importDex } from './importer.ts';
+import { syncAsiaSets } from './asiaSets.ts';
 import { importLocalPhotos } from './localPhotos.ts';
 import { catalogJob, PRINTED_PHOTOS, startCatalogPhotos } from './catalogPhotos.ts';
 import { detailsJob, pendingDetails, startJaDetails } from './details.ts';
@@ -37,7 +38,12 @@ const dexOf = (v: unknown) => {
 };
 
 // builds (or refreshes) the Full of one Pokémon from every source
-app.post<{ Params: { dex: string } }>('/api/import/:dex', async req => importDex(dexOf(req.params.dex)));
+app.post<{ Params: { dex: string } }>('/api/import/:dex', async req => {
+  const r = await importDex(dexOf(req.params.dex));
+  // its Chinese expansions in the catalog, with the printings linked (expansiones-chinas-en-cargar)
+  await syncAsiaSets().catch(e => console.warn('no pude armar las expansiones chinas:', e instanceof Error ? e.message : e));
+  return r;
+});
 
 // the Full: every printing with its facts grouped by field (each with its source), the sources and their permission
 app.get<{ Params: { dex: string } }>('/api/full/:dex', async req => {
@@ -388,5 +394,10 @@ await app.listen({ port, host: '127.0.0.1' });
 ensureTdSets().then(
   n => n && console.log(`expansiones de TCGdex agregadas o actualizadas: ${n}`),
   e => console.warn('no pude actualizar las expansiones de TCGdex:', e instanceof Error ? e.message : e),
+);
+// the Chinese expansions of the Full, in the background (expansiones-chinas-en-cargar)
+syncAsiaSets().then(
+  r => r.sets && console.log(`expansiones chinas: ${r.sets}, cartas nuevas: ${r.cards}, impresiones enlazadas: ${r.linked}`),
+  e => console.warn('no pude armar las expansiones chinas:', e instanceof Error ? e.message : e),
 );
 console.log(`Arma tu colección (API) en http://127.0.0.1:${port}`);
