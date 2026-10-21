@@ -311,10 +311,11 @@ export function startCatalogPhotos({ dex, sets }: { dex?: number[]; sets?: strin
   });
   (async () => {
     // the lists first, one expansion after the other, so their cards get photos below: TCGdex's for one never opened,
-    // and Limitless's when TCGdex has it without cards
+    // and Limitless's when TCGdex has it without cards or only Limitless has it (expansiones-japonesas-de-limitless)
     const { rows: empty } = await pool.query<{ id: string; asked: boolean }>(
       `SELECT s.id, s.cards_synced_at IS NOT NULL AS asked FROM sets s
-       WHERE s.source = 'tcgdex-ja' AND NOT EXISTS (SELECT 1 FROM cards c WHERE c.set_id = s.id) AND ($1::text[] IS NULL OR s.id = ANY ($1))
+       WHERE s.source IN ('tcgdex-ja', 'limitless') AND NOT EXISTS (SELECT 1 FROM cards c WHERE c.set_id = s.id)
+         AND ($1::text[] IS NULL OR s.id = ANY ($1))
        ORDER BY 1`,
       [onlySets],
     );
