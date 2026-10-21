@@ -17,3 +17,14 @@ Una copia en chino (`ZH`) SHALL contar como la impresión china de esa carta y v
 #### Scenario: Copias ya guardadas
 - **WHEN** el usuario tiene una copia `ZH` de la S10D 052 normal y el Full tiene `EEV·JA-S10D·52·ZH-TW·N`
 - **THEN** el Master Set de Eevee enciende esa impresión
+
+### Requirement: La grilla muestra la variante de la ficha
+Cada carta de la grilla de Cargar SHALL mostrar en su etiqueta y en su foto la variante que se cargaría sin elegir otra: la primera de su Full en el idioma de carga, la misma que marca su ficha. Solo si el Full no sabe nada de la carta, SHALL usar la variante que se deduce de su rareza.
+
+#### Scenario: Gem Pack Vol. 4
+- **WHEN** el usuario abre `CBB4C`, cuyas cartas no tienen rareza
+- **THEN** la 401 dice "Holo", la 402 "Poké Ball" y la 405 "Master Ball", igual que sus fichas
+
+#### Scenario: Una promo SWSH
+- **WHEN** el usuario abre SWSH Black Star Promos y la SWSH230 solo es holo en su Full
+- **THEN** su etiqueta dice "Holo", no "Normal"

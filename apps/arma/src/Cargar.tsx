@@ -1,6 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  autoVariant,
   CONDS,
   expandRange,
   indexNumbers,
@@ -726,7 +725,15 @@ export function Cargar() {
           ) : (
             <ul className="row" style={{ padding: '16px 0' }}>
               {shown.map(c => (
-                <LoadItem key={c.id} card={c} qty={cardQty(c)} marked={c.num === focusNum} onPick={pickCard} />
+                <LoadItem
+                  key={c.id}
+                  card={c}
+                  qty={cardQty(c)}
+                  variant={firstVariant(c, variantsFor(c))}
+                  lang={session.lang}
+                  marked={c.num === focusNum}
+                  onPick={pickCard}
+                />
               ))}
             </ul>
           )}
@@ -936,15 +943,20 @@ function VariantPick({ list, value, onPick }: { list: string[]; value: string; o
 const LoadItem = memo(function LoadItem({
   card,
   qty,
+  variant,
+  lang,
   marked,
   onPick,
 }: {
   card: SetCard;
   qty: number;
+  /** the variant it loads without choosing one: its Full's first in the session's language, as its sheet */
+  variant: string;
+  lang: string;
   marked: boolean;
   onPick: (c: SetCard) => void;
 }) {
-  const v = variantName(autoVariant(card.rarity));
+  const v = variantName(variant);
   return (
     <li>
       <button
@@ -957,11 +969,12 @@ const LoadItem = memo(function LoadItem({
       >
         <span className="art">
           <CardPicture
-            own={card.photos[autoVariant(card.rarity)]}
+            own={card.photos[variant]}
             ownCard={card.own_card}
             img={card.img}
             local={card.local}
             reference={card.ref}
+            variant={variantPhoto(card.variant_photos?.[variant], lang)}
             name={card.name}
           />
           {qty > 1 && <span className="owned">×{qty}</span>}

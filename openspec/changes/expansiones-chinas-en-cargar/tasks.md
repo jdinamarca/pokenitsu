@@ -15,6 +15,7 @@
 - [x] 3.1 Buscador: pestaña "Chinas", etiqueta "Chino simplificado"/"Chino tradicional" y búsqueda por código, nombre chino o en inglés
 - [x] 3.2 Abrir una expansión china pasa la sesión a `ZH`
 - [x] 3.3 Ficha: "Lista armada desde tu Master Set"
+- [x] 3.4 Grilla: etiqueta y foto de la variante de la ficha (no la de la rareza)
 
 ## 4. Verificación
 
