@@ -266,3 +266,32 @@ Si la carta marcada tiene impresiones en el Full y ninguna en el idioma de carga
 #### Scenario: SWSH190 en japonés
 - **WHEN** el idioma es Japonés y el usuario marca la SWSH190 de SWSH Black Star Promos
 - **THEN** la ficha dice "Esta carta no salió en japonés. Salió en: EN, ES, PT, FR, DE, IT"
+
+### Requirement: Cargar cartas de expansiones chinas
+El buscador de Cargar SHALL encontrar las expansiones chinas por código, nombre chino o nombre en inglés, con la etiqueta "Chino simplificado" o "Chino tradicional", y SHALL listarlas en su propia pestaña "Chinas", aparte de las internacionales y las japonesas. Al abrir una, el idioma de carga SHALL pasar a Chino. La ficha de una carta armada desde el Full SHALL decir "Lista armada desde tu Master Set".
+
+#### Scenario: Cargar la Eevee 0401 de Gem Pack Vol. 4
+- **WHEN** el usuario escribe `CBB4C`, abre la expansión y carga la 401
+- **THEN** se guarda una copia en chino, la ficha dice "Lista armada desde tu Master Set" y el Master Set de Eevee enciende `EEV·PC:SCN_CBB4·401·ZH-CN·H`
+
+### Requirement: Las copias en chino cuentan en el Master Set
+Una copia en chino (`ZH`) SHALL contar como la impresión china de esa carta y variante: primero en el idioma de su expansión, cuando es china, y si no en `ZH-TW` o `ZH-CN`. No SHALL cambiarse ninguna copia guardada.
+
+#### Scenario: Traducción de una expansión japonesa
+- **WHEN** el usuario abre S10D, cambia el idioma a Chino y carga la 052 normal, y el Full tiene `EEV·JA-S10D·52·ZH-TW·N`
+- **THEN** el Master Set de Eevee enciende esa impresión
+
+#### Scenario: Copias ya guardadas
+- **WHEN** el usuario tiene una copia `ZH` de la S10D 052 normal y el Full tiene `EEV·JA-S10D·52·ZH-TW·N`
+- **THEN** el Master Set de Eevee enciende esa impresión
+
+### Requirement: La grilla muestra la variante de la ficha
+Cada carta de la grilla de Cargar SHALL mostrar en su etiqueta y en su foto la variante que se cargaría sin elegir otra: la primera de su Full en el idioma de carga, la misma que marca su ficha. Solo si el Full no sabe nada de la carta, SHALL usar la variante que se deduce de su rareza.
+
+#### Scenario: Gem Pack Vol. 4
+- **WHEN** el usuario abre `CBB4C`, cuyas cartas no tienen rareza
+- **THEN** la 401 dice "Holo", la 402 "Poké Ball" y la 405 "Master Ball", igual que sus fichas
+
+#### Scenario: Una promo SWSH
+- **WHEN** el usuario abre SWSH Black Star Promos y la SWSH230 solo es holo en su Full
+- **THEN** su etiqueta dice "Holo", no "Normal"
