@@ -122,6 +122,8 @@ export interface PcGroup {
 export interface PcIo {
   species: (dex: number) => Promise<string>;
   jaByName: Map<string, string>;
+  /** the codes of our Simplified Chinese expansions (CBB4C, 30TH…) */
+  zhCodes?: readonly string[];
   record: (cardId: string, file: string, url: string) => Promise<void>;
 }
 class Stopped extends Error {}
@@ -194,7 +196,7 @@ export async function pokecottageStep(groups: PcGroup[], io: PcIo, j: CatalogJob
         if (stats.fetched > before) await sleep(polite.albumPause);
         if (album === FAILED) s.failed += cards.length;
         else {
-          const found = album ? matchPokecottage(album, cards, io.jaByName) : new Map<string, string>();
+          const found = album ? matchPokecottage(album, cards, io.jaByName, io.zhCodes) : new Map<string, string>();
           s.missing += cards.length - found.size;
           for (const [id, url] of found) if (await photo(id, url, 'pokecottage-fotos', io.record)) done.add(id);
         }
@@ -359,12 +361,12 @@ export function startCatalogPhotos({ dex, sets }: { dex?: number[]; sets?: strin
       j.done++;
     }
 
-    // PokeCottage: the Japanese cards of a Pokémon still without any photo, grouped by Pokémon
+    // PokeCottage: the Japanese and Simplified Chinese cards of a Pokémon still without any photo, grouped by Pokémon
     j.phase = 'pokecottage';
     j.current = null;
     const { rows: cards } = await pool.query<PcCard>(
       `SELECT c.id, c.set_id, c.number, c.dex FROM cards c JOIN sets s ON s.id = c.set_id
-       WHERE s.lang = 'JA' AND c.image_small IS NULL AND cardinality(c.dex) > 0
+       WHERE s.lang IN ('JA', 'ZH-CN') AND c.image_small IS NULL AND cardinality(c.dex) > 0
          AND NOT EXISTS (SELECT 1 FROM arma.card_photos p WHERE p.card_id = c.id)
          AND NOT EXISTS (SELECT 1 FROM ${PRINTED_PHOTOS} x WHERE x.card_id = c.id)
          AND ($1::int[] IS NULL OR c.dex && $1) AND ($2::text[] IS NULL OR c.set_id = ANY ($2))`,
@@ -375,11 +377,15 @@ export function startCatalogPhotos({ dex, sets }: { dex?: number[]; sets?: strin
     const groups = [...byDex].sort(([a], [b]) => a - b).map(([d, cs]) => ({ dex: d, cards: cs }));
     j.pokemon = groups.length;
     const { jaByName } = await loadCatalog();
+    const { rows: zh } = await pool.query<{ code: string }>(
+      `SELECT substr(id, length('zh-cn-') + 1) AS code FROM sets WHERE source = 'asia' AND lang = 'ZH-CN'`,
+    );
     await pokecottageStep(
       groups,
       {
         species: async d => (await speciesNames(d)).en,
         jaByName,
+        zhCodes: zh.map(r => r.code),
         record: recordAs('pokecottage-fotos'),
       },
       j,
