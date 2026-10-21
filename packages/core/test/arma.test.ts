@@ -118,6 +118,28 @@ describe('2.1 código de catálogo y variantes', () => {
     expect(m[0]!.finish).toBe('cosmos');
     expect(m[0]!.facts.filter(f => f.field === 'exists').map(f => f.source)).toEqual(['tcgdex', 'tcgplayer']);
   });
+  it('30th Celebration es toda holo: el normal de las fuentes es la holo (me55-solo-holo)', () => {
+    const m = mergeClaims([
+      claim('me55', '118', 'EN', 'normal', 'pokemontcg'),
+      claim('me55', '118', 'EN', 'normal', 'tcgdex'),
+      claim('me55', '118', 'EN', 'holo', 'pokecottage'),
+      claim('me55', '118', 'DE', 'normal', 'tcgdex'),
+    ]);
+    expect(m.map(p => `${p.lang} ${p.finish}`)).toEqual(['EN holo', 'DE holo']);
+    expect(m[0]!.facts.filter(f => f.field === 'exists').map(f => f.source)).toEqual(['pokemontcg', 'tcgdex', 'pokecottage']);
+  });
+  it('30th Celebration: holo y cosmos siguen separadas, y una sola cosmos se queda cosmos', () => {
+    const both = mergeClaims([
+      claim('me55', '116', 'EN', 'normal', 'tcgdex'),
+      claim('me55', '116', 'EN', 'holo', 'pokecottage'),
+      claim('me55', '116', 'EN', 'cosmos', 'pokecottage'),
+    ]);
+    expect(both.map(p => p.finish).sort()).toEqual(['cosmos', 'holo']);
+    const cosmos = mergeClaims([claim('me55', '50', 'EN', 'normal', 'tcgdex'), claim('me55', '50', 'EN', 'cosmos', 'pokecottage')]);
+    expect(cosmos.map(p => p.finish)).toEqual(['cosmos']);
+  });
+  it('fuera de las expansiones toda holo, el normal sigue normal', () =>
+    expect(mergeClaims([claim('sv8', '133', 'EN', 'normal', 'tcgdex')]).map(p => p.finish)).toEqual(['normal']));
   it('era EX: el sello de la expansión de TCGdex y PokeCottage es la Reverse (reverse-con-sello-ex)', () => {
     const m = mergeClaims([
       claim('ex11', '68', 'EN', 'normal', 'tcgplayer'),
