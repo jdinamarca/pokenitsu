@@ -20,7 +20,7 @@ export const PRINTED_PHOTOS = `(SELECT p.card_id, f.source_id, f.value AS src, p
   FROM arma.printings p JOIN cards c ON c.id = p.card_id JOIN sets k ON k.id = c.set_id
   JOIN arma.facts f ON f.printing_code = p.code AND f.field = 'image' AND f.value IS NOT NULL
   LEFT JOIN arma.photo_marks m ON m.src = f.value
-  WHERE p.lang = CASE WHEN k.lang = 'JA' THEN 'JA' ELSE 'EN' END AND coalesce(m.shows, '') = coalesce(p.stamp, ''))`;
+  WHERE p.lang = coalesce(nullif(k.lang, ''), 'EN') AND coalesce(m.shows, '') = coalesce(p.stamp, ''))`;
 
 export interface SetPhotos {
   set: string;
