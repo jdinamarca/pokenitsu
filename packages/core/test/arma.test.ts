@@ -10,6 +10,8 @@ import {
   catalogCode,
   FULL_RULES,
   mergeClaims,
+  mirrorPhotos,
+  plainPhotoFits,
   parseLanguageSentence,
   parseLanguageTables,
   misfiled,
@@ -26,6 +28,7 @@ import {
   variantFromTcgplayer,
   variantLabel,
   type ArmaFinish,
+  type Fact,
   type AuditPrinting,
   type Claim,
   type RulePrinting,
@@ -775,5 +778,45 @@ describe('sellos-y-cruce-de-expansiones', () => {
       '{{Setlist/nmentry|075/131|{{TCG ID|Prismatic Evolutions|Eevee ex|75|Eevee}}{{Tera ex}}|Colorless|||{{TCGMerch|Scarlet & Violet|Series|Prismatic Evolutions Surprise Box}} exclusive with "Prismatic Evolutions" stamp}}\n' +
       '{{Setlist/nmentry|026/131|{{TCG ID|Prismatic Evolutions|Glaceon ex|26|Glaceon}}{{Tera ex}}|Water|6=Snowflake Stamp {{TCGMerch|Scarlet & Violet|Series|Holiday Calendar 2025}} exclusive}}';
     expect(parseAdditionalCards(pre, 'Prismatic Evolutions')).toEqual([{ number: '75', stamp: 'set-logo', finish: null }]);
+  });
+});
+
+describe('fotos-de-japonesas-con-poke-ball', () => {
+  const td = { field: 'image' as const, source: 'tcgdex', value: 'https://assets.tcgdex.net/ja/SV/SV8a/125/high.webp', ref: null };
+  const pc = { field: 'image' as const, source: 'pokecottage-fotos', value: '/img-local/pc.webp', ref: null };
+  const ex = { field: 'exists' as const, source: 'tcgdex', value: 'true', ref: null };
+  const p = (finish: ArmaFinish, facts: Fact[], lang = 'JA', number = '125') => ({
+    setKey: 'ja-SV8a',
+    number,
+    lang,
+    finish,
+    stamp: null,
+    facts,
+  });
+  it('la foto de TCGdex pasa a la Poké Ball', () => {
+    const out = mirrorPhotos([p('normal', [ex, td]), p('reverse', [td]), p('masterball', [td]), p('pokeball', [pc])]);
+    expect(out.map(x => [x.finish, x.facts.filter(f => f.field === 'image').map(f => f.source)])).toEqual([
+      ['normal', []],
+      ['reverse', []],
+      ['masterball', []],
+      ['pokeball', ['pokecottage-fotos', 'tcgdex']],
+    ]);
+    expect(out[0]!.facts).toEqual([ex]);
+  });
+  it('una carta sin Poké Ball queda igual', () => {
+    const xs = [p('normal', [td], 'JA', '126'), p('pokeball', [pc])];
+    expect(mirrorPhotos(xs)[0]).toBe(xs[0]);
+  });
+  it('solo en japonés', () => {
+    const xs = [p('normal', [td], 'ZH-TW'), p('pokeball', [pc])];
+    expect(mirrorPhotos(xs)[0]).toBe(xs[0]);
+  });
+  it('la foto de Limitless es la de la impresión simple', () => {
+    expect(plainPhotoFits({ finish: 'normal', stamp: null })).toBe(true);
+    expect(plainPhotoFits({ finish: 'holo', stamp: null })).toBe(true);
+    expect(plainPhotoFits({ finish: 'pokeball', stamp: null })).toBe(false);
+    expect(plainPhotoFits({ finish: 'masterball', stamp: null })).toBe(false);
+    expect(plainPhotoFits({ finish: 'reverse', stamp: null })).toBe(false);
+    expect(plainPhotoFits({ finish: 'normal', stamp: 'set-logo' })).toBe(false);
   });
 });

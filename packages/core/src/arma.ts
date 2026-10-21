@@ -730,6 +730,33 @@ export function photoShows(holder: PhotoHolder, holders: readonly PhotoHolder[],
 }
 
 /**
+ * TCGdex's one picture of a Japanese card that also has a Poké Ball printing (SV2a, SV8a) is the Poké Ball mirror's
+ * (fotos-de-japonesas-con-poke-ball): it goes to that printing only, never to the normal, reverse or Master Ball one.
+ */
+export function mirrorPhotos<P extends Pick<MergedPrinting, 'setKey' | 'number' | 'lang' | 'finish' | 'stamp' | 'facts'>>(
+  printings: readonly P[],
+): P[] {
+  const card = (p: P) => `${p.setKey}|${normNumber(p.number)}|${p.lang}`;
+  const isBall = (p: P) => p.lang === 'JA' && p.finish === 'pokeball' && !p.stamp;
+  const isTdImage = (f: Fact) => f.field === 'image' && f.source === 'tcgdex';
+  const ball = new Set(printings.filter(isBall).map(card));
+  const photo = new Map<string, Fact>();
+  for (const p of printings) {
+    const f = p.facts.find(isTdImage);
+    if (f && ball.has(card(p)) && !photo.has(card(p))) photo.set(card(p), f);
+  }
+  return printings.map(p => {
+    if (!ball.has(card(p))) return p;
+    const rest = p.facts.filter(f => !isTdImage(f));
+    const f = photo.get(card(p));
+    return { ...p, facts: isBall(p) && f ? [...rest, f] : rest };
+  });
+}
+/** Limitless's photo of a Japanese card is the plain one: never a reverse, Poké Ball or Master Ball printing's, nor a stamp's */
+export const plainPhotoFits = (p: { finish: ArmaFinish; stamp: string | null }) =>
+  !p.stamp && (['normal', 'holo', 'cosmos'] as readonly string[]).includes(p.finish);
+
+/**
  * The finish a card is printed in when nothing else is said: normal, or its only holo. For a printing a source confirms
  * in another language without naming its variant (WikiDex) or one deduced from a set list: never a stamp nor a reverse.
  */
