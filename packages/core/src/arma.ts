@@ -396,12 +396,20 @@ export interface MergedPrinting extends PrintingId {
   facts: Fact[];
 }
 
+/**
+ * Expansions where every card is holo (me55-solo-holo): a source's plain "normal" there is the holo, since no non-holo
+ * was printed. 30th Celebration (me55), checked against Bulbapedia ("every single card… is Holofoil"), PokeCottage,
+ * Pokedexia and TCGplayer's prices (holofoil only); TCGdex's "normal" for it is generated, pokemontcg.io's a default.
+ */
+export const ALL_HOLO_SETS: ReadonlySet<string> = new Set(['me55']);
+
 const first = <T>(xs: (T | undefined)[]): T | null => xs.find(x => x !== undefined && x !== null && x !== '') ?? null;
 
 /**
  * One printing per (set, number, language, finish, stamp), with every source behind each fact. Before grouping,
  * prints the sources name differently are reconciled per card: a promo's TCGplayer "holo" is TCGdex's cosmos holo;
- * a TCGdex "normal" that TCGplayer only has as holo is that holo; a TCGplayer "normal" TCGdex only has as holo is it.
+ * a TCGdex "normal" that TCGplayer only has as holo is that holo; a TCGplayer "normal" TCGdex only has as holo is it;
+ * a "normal" in an expansion that is all holo (ALL_HOLO_SETS) is its holo.
  */
 export function mergeClaims(claims: readonly Claim[]): MergedPrinting[] {
   const card = (c: Claim) => `${c.setKey}|${normNumber(c.number)}|${c.lang}`;
@@ -443,6 +451,10 @@ export function mergeClaims(claims: readonly Claim[]): MergedPrinting[] {
       }
       let finish = c.finish;
       let inferred = false;
+      if (ALL_HOLO_SETS.has(c.setKey) && !c.stamp && finish === 'normal') {
+        finish = 'holo';
+        inferred = true; // the set says holo, not which one: a cosmos-only card stays cosmos below
+      }
       if (c.source === 'tcgplayer' && !c.stamp && finish === 'normal' && !td('normal') && (td('holo') || td('cosmos')) && !tp('holo'))
         finish = td('holo') ? 'holo' : 'cosmos';
       if (c.source === 'tcgdex' && !c.stamp && finish === 'normal' && tp('holo') && !tp('normal') && !td('holo') && !td('cosmos')) {
