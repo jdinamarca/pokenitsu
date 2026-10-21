@@ -37,10 +37,10 @@ La galería SHALL mostrar el avance "N de M listas para producción". M son las 
 - **THEN** la galería muestra solo las fotos de Limitless en uso, y el filtro dice cuántas son
 
 ### Requirement: Bajar las fotos locales del catálogo japonés
-Con las fotos locales encendidas, la galería SHALL ofrecer al administrador "Bajar fotos locales del catálogo japonés". Esto SHALL bajar, en tres pasos, las fotos de las cartas japonesas sin foto:
-1. de Limitless TCG, por expansión;
-2. de PokeCottage, por Pokémon, para las que sigan sin foto;
-3. de Bill's Archive, por expansión, para las que sigan sin foto.
+Con las fotos locales encendidas, la galería SHALL ofrecer al administrador "Bajar fotos locales del catálogo japonés y chino". Esto SHALL bajar, en tres pasos, las fotos de las cartas sin foto:
+1. de Limitless TCG, por expansión, para las japonesas;
+2. de PokeCottage, por Pokémon, para las japonesas y las chinas en chino simplificado que sigan sin foto;
+3. de Bill's Archive, por expansión, para las japonesas que sigan sin foto.
 
 La galería SHALL mostrar el avance:
 - el paso en curso;
@@ -53,8 +53,12 @@ La galería SHALL mostrar el avance:
 Pedirlo otra vez mientras corre SHALL mostrar el avance en curso y MUST NOT empezar otra descarga. Con las fotos locales apagadas, la galería SHALL decir que hay que encenderlas (`ARMA_FOTOS_LOCALES=1`) y MUST NOT ofrecer la descarga.
 
 #### Scenario: Bajar todo
-- **WHEN** el administrador pide bajar las fotos del catálogo japonés
+- **WHEN** el administrador pide bajar las fotos del catálogo japonés y chino
 - **THEN** ve el avance de Limitless por expansión, después el de PokeCottage por Pokémon y después el de Bill's Archive por expansión y, al terminar, las cartas nuevas aparecen en la galería con su fuente (Limitless TCG, PokeCottage o Bill's Archive)
+
+#### Scenario: Chinas con álbum ya guardado
+- **WHEN** el álbum de PokeCottage de Eevee ya está guardado y hay cartas chinas de Eevee sin foto
+- **THEN** el paso de PokeCottage no vuelve a pedir el álbum y solo baja las fotos que faltan
 
 #### Scenario: Se detuvo
 - **WHEN** PokeCottage o Bill's Archive fallan varias veces seguidas
