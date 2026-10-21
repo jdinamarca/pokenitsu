@@ -157,11 +157,15 @@ export interface ListedSet extends SetLike {
   date?: string | null;
 }
 /**
- * The picker's list (cargar-selector-y-nombre): the Japanese or the international expansions, by series (era), the
+ * The picker's list (cargar-selector-y-nombre): the Japanese, the Chinese (expansiones-chinas-en-cargar) or the
+ * international expansions, by series (era), the
  * series with the newest expansion first; inside one, newest first and those without a date last, by code.
  */
-export function groupSets<S extends ListedSet>(sets: readonly S[], which: 'ja' | 'intl'): { era: string; sets: S[] }[] {
-  const mine = sets.filter(s => (s.lang === 'JA') === (which === 'ja'));
+/** the picker's tab of an expansion */
+export const setRegion = (s: Pick<ListedSet, 'lang'>): 'ja' | 'zh' | 'intl' =>
+  s.lang === 'JA' ? 'ja' : s.lang?.startsWith('ZH') ? 'zh' : 'intl';
+export function groupSets<S extends ListedSet>(sets: readonly S[], which: 'ja' | 'zh' | 'intl'): { era: string; sets: S[] }[] {
+  const mine = sets.filter(s => setRegion(s) === which);
   const byEra = new Map<string, S[]>();
   for (const s of mine) {
     const era = eraOf(s) || 'Otras';

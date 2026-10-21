@@ -1,10 +1,8 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  autoVariant,
   CONDS,
   expandRange,
   indexNumbers,
-  langCode,
   LANGS,
   matchesCardName,
   nameQuery,
@@ -28,6 +26,7 @@ import {
   litCount,
   planRow,
   setLine,
+  setLangOf,
   variantName,
   variantPhoto,
   openLang,
@@ -162,7 +161,7 @@ export function Cargar() {
         if (lastSet) {
           // reopened with the rule of opening it (idioma-al-abrir-expansion): an international one not in an Asian language
           const sv = readSaved().session;
-          const lang = openLang({ typed: null, setLang: langCode(lastSet.lang), current: sv.lang, west: sv.west });
+          const lang = openLang({ typed: null, setLang: setLangOf(lastSet.lang), current: sv.lang, west: sv.west });
           if (lang !== sv.lang)
             setSaved(x => {
               const next = { ...x, session: withWest({ ...x.session, lang }) };
@@ -400,7 +399,7 @@ export function Cargar() {
   function chooseSet(s: CardSet, given: Lang | null, typed = false) {
     // a language typed in the search ("MEW ES") changes the session's; a single-language expansion sets its own; an
     // international one doesn't keep an Asian language: it goes back to the last Western one (idioma-al-abrir-expansion)
-    const lang = openLang({ typed: typed ? given : null, setLang: langCode(s.lang), current: given || session.lang, west: session.west });
+    const lang = openLang({ typed: typed ? given : null, setLang: setLangOf(s.lang), current: given || session.lang, west: session.west });
     updateSaved(sv => ({
       session: withWest({ ...sv.session, lang }),
       recents: [{ id: s.id, lang }, ...sv.recents.filter(r => r.id !== s.id)].slice(0, 8),
@@ -726,7 +725,15 @@ export function Cargar() {
           ) : (
             <ul className="row" style={{ padding: '16px 0' }}>
               {shown.map(c => (
-                <LoadItem key={c.id} card={c} qty={cardQty(c)} marked={c.num === focusNum} onPick={pickCard} />
+                <LoadItem
+                  key={c.id}
+                  card={c}
+                  qty={cardQty(c)}
+                  variant={firstVariant(c, variantsFor(c))}
+                  lang={session.lang}
+                  marked={c.num === focusNum}
+                  onPick={pickCard}
+                />
               ))}
             </ul>
           )}
@@ -771,6 +778,11 @@ export function Cargar() {
             {focus.list === 'limitless' && (
               <p className="list-src" role="note">
                 Dato de Limitless · solo uso local
+              </p>
+            )}
+            {focus.list === 'full' && (
+              <p className="list-src" role="note">
+                Lista armada desde tu Master Set
               </p>
             )}
             <VariantPick
@@ -931,15 +943,20 @@ function VariantPick({ list, value, onPick }: { list: string[]; value: string; o
 const LoadItem = memo(function LoadItem({
   card,
   qty,
+  variant,
+  lang,
   marked,
   onPick,
 }: {
   card: SetCard;
   qty: number;
+  /** the variant it loads without choosing one: its Full's first in the session's language, as its sheet */
+  variant: string;
+  lang: string;
   marked: boolean;
   onPick: (c: SetCard) => void;
 }) {
-  const v = variantName(autoVariant(card.rarity));
+  const v = variantName(variant);
   return (
     <li>
       <button
@@ -952,11 +969,12 @@ const LoadItem = memo(function LoadItem({
       >
         <span className="art">
           <CardPicture
-            own={card.photos[autoVariant(card.rarity)]}
+            own={card.photos[variant]}
             ownCard={card.own_card}
             img={card.img}
             local={card.local}
             reference={card.ref}
+            variant={variantPhoto(card.variant_photos?.[variant], lang)}
             name={card.name}
           />
           {qty > 1 && <span className="owned">×{qty}</span>}

@@ -48,3 +48,29 @@ describe('cargar-selector-y-nombre: buscar una carta por nombre', () => {
     for (const x of ['es', 'NM', 'lp', '25r', '1-30', '133', 'e', ' ']) expect(nameQuery(x)).toBeNull();
   });
 });
+
+describe('expansiones-chinas-en-cargar: la pestaña Chinas', () => {
+  const zh = (id: string, code: string, lang: string, series: string | null) => ({
+    id,
+    code,
+    date: '2026/02/26',
+    series,
+    source: 'asia',
+    lang,
+  });
+  const sets = [
+    ja('ja-SV2a', 'SV2a', '2023/06/16'),
+    zh('zh-cn-CBB4C', 'CBB4C', 'ZH-CN', '朱&紫'),
+    zh('zh-tw-SCC', 'SCC', 'ZH-TW', '劍&盾'),
+    intl('sv1', 'Scarlet & Violet', '2023/03/31'),
+  ];
+  it('las chinas, por serie en inglés', () =>
+    expect(groupSets(sets, 'zh').map(g => [g.era, g.sets.map(s => s.id)])).toEqual([
+      ['Scarlet & Violet', ['zh-cn-CBB4C']],
+      ['Sword & Shield', ['zh-tw-SCC']],
+    ]));
+  it('ni en Internacionales ni en Japonesas', () => {
+    expect(groupSets(sets, 'intl').flatMap(g => g.sets.map(s => s.id))).toEqual(['sv1']);
+    expect(groupSets(sets, 'ja').flatMap(g => g.sets.map(s => s.id))).toEqual(['ja-SV2a']);
+  });
+});

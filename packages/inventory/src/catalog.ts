@@ -274,8 +274,8 @@ export function createCatalog(db: Db) {
       [setId],
     );
     if (!rows.length) throw bad(`La expansión ${setId} no existe`, 404);
-    // typed by hand, or left from the old PokeCottage checklists (in use, so kept): nothing to download
-    if (['manual', 'pokecottage'].includes(rows[0]!.source) || (!force && rows[0]!.cards_synced_at)) return;
+    // typed by hand, left from the old PokeCottage checklists (in use, so kept) or built by Arma (asia): nothing to download
+    if (['manual', 'pokecottage', 'asia'].includes(rows[0]!.source) || (!force && rows[0]!.cards_synced_at)) return;
     const sync = rows[0]!.source === 'tcgdex-ja' ? syncJaSet : rows[0]!.source === 'tcgdex-en' ? syncTdSet : syncSetCards;
     if (!syncing.has(setId))
       syncing.set(

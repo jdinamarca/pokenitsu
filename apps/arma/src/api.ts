@@ -87,7 +87,7 @@ export interface CardSet {
   printed: number | null;
   sym: string;
   source: string;
-  /** the only language of the expansion (Japanese ones), or null */
+  /** the only language of the expansion (Japanese ones: JA; Chinese ones: ZH-CN or ZH-TW), or null */
   lang: string | null;
   has_cards: boolean;
 }
@@ -127,7 +127,8 @@ export interface SetCard {
   full?: { lang: string; variant: string }[];
   /** the photos of its variants with a stamp, from the Full: { variant: { lang: photo } } (foto-de-la-variante-con-sello) */
   variant_photos?: Record<string, VariantPhotos>;
-  /** where its card list came from when it is not its expansion's own source: 'limitless' (lista-de-limitless-en-japonesas-vacias) */
+  /** where its card list came from when it is not its expansion's own source: 'limitless' (lista-de-limitless-en-japonesas-vacias),
+   *  'full' when built from the Full's printings (expansiones-chinas-en-cargar) */
   list?: string | null;
 }
 export interface LocalPhoto {
