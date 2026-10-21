@@ -4,6 +4,7 @@ import { migrate } from './migrate.ts';
 import { pool } from './db.ts';
 import { importDex } from './importer.ts';
 import { syncAsiaSets } from './asiaSets.ts';
+import { linkFullToJaSets, syncJaSets } from './jaSets.ts';
 import { importLocalPhotos } from './localPhotos.ts';
 import { catalogJob, PRINTED_PHOTOS, startCatalogPhotos } from './catalogPhotos.ts';
 import { detailsJob, pendingDetails, startJaDetails } from './details.ts';
@@ -42,6 +43,8 @@ app.post<{ Params: { dex: string } }>('/api/import/:dex', async req => {
   const r = await importDex(dexOf(req.params.dex));
   // its Chinese expansions in the catalog, with the printings linked (expansiones-chinas-en-cargar)
   await syncAsiaSets().catch(e => console.warn('no pude armar las expansiones chinas:', e instanceof Error ? e.message : e));
+  // its printings of the Japanese expansions only Limitless has, linked (expansiones-japonesas-de-limitless)
+  await linkFullToJaSets().catch(e => console.warn('no pude enlazar las expansiones japonesas:', e instanceof Error ? e.message : e));
   return r;
 });
 
@@ -399,5 +402,15 @@ ensureTdSets().then(
 syncAsiaSets().then(
   r => r.sets && console.log(`expansiones chinas: ${r.sets}, cartas nuevas: ${r.cards}, impresiones enlazadas: ${r.linked}`),
   e => console.warn('no pude armar las expansiones chinas:', e instanceof Error ? e.message : e),
+);
+// the Japanese expansions only Limitless has, in the background and only in local mode (expansiones-japonesas-de-limitless)
+syncJaSets().then(
+  r =>
+    r &&
+    console.log(
+      `expansiones japonesas de Limitless: ${r.added} nuevas, ${r.filled} llenadas con ${r.cards} cartas, impresiones enlazadas: ${r.linked}` +
+        (r.missing.length ? `, sin lista: ${r.missing.join(' ')}` : ''),
+    ),
+  e => console.warn('no pude agregar las expansiones japonesas de Limitless:', e instanceof Error ? e.message : e),
 );
 console.log(`Arma tu colección (API) en http://127.0.0.1:${port}`);

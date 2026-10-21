@@ -63,11 +63,21 @@ export function fillJaSetFromLimitless(setId: string): Promise<ListResult> {
   return filling.get(setId)!;
 }
 async function fill(setId: string): Promise<ListResult> {
-  const { rows } = await pool.query(`SELECT 1 FROM sets s WHERE s.id = $1 AND s.source = 'tcgdex-ja' AND ${ASKED_EMPTY}`, [setId]);
+  // TCGdex's answered empty, or one only Limitless has (expansiones-japonesas-de-limitless) still without its list
+  const { rows } = await pool.query(
+    `SELECT 1 FROM sets s WHERE s.id = $1
+       AND ((s.source = 'tcgdex-ja' AND ${ASKED_EMPTY}) OR (s.source = 'limitless' AND NOT EXISTS (SELECT 1 FROM cards c WHERE c.set_id = s.id)))`,
+    [setId],
+  );
   const f = limitlessFile(setId, '1');
   if (!rows.length || !f) return null;
   const cards = (await fetchText(limitlessListUrl(f.code), parseLimitlessList)) ?? [];
   if (!cards.length) return 'missing';
+  await addLimitlessCards(setId, cards);
+  return { filled: cards.length };
+}
+/** Limitless's list as the expansion's cards, with ids as TCGdex would write them, and the Full's printings linked */
+export async function addLimitlessCards(setId: string, cards: readonly ListedJaCard[]) {
   const { idx } = await speciesNames();
   const code = setId.slice(3);
   await tx(async c => {
@@ -88,5 +98,4 @@ async function fill(setId: string): Promise<ListResult> {
       [setId],
     );
   });
-  return { filled: cards.length };
 }
