@@ -10,6 +10,7 @@ import { pickCardPhotos, pickVariantPhotos, type CardPhotos, type VariantPhotoRo
 import { localPhotosOn } from './local.ts';
 import { asViewer } from './viewerTx.ts';
 import { fillJaDetails } from './details.ts';
+import { fillJaSetFromLimitless } from './jaLists.ts';
 
 // catalog downloads (cards, exchange rate) are shared by every account: plain connections
 const inv = createInventory({ query: (text, params) => pool.query(text, params) as Promise<never>, tx });
@@ -24,6 +25,8 @@ export async function ensureTdSets() {
   if (rows[0]!.n && rows[0]!.fresh) return 0;
   return inv.syncTdSets();
 }
+/** an expansion's cards from its own source, the first time (lista-de-limitless-en-japonesas-vacias: the photos' job) */
+export const ensureSetCards = (id: string) => inv.ensureSetCards(id);
 // boxes and binders (cajas-y-carpetas-en-arma): the same operations as Nitsu's Ubicaciones
 const locs = createLocations(inv);
 
@@ -182,6 +185,8 @@ export function inventoryRoutes(app: FastifyInstance) {
     const { rows: set } = await pool.query('SELECT 1 FROM sets WHERE id = $1', [sid]);
     if (!set.length) throw Object.assign(new Error('Esa expansión no existe'), { statusCode: 404 });
     await inv.ensureSetCards(sid);
+    // a Japanese expansion TCGdex has without cards: Limitless's list, for local use only (lista-de-limitless-en-japonesas-vacias)
+    await fillJaSetFromLimitless(sid).catch(e => console.warn(`[arma] lista de Limitless de ${sid}:`, e instanceof Error ? e.message : e));
     // a Japanese expansion's photos for local use only download in the background: the case never waits for them
     void ensureLocalCardPhotos(sid).catch(() => {});
     const [fx, labels] = await Promise.all([getFx(pool), variantLabels()]);
@@ -190,7 +195,7 @@ export function inventoryRoutes(app: FastifyInstance) {
       async c => {
         const [cards, prices, copies, own, cfg, prints, photos] = await Promise.all([
           c.query<Pictured & { id: string }>(
-            `SELECT c.id, ${CARD_COLS}, c.variants, c.variants_guessed AS vguess FROM cards c WHERE c.set_id = $1
+            `SELECT c.id, ${CARD_COLS}, c.variants, c.variants_guessed AS vguess, c.list_source AS list FROM cards c WHERE c.set_id = $1
              ORDER BY c.number_norm ~ '^[0-9]+$' DESC, nullif(regexp_replace(c.number_norm, '[^0-9]', '', 'g'), '')::int NULLS LAST, c.number`,
             [sid],
           ),

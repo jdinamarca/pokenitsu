@@ -324,12 +324,20 @@ const counts = (s: SourceCount, lacks: string) =>
 /** the download's progress: a line per step (Limitless, then PokeCottage), and when PokeCottage asked to wait */
 function JobNotice({ job }: { job: CatalogJob }) {
   const step = ['limitless', 'pokecottage', 'billsarchive'].indexOf(job.phase);
-  const doing = (i: number) => (job.running && step === i ? `Bajando ${job.current || '…'} · ` : '');
+  const listing = !!job.lists && job.lists.done < job.lists.sets;
+  const doing = (i: number) => (job.running && !listing && step === i ? `Bajando ${job.current || '…'} · ` : '');
   const shown = (i: number) => step >= i || !job.running;
   const who = ['Limitless', 'PokeCottage', "Bill's Archive"][step] || '';
   const wait = job.waitingUntil && new Date(job.waitingUntil);
   return (
     <div className="notice" style={{ margin: '14px 28px 0' }} role="status">
+      {!!job.lists?.sets && (
+        <p>
+          {listing && job.running ? `Leyendo ${job.current?.replace(/^ja-/, '') || '…'} · ` : ''}Listas: {n(job.lists.done)} de{' '}
+          {n(job.lists.sets)} expansiones japonesas sin cartas · {n(job.lists.tcgdex)} de TCGdex · {n(job.lists.cards)} cartas de Limitless
+          {job.lists.missing.length ? ` · sin lista: ${job.lists.missing.join(', ')}` : ''}
+        </p>
+      )}
       <p>
         {job.running ? '' : 'Última descarga · '}
         {doing(0)}Limitless: {n(job.done)} de {n(job.sets)} expansiones · {counts(job.bySource.limitless, 'Limitless')}

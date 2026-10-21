@@ -127,6 +127,8 @@ export interface SetCard {
   full?: { lang: string; variant: string }[];
   /** the photos of its variants with a stamp, from the Full: { variant: { lang: photo } } (foto-de-la-variante-con-sello) */
   variant_photos?: Record<string, VariantPhotos>;
+  /** where its card list came from when it is not its expansion's own source: 'limitless' (lista-de-limitless-en-japonesas-vacias) */
+  list?: string | null;
 }
 export interface LocalPhoto {
   src: string;
@@ -326,6 +328,7 @@ export interface CatalogJob {
   billsSkipped: string[];
   current: string | null;
   bySource: { limitless: SourceCount; pokecottage: SourceCount; billsarchive: SourceCount };
+  lists?: { sets: number; done: number; tcgdex: number; cards: number; missing: string[] };
   skipped: string[];
   waitingUntil?: string;
   stopped?: string;

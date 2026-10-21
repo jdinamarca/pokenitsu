@@ -5,6 +5,7 @@
 import { basename, join } from 'node:path';
 import { pool } from './db.ts';
 import { LOCAL_IMAGE_DIR, localPhotosOn } from './local.ts';
+import { fillJaSetFromLimitless } from './jaLists.ts';
 import { limitlessFile, limitlessUrl } from './limitless.ts';
 import { fileOf } from './localPhotos.ts';
 import { loadCatalog } from './sources/catalog.ts';
@@ -262,6 +263,8 @@ export interface CatalogJob {
   /** the expansion or Pokémon (#133) being asked */
   current: string | null;
   bySource: { limitless: SourceCount; pokecottage: SourceCount; billsarchive: SourceCount };
+  /** first, the Japanese expansions TCGdex has without cards get Limitless's list (lista-de-limitless-en-japonesas-vacias) */
+  lists: { sets: number; done: number; tcgdex: number; cards: number; missing: string[] };
   /** expansions Limitless doesn't have */
   skipped: string[];
   /** PokeCottage asked to wait (or failed): the next request after this */
@@ -301,9 +304,39 @@ export function startCatalogPhotos({ dex, sets }: { dex?: number[]; sets?: strin
     billsSkipped: [],
     current: null,
     bySource: { limitless: count(), pokecottage: count(), billsarchive: count() },
+    lists: { sets: 0, done: 0, tcgdex: 0, cards: 0, missing: [] },
     skipped: [],
   });
   (async () => {
+    // the lists first, one expansion after the other, so their cards get photos below: TCGdex's for one never opened,
+    // and Limitless's when TCGdex has it without cards
+    const { rows: empty } = await pool.query<{ id: string; asked: boolean }>(
+      `SELECT s.id, s.cards_synced_at IS NOT NULL AS asked FROM sets s
+       WHERE s.source = 'tcgdex-ja' AND NOT EXISTS (SELECT 1 FROM cards c WHERE c.set_id = s.id) AND ($1::text[] IS NULL OR s.id = ANY ($1))
+       ORDER BY 1`,
+      [onlySets],
+    );
+    j.lists.sets = empty.length;
+    const { ensureSetCards } = await import('./inventory.ts');
+    for (const { id, asked } of empty) {
+      j.current = id;
+      if (!asked) {
+        await ensureSetCards(id).catch(e => console.warn(`[arma] lista de TCGdex de ${id}:`, e instanceof Error ? e.message : e));
+        const { rows } = await pool.query<{ n: number }>('SELECT count(*)::int AS n FROM cards WHERE set_id = $1', [id]);
+        if (rows[0]!.n) {
+          j.lists.tcgdex++;
+          j.lists.done++;
+          continue;
+        }
+      }
+      const r = await fillJaSetFromLimitless(id).catch(e => {
+        console.warn(`[arma] lista de Limitless de ${id}:`, e instanceof Error ? e.message : e);
+        return 'missing' as const;
+      });
+      if (r === 'missing' || !r) j.lists.missing.push(id.slice(3));
+      else if (r) j.lists.cards += r.filled;
+      j.lists.done++;
+    }
     const { rows } = await pool.query<{ set_id: string }>(
       `SELECT DISTINCT c.set_id FROM cards c
        WHERE c.set_id LIKE 'ja-%' AND c.image_small IS NULL AND NOT EXISTS (SELECT 1 FROM arma.card_photos p WHERE p.card_id = c.id)

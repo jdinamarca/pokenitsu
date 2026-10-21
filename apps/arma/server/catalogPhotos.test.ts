@@ -23,6 +23,7 @@ const job = (): Job => ({
   billsSets: 0,
   billsDone: 0,
   billsSkipped: [],
+  lists: { sets: 0, done: 0, tcgdex: 0, cards: 0, missing: [] },
   current: null,
   bySource: {
     limitless: { fetched: 0, existing: 0, missing: 0, failed: 0 },
