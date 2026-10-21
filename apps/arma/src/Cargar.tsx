@@ -768,6 +768,11 @@ export function Cargar() {
                 Esta carta no salió en {langWord}. Salió en: {focusLangs.join(', ')}
               </p>
             )}
+            {focus.list === 'limitless' && (
+              <p className="list-src" role="note">
+                Dato de Limitless · solo uso local
+              </p>
+            )}
             <VariantPick
               list={variantsFor(focus)}
               value={marked(focus)}

@@ -880,6 +880,11 @@ button {
   background: #3a2c17;
   color: #f3cf96;
 }
+/* a card listed from Limitless, for local use only (lista-de-limitless-en-japonesas-vacias) */
+.list-src {
+  font-size: 12px;
+  color: var(--ink-mute);
+}
 .own {
   background: var(--felt);
   border-radius: 10px;
