@@ -21,7 +21,7 @@ describe('fotos-pokecottage-en-catalogo: el cruce con el álbum', () => {
     expect(matchPokecottage([entry({})], [eevee], jaByName).get('ja-PMCG2-037')).toBe('https://pokecottagecdn.com/a.webp'));
   it('otro Pokédex con la misma expansión y número no calza', () =>
     expect(matchPokecottage([entry({ pokemonNumber: 25 })], [eevee], jaByName).size).toBe(0));
-  it('una china (scn_) no calza', () =>
+  it('una china (scn_) sin expansiones chinas no calza', () =>
     expect(matchPokecottage([entry({ set: { id: 'scn_b02', name: 'Pokémon Jungle' } })], [eevee], jaByName).size).toBe(0));
   it('una expansión que no conocemos no calza', () =>
     expect(matchPokecottage([entry({ set: { id: 'jpn_x', name: 'Otra' } })], [eevee], jaByName).size).toBe(0));
@@ -41,6 +41,31 @@ describe('fotos-pokecottage-en-catalogo: el cruce con el álbum', () => {
       ).size,
     ).toBe(1));
   it('número con total impreso', () => expect(matchPokecottage([entry({ cardNumber: '037/048' })], [eevee], jaByName).size).toBe(1));
+});
+
+describe('fotos-pokecottage-en-chinas: las chinas del álbum', () => {
+  const zhCodes = ['CBB4C', '30TH', '30THD', 'CSM1aC'];
+  const zh = (id: string, cardNumber: string, over: object = {}) => entry({ set: { id, name: 'x' }, cardNumber, ...over });
+  const card = (set_id: string, number: string, dex = [133]) => ({ id: `${set_id}-${number}`, set_id, number, dex });
+  it('Gem Pack Vol. 4 (scn_cbb4) #401 es la CBB4C 401', () =>
+    expect(matchPokecottage([zh('scn_cbb4', '401')], [card('zh-cn-CBB4C', '401')], jaByName, zhCodes).size).toBe(1));
+  it('el mismo código: scn_30thd #25', () =>
+    expect(matchPokecottage([zh('scn_30thd', '25')], [card('zh-cn-30THD', '25')], jaByName, zhCodes).size).toBe(1));
+  it('número con total: 75/103 es la 75', () =>
+    expect(matchPokecottage([zh('scn_30th', '75/103')], [card('zh-cn-30TH', '75')], jaByName, zhCodes).size).toBe(1));
+  it('el código con minúsculas de TCGdex: scn_csm1a es CSM1aC', () =>
+    expect(matchPokecottage([zh('scn_csm1a', '101')], [card('zh-cn-CSM1aC', '101')], jaByName, zhCodes).size).toBe(1));
+  it('otro Pokédex en el mismo número no calza', () =>
+    expect(matchPokecottage([zh('scn_cbb4', '401', { pokemonNumber: 25 })], [card('zh-cn-CBB4C', '401')], jaByName, zhCodes).size).toBe(0));
+  it('una expansión china que no tenemos no calza', () =>
+    expect(matchPokecottage([zh('scn_otra', '401')], [card('zh-cn-CBB4C', '401')], jaByName, zhCodes).size).toBe(0));
+  it('una china no calza con una japonesa del mismo número', () =>
+    expect(matchPokecottage([zh('scn_b02', '37')], [eevee], jaByName, zhCodes).size).toBe(0));
+  it('gana la estándar', () => {
+    const v = zh('scn_cbb4', '401', { url: 'https://pokecottagecdn.com/variante.webp', variantType: 'master' });
+    const std = zh('scn_cbb4', '401', { url: 'https://pokecottagecdn.com/estandar.webp' });
+    expect(matchPokecottage([v, std], [card('zh-cn-CBB4C', '401')], jaByName, zhCodes).get('zh-cn-CBB4C-401')).toBe(std.url);
+  });
 });
 
 describe('el nombre del álbum en PokeCottage', () => {

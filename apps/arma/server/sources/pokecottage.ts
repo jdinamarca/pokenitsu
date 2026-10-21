@@ -3,6 +3,7 @@
 // (fotos-pokecottage-en-catalogo): the album with its picture URLs is cached apart, under its own key.
 import { compactStamp, normNumber, variantFromPokecottage, variantLabel, type Claim } from '@pokenitsu/core';
 import { tdSetId } from '@pokenitsu/inventory';
+import { asiaSetId, crossCode } from '../asiaSets.ts';
 import { cardIdOf, intlSetByName, nameKey, tdSetByName, type Catalog } from './catalog.ts';
 import { fetchJson } from './http.ts';
 
@@ -174,16 +175,26 @@ export interface PcCard {
 }
 const plainNumber = (n: string) => normNumber(String(n).split('/')[0]!.replace(/^#/, ''));
 /**
- * The photo of each catalog card in a Pokémon's album: a Japanese entry of the same expansion (by its English name or
- * an alias), the same number and a Pokédex number of the card's (so a wrong set match can't give another Pokémon's
- * photo). The standard entry wins over its variants. Card id → picture URL.
+ * The photo of each catalog card in a Pokémon's album: an entry of the same expansion, the same number and a Pokédex
+ * number of the card's (so a wrong set match can't give another Pokémon's photo). A Japanese entry's expansion by its
+ * English name or an alias; a Simplified Chinese one (scn_) by its code, crossed with the codes of our Chinese
+ * expansions as they were built (fotos-pokecottage-en-chinas). The standard entry wins over its variants.
+ * Card id → picture URL.
  */
-export function matchPokecottage(entries: PcPhotoEntry[], cards: PcCard[], jaByName: Map<string, string>): Map<string, string> {
+export function matchPokecottage(
+  entries: PcPhotoEntry[],
+  cards: PcCard[],
+  jaByName: Map<string, string>,
+  zhCodes: readonly string[] = [],
+): Map<string, string> {
   const want = new Map(cards.map(c => [`${c.set_id}|${plainNumber(c.number)}`, c]));
   const out = new Map<string, { url: string; std: boolean }>();
   for (const e of entries) {
-    if (!e.url || !e.set.id.startsWith('jpn_')) continue;
-    const setId = PC_SET_ALIASES[e.set.id] ?? jaByName.get(nameKey(e.set.name));
+    if (!e.url) continue;
+    const zh = e.set.id.startsWith('scn_') ? crossCode(e.set.id.slice(4), zhCodes) : null;
+    const setId = e.set.id.startsWith('jpn_')
+      ? (PC_SET_ALIASES[e.set.id] ?? jaByName.get(nameKey(e.set.name)))
+      : zh && asiaSetId('ZH-CN', zh);
     const card = setId && want.get(`${setId}|${plainNumber(e.cardNumber)}`);
     if (!card || e.pokemonNumber == null || !card.dex.includes(e.pokemonNumber)) continue;
     const std = e.variantType === 'default';

@@ -252,7 +252,7 @@ export function Reemplazar() {
             {d.localPhotos ? (
               <button type="button" className="ghost small" disabled={!!job?.running} onClick={() => void startJob()}>
                 <Download size={15} strokeWidth={2} aria-hidden="true" />
-                {job?.running ? 'Bajando…' : 'Bajar fotos locales del catálogo japonés'}
+                {job?.running ? 'Bajando…' : 'Bajar fotos locales del catálogo japonés y chino'}
               </button>
             ) : null}
           </div>
