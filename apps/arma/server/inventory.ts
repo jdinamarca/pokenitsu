@@ -108,7 +108,9 @@ async function variantPhotos(ids: string[]) {
      FROM arma.printings p JOIN arma.facts f ON f.printing_code = p.code AND f.field = 'image' AND f.value IS NOT NULL
      JOIN arma.sources s ON s.id = f.source_id AND s.images
      LEFT JOIN arma.photo_marks m ON m.src = f.value
-     WHERE p.card_id = ANY ($1) AND p.stamp IS NOT NULL AND coalesce(m.shows, p.stamp) = p.stamp
+     WHERE p.card_id = ANY ($1) AND coalesce(m.shows, p.stamp, '') = coalesce(p.stamp, '')
+       -- a stamped variant, or any of a Japanese card whose catalog picture is its Poké Ball mirror (fotos-de-japonesas-con-poke-ball)
+       AND (p.stamp IS NOT NULL OR EXISTS (SELECT 1 FROM arma.printings b WHERE b.card_id = p.card_id AND b.lang = 'JA' AND b.finish = 'pokeball' AND b.stamp IS NULL))
      ORDER BY p.card_id, p.lang, src`,
     [ids],
   );

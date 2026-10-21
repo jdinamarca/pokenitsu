@@ -6,6 +6,7 @@ import {
   buildEquivalences,
   catalogCode,
   mergeClaims,
+  mirrorPhotos,
   misfiled,
   normNumber,
   type Claim,
@@ -151,7 +152,8 @@ async function run(dex: number): Promise<ImportSummary> {
   const onlyTd = [...new Set(claims.map(c => c.setKey))].filter(k => cat.sets.get(k)?.source === 'tcgdex-en');
   for (const k of onlyTd) await catalog.ensureSetCards(k).catch(() => {});
   await addCards(cat, onlyTd);
-  const merged = mergeClaims(claims);
+  // TCGdex's picture of a Japanese card with a Poké Ball printing is that one's (fotos-de-japonesas-con-poke-ball)
+  const merged = mirrorPhotos(mergeClaims(claims));
   for (const p of merged) p.cardId ||= cardIdOf(cat, p.setKey, p.number) ?? null;
   // a link whose Japanese number Bulbapedia does not give: the only card of the species in that set, if there is one
   links = links.flatMap(l => {

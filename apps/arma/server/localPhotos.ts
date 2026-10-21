@@ -2,7 +2,7 @@
 // with no photo from a source allowed to show it. Each file is downloaded once to LOCAL_IMAGE_DIR and recorded as an
 // image fact of its source (permission 'local'), served at /img-local/… only while ARMA_FOTOS_LOCALES=1.
 import { basename, join } from 'node:path';
-import { normNumber, photoShows } from '@pokenitsu/core';
+import { normNumber, photoShows, plainPhotoFits, type ArmaFinish } from '@pokenitsu/core';
 import { pool, tx } from './db.ts';
 import { LOCAL_IMAGE_DIR, localPhotosOn } from './local.ts';
 import { limitlessFile, limitlessUrl } from './limitless.ts';
@@ -16,10 +16,11 @@ interface Target {
   set_key: string;
   number: string;
   lang: string;
+  finish: ArmaFinish;
+  stamp: string | null;
   pc_ref: string | null;
 }
 interface Holder extends Target {
-  stamp: string | null;
   card: string;
 }
 interface Found {
@@ -59,18 +60,24 @@ async function pokecottage(dex: number, species: string, targets: Holder[], all:
     const u = h.pc_ref && byId.get(h.pc_ref);
     if (u) holders.set(`${h.card}|${u}`, [...(holders.get(`${h.card}|${u}`) || []), h]);
   }
-  return targets
-    .filter(t => t.pc_ref && byId.has(t.pc_ref))
-    .map(t => ({ t, url: byId.get(t.pc_ref!)! }))
-    .filter(({ t, url }) => photoShows(t, holders.get(`${t.card}|${url}`) || [t]) === (t.stamp || ''))
-    .map(({ t, url }) => ({ code: t.code, source: 'pokecottage-fotos', url, file: '' }));
+  return (
+    targets
+      .filter(t => t.pc_ref && byId.has(t.pc_ref))
+      .map(t => ({ t, url: byId.get(t.pc_ref!)! }))
+      .filter(({ t, url }) => photoShows(t, holders.get(`${t.card}|${url}`) || [t]) === (t.stamp || ''))
+      // one picture for two finishes of a card (its Master Ball entry reusing the Normal's) shows the plain one only
+      // (fotos-de-japonesas-con-poke-ball)
+      .filter(({ t, url }) => plainPhotoFits(t) || new Set((holders.get(`${t.card}|${url}`) || [t]).map(h => h.finish)).size === 1)
+      .map(({ t, url }) => ({ code: t.code, source: 'pokecottage-fotos', url, file: '' }))
+  );
 }
 
 /** Limitless: Japanese set code + number with 3 digits (SV2a 133 → SV2a_133_R_JP_LG.png); only the Japanese printing,
- *  since the Chinese, Thai or Indonesian ones of the same set carry other text */
+ *  since the Chinese, Thai or Indonesian ones of the same set carry other text, and only the plain one: its photo is never
+ *  a reverse, Poké Ball or Master Ball (fotos-de-japonesas-con-poke-ball) */
 function limitless(targets: Target[]): Found[] {
   return targets.flatMap(t => {
-    const f = t.lang === 'JA' ? limitlessFile(t.set_key, t.number) : null;
+    const f = t.lang === 'JA' && plainPhotoFits(t) ? limitlessFile(t.set_key, t.number) : null;
     return f ? [{ code: t.code, source: 'limitless', url: limitlessUrl(f), file: '' }] : [];
   });
 }
@@ -146,8 +153,8 @@ async function run(dex: number): Promise<PhotoSummary> {
   const { en } = await speciesNames(dex);
   // the printings with no photo, from a source allowed to show it, that shows their own variant (fotos-por-variante):
   // an unlimited whose only photo is the one shared with its 1st Edition still needs one
-  const { rows } = await pool.query<Target & { stamp: string | null; card: string; allowed: string[] }>(
-    `SELECT p.code, p.set_key, p.number, p.lang, p.stamp, -- the same card whatever zeros its number has (074 = 74), as in core's normNumber
+  const { rows } = await pool.query<Target & { card: string; allowed: string[] }>(
+    `SELECT p.code, p.set_key, p.number, p.lang, p.finish, p.stamp, -- the same card whatever zeros its number has (074 = 74), as in core's normNumber
             p.set_key || '|' || regexp_replace(upper(p.number), '^([A-Z]*)0+(?=[0-9])', '\\1') || '|' || p.lang AS card,
             (SELECT ref FROM arma.facts WHERE printing_code = p.code AND source_id = 'pokecottage' AND field = 'exists') AS pc_ref,
             coalesce((SELECT array_agg(f.value) FROM arma.facts f JOIN arma.sources s ON s.id = f.source_id
