@@ -358,6 +358,54 @@ export const catalogCode = (prefix: string, p: PrintingId): string =>
     '·',
   );
 
+// ---------- printings confirmed with the user's own card ----------
+/** a printing no source lists that the user showed with a photo of the card (burger-king-2009-en-espanol) */
+export interface ConfirmedPrinting extends PrintingId {
+  dex: number;
+  name: string;
+  artist?: string;
+  release?: string;
+  /** what proves it: the photo and its date */
+  ref: string;
+}
+export const CONFIRMED_SOURCE = 'confirmada';
+/**
+ * Each one checked against the photo: language of its text, number, finish and stamp. Burger King's 2009 Eevee in
+ * Spanish (Latin America): every source lists that promotion only in English; the user's card has its Spanish text
+ * ("Llamar a la Familia", "Embestida"), 62/100, reverse holo and the "Platinum" stamp, ©2009.
+ */
+export const CONFIRMED_PRINTINGS: readonly ConfirmedPrinting[] = [
+  {
+    dex: 133,
+    setKey: 'dp5',
+    number: '62',
+    lang: 'ES',
+    finish: 'reverse',
+    stamp: 'burger-king-2009',
+    name: 'Eevee',
+    artist: 'Ken Sugimori',
+    release: '2009-06-01',
+    ref: 'Foto de la carta del usuario, 2026-10-21',
+  },
+];
+/** the confirmed printings of a species, as claims of their own source */
+export const ownCardClaims = (dex: number, list: readonly ConfirmedPrinting[] = CONFIRMED_PRINTINGS): Claim[] =>
+  list
+    .filter(p => p.dex === dex)
+    .map(p => ({
+      setKey: p.setKey,
+      number: p.number,
+      lang: p.lang,
+      finish: p.finish,
+      stamp: p.stamp,
+      name: p.name,
+      ...(p.artist ? { artist: p.artist } : {}),
+      ...(p.release ? { release: p.release } : {}),
+      ref: p.ref,
+      source: CONFIRMED_SOURCE,
+      label: variantLabel({ finish: p.finish, stamp: p.stamp }),
+    }));
+
 // ---------- merging what the sources claim ----------
 export type ArmaField = 'exists' | 'name' | 'number' | 'artist' | 'image' | 'price' | 'equivalence' | 'variant';
 export interface Claim extends PrintingId {

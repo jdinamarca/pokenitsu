@@ -10,6 +10,7 @@ import {
   catalogCode,
   FULL_RULES,
   mergeClaims,
+  ownCardClaims,
   mirrorPhotos,
   plainPhotoFits,
   parseLanguageSentence,
@@ -117,6 +118,26 @@ describe('2.1 código de catálogo y variantes', () => {
     expect(m).toHaveLength(1);
     expect(m[0]!.finish).toBe('cosmos');
     expect(m[0]!.facts.filter(f => f.field === 'exists').map(f => f.source)).toEqual(['tcgdex', 'tcgplayer']);
+  });
+  it('la Eevee de Burger King 2009 en español, confirmada con la carta del usuario (burger-king-2009-en-espanol)', () => {
+    const own = ownCardClaims(133);
+    expect(own).toHaveLength(1);
+    expect(own[0]).toMatchObject({
+      setKey: 'dp5',
+      number: '62',
+      lang: 'ES',
+      finish: 'reverse',
+      stamp: 'burger-king-2009',
+      source: 'confirmada',
+    });
+    expect(own[0]!.label).toBe(variantLabel({ finish: 'reverse', stamp: 'burger-king-2009' }));
+    expect(ownCardClaims(134)).toEqual([]);
+    const m = mergeClaims([claim('dp5', '62', 'EN', 'reverse', 'tcgdex', 'burger-king-2009'), ...own]);
+    expect(m.map(p => `${p.lang} ${p.finish} ${p.stamp}`)).toEqual(['EN reverse burger-king-2009', 'ES reverse burger-king-2009']);
+    expect(m[1]!.facts.find(f => f.field === 'exists')).toMatchObject({
+      source: 'confirmada',
+      ref: 'Foto de la carta del usuario, 2026-10-21',
+    });
   });
   it('30th Celebration es toda holo: el normal de las fuentes es la holo (me55-solo-holo)', () => {
     const m = mergeClaims([
