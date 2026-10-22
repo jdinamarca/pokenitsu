@@ -3,12 +3,14 @@
 import {
   additionalCardClaims,
   battleAcademyClaims,
+  CONFIRMED_SOURCE,
   buildEquivalences,
   catalogCode,
   mergeClaims,
   mirrorPhotos,
   misfiled,
   normNumber,
+  ownCardClaims,
   type Claim,
   type DesignLink,
   type MergedPrinting,
@@ -134,6 +136,8 @@ async function run(dex: number): Promise<ImportSummary> {
     };
   });
   await attempt(['tcgdex-expansiones'], () => deducedClaims(cat, claims, listed));
+  // printings no source lists that the user showed with their own card (burger-king-2009-en-espanol)
+  await attempt([CONFIRMED_SOURCE], async () => ({ claims: ownCardClaims(dex) }));
 
   // Bulbapedia down: its links are rebuilt from the equivalences it backed in the last import, so none is lost
   if (!sources.bulbapedia?.ok) {
